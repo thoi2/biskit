@@ -1,0 +1,35 @@
+# ===================================================================
+# 2. docker-compose.override.yml (개발용 덮어쓰기 파일)
+# - 로컬 개발 환경에서만 사용됩니다. (Hot Reloading 지원)
+# ===================================================================
+services:
+  backend:
+    build:
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    build:
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+  mysql:
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  redis:
+    ports:
+      - "${REDIS_PORT}:${REDIS_PORT}"

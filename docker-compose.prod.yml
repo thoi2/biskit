@@ -1,0 +1,27 @@
+# ===================================================================
+# 3. docker-compose.prod.yml (운영용 덮어쓰기 파일)
+# - Jenkins 등 CI/CD를 통해 실제 서버에 배포할 때 사용합니다.
+# ===================================================================
+services:
+  backend:
+    # 운영 환경에서는 기본 Dockerfile을 사용합니다.
+    build:
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    restart: always
+
+  frontend:
+    build:
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    restart: always
+
+  mysql:
+    # 보안을 위해 운영 환경에서는 DB 포트를 외부에 노출하지 않습니다.
+    restart: always
+
+  redis:
+    # 보안을 위해 운영 환경에서는 Redis 포트를 외부에 노출하지 않습니다.
+    restart: always

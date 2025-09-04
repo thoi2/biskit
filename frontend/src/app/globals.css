@@ -1,0 +1,25 @@
+@import 'tailwindcss';
+
+/* body {
+  font-family: 'Pretendard', sans-serif; 
+  color: #333; 
+  background-color: #f8f9fa; 
+}
+
+@layer base {
+  h1 {
+    @apply text-4xl font-bold mb-4; 
+  }
+  a {
+    @apply text-blue-600 hover:underline; 
+  }
+} */
+/* font-family: 'Pretendard', sans-serif;: 웹사이트의 기본 글꼴을 'Pretendard'로 지정합니다. 만약 사용자의 컴퓨터에 'Pretendard' 글꼴이 없다면, 기본 sans-serif 글꼴을 사용하게 됩니다.
+
+color: #333;: 특별히 다른 색을 지정하지 않은 모든 글자의 기본 색상을 진한 회색(#333)으로 설정합니다.
+
+background-color: #f8f9fa;: 웹사이트의 기본 배경색을 매우 옅은 회색(#f8f9fa)으로 설정합니다.
+
+@apply text-4xl font-bold mb-4;는 "이 h1 태그에 text-4xl(글자 크게), font-bold(굵게), mb-4(아래쪽 여백) 클래스를 적용해 줘"라는 뜻입니다.
+
+@apply text-blue-600 hover:underline;은 "모든 링크는 파란색으로 만들고, 마우스를 올리면 밑줄을 표시해 줘"라는 의미입니다. */

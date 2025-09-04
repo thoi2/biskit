@@ -1,0 +1,30 @@
+# frontend/Dockerfile.dev
+# 개발 환경을 위한 Dockerfile (Corepack 사용)
+
+# 1. Node.js Alpine 이미지를 기반으로 시작합니다.
+FROM node:18-alpine
+
+# 2. 작업 디렉토리를 /app으로 설정합니다.
+WORKDIR /app
+
+# 3. 의존성 파일을 먼저 복사하여 Docker 빌드 캐시를 활용합니다.
+COPY package.json yarn.lock ./
+
+# 4. (★핵심 수정★)
+#    - Node.js 내장 도구인 Corepack을 활성화합니다. (npm install -g yarn 대체)
+#    - 빌드에 필요한 임시 도구들을 설치합니다.
+#    - yarn install을 실행합니다.
+#    - 설치가 끝나면 임시 빌드 도구들을 삭제하여 이미지 용량을 최적화합니다.
+RUN apk add --no-cache --virtual .build-deps python3 make g++ && \
+    corepack enable && \
+    yarn install --frozen-lockfile && \
+    apk del .build-deps
+
+# 5. 나머지 모든 소스 코드를 컨테이너 안으로 복사합니다.
+COPY . .
+
+# 6. Next.js 개발 서버의 기본 포트인 3000번을 외부에 노출시킵니다.
+EXPOSE 3000
+
+# 7. 컨테이너가 시작될 때 'yarn dev' 명령어를 실행하여 개발 서버를 시작합니다.
+CMD ["yarn", "dev"]

@@ -5,6 +5,7 @@
 
 # Node.js 의존성 폴더 (가장 중요!)
 node_modules/
+jenkins-data/
 
 # 빌드 결과물 폴더
 build/
@@ -33,6 +34,8 @@ yarn-error.log*
 *.sublime-project
 *.sublime-workspace
 
+# Gradle cache files
+.gradle/
 
 # =========================================================================
 # Environment Variables
@@ -43,7 +46,8 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
-
+.env.*
+next-env.d.ts
 
 # =========================================================================
 # Operating System files

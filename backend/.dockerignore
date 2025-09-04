@@ -1,0 +1,56 @@
+# Git 관련
+.git
+.gitignore
+.gitattributes
+
+# 빌드 결과물 (JAR 파일 제외)
+.gradle/
+build/
+!build/libs/*.jar
+out/
+
+# IDE 설정
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.eclipse/
+
+# 환경변수 파일 (보안 중요!)
+.env*
+*.env
+.env.dev
+.env.prod
+
+# OS 파일
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+
+# 로그 파일
+*.log
+logs/
+
+# 테스트 관련
+src/test/
+**/test/
+
+# 문서 및 기타
+README.md
+*.md
+docs/
+.dockerignore
+Dockerfile*
+
+# Node.js (프론트엔드 있을 경우)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 임시 파일
+*.swp
+*.swo
+*~

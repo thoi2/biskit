@@ -1,0 +1,84 @@
+# ===================================================================
+# 1. docker-compose.yml (공통/기본 설정 파일)
+# - 모든 환경(개발, 운영)에서 공통으로 사용되는 기본 뼈대입니다.
+# - 프론트엔드, 백엔드, DB, Redis 서비스의 기본 구조를 정의합니다.
+# ===================================================================
+services:
+  # Spring Boot 백엔드 애플리케이션
+  backend:
+    build:
+      context: ./backend
+      # 사용할 Dockerfile은 override 또는 prod 파일에서 지정합니다.
+    container_name: startup-backend
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT}
+      - JWT_SECRET=${JWT_SECRET}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
+      - KT_API_KEY=${KT_API_KEY}
+      - PUBLIC_DATA_API_KEY=${PUBLIC_DATA_API_KEY}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - startup-network
+
+  # Next.js 프론트엔드 애플리케이션
+  frontend:
+    build:
+      context: ./frontend
+    container_name: startup-frontend
+    depends_on:
+      - backend
+    networks:
+      - startup-network
+
+  # MySQL 데이터베이스
+  mysql:
+    image: mysql:8.0
+    # (★핵심 수정★) 실행할 플랫폼을 명시적으로 지정합니다.
+    platform: linux/amd64
+    container_name: startup-mysql
+    # 이하 나머지 설정은 동일합니다.
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: Asia/Seoul
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - startup-network
+
+  # Redis 인메모리 데이터 스토어
+  redis:
+    image: redis:7-alpine
+    container_name: startup-redis
+    command: ["redis-server", "--port", "${REDIS_PORT}", "--save", "60", "1000"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - startup-network
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  startup-network:
+    driver: bridge
