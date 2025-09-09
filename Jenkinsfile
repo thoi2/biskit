@@ -28,7 +28,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 // GitHub 저장소에서 최신 코드를 가져옴
-                git branch: 'release-test', credentialsId: 'gitlab-access-token', url: 'https://lab.ssafy.com/s13-bigdata-recom-sub1/S13P21A101.git'
+                git branch: 'release', credentialsId: 'gitlab-access-token', url: 'https://lab.ssafy.com/s13-bigdata-recom-sub1/S13P21A101.git'
             }
         }
 
