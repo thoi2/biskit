@@ -29,7 +29,7 @@ services:
       redis:
         condition: service_started
     networks:
-      - startup-network
+      - my-network
 
   # Next.js 프론트엔드 애플리케이션
   frontend:
@@ -39,7 +39,7 @@ services:
     depends_on:
       - backend
     networks:
-      - startup-network
+      - my-network
 
   # MySQL 데이터베이스
   mysql:
@@ -63,7 +63,7 @@ services:
       retries: 5
       start_period: 30s
     networks:
-      - startup-network
+      - my-network
 
   # Redis 인메모리 데이터 스토어
   redis:
@@ -73,12 +73,12 @@ services:
     volumes:
       - redis_data:/data
     networks:
-      - startup-network
+      - my-network
 
 volumes:
   mysql_data:
   redis_data:
 
 networks:
-  startup-network:
-    driver: bridge
+  my-network: # ⬅️ 이름을 'my-network'로 변경
+    external: true # ⬅️ 이 네트워크는 외부에 이미 존재함을 알림
