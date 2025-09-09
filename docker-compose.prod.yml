@@ -7,15 +7,11 @@ services:
     # 운영 환경에서는 기본 Dockerfile을 사용합니다.
     build:
       dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
     restart: always
 
   frontend:
     build:
       dockerfile: Dockerfile
-    ports:
-      - "80:80"
     restart: always
 
   mysql:
