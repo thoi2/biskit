@@ -21,3 +21,7 @@ services:
   redis:
     # 보안을 위해 운영 환경에서는 Redis 포트를 외부에 노출하지 않습니다.
     restart: always
+
+networks:
+  my-network:
+    external: true
