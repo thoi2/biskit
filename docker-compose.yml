@@ -81,4 +81,4 @@ volumes:
 
 networks:
   my-network: # ⬅️ 이름을 'my-network'로 변경
-    external: true # ⬅️ 이 네트워크는 외부에 이미 존재함을 알림
+    external: bridge # ⬅️ 이 네트워크는 외부에 이미 존재함을 알림
