@@ -63,7 +63,7 @@ FIELDS TERMINATED BY ','
 OPTIONALLY ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
 IGNORE 1 LINES
-(store_name, branch_name, biz_category_code, dong_code, road_address, lng, lat);
+(store_name, branch_name, biz_category_code, dong_code, road_address, lat, lng);
 
 
 COMMIT;
