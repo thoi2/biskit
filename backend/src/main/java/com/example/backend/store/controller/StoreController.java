@@ -4,6 +4,7 @@ import com.example.backend.common.response.ApiResponse;
 import com.example.backend.store.dto.BoundsRequest;
 import com.example.backend.store.dto.StoreDto;
 import com.example.backend.store.service.StoreService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,7 +24,7 @@ public class StoreController {
 
     @PostMapping("/in-bounds")
     public ApiResponse<List<StoreDto>> getStoresInBounds(
-            @RequestBody BoundsRequest request) {
+            @Valid @RequestBody BoundsRequest request) {
 
         List<StoreDto> stores = storeService.findStoresInBounds(request.getBounds());
         return ApiResponse.of(stores);
