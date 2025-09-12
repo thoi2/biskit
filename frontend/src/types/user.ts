@@ -1,7 +1,6 @@
 export interface User {
-  id: number;
-  provider_user_id: string;
+  userId: number;
   email: string;
-  nickname: string;
-  created_at: number;
+  name: string;
+  profileImageUrl: string;
 }

@@ -36,6 +36,9 @@ services:
     build:
       context: ./frontend
     container_name: frontend
+    environment:
+      - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - NEXT_PUBLIC_GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
     depends_on:
       - backend
     networks:
