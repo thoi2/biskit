@@ -6,6 +6,8 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { googleLoginAPI } from '@/lib/api'; // 3단계에서 만들 API 함수
 import { useAuthStore } from '@/store/authStore';
 import { useQueryClient } from '@tanstack/react-query';
+import { Suspense } from 'react';
+import AuthCallbackClient from '@/components/Param/AuthCallbackClient'; // 방금 만든 컴포넌트
 
 export const dynamic = 'force-dynamic';
 
@@ -50,5 +52,7 @@ export default function AuthCallbackPage() {
   }, [searchParams, router, login, queryClient]);
   
   // 이 페이지는 로직 처리 중임을 사용자에게 보여주는 로딩 화면 역할을 합니다.
-  return <div>로그인 처리 중입니다. 잠시만 기다려주세요...</div>;
+  return (<Suspense fallback={<div>Loading...</div>}>
+      <AuthCallbackClient />
+    </Suspense>)
 }
