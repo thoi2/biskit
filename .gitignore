@@ -9,6 +9,9 @@ jenkins-data/
 
 # 빌드 결과물 폴더
 build/
+/backend/out
+/build
+/.idea
 dist/
 .next/
 .out/
