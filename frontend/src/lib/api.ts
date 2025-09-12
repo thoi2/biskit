@@ -16,7 +16,6 @@ export const logoutAPI = async () => {
 // 인증 상태 확인 API
 export const checkAuthStatusAPI = async () => {
   const response = await apiClient.get('/auth/check');
-  console.log(response.data);
   return response.data;
 };
 

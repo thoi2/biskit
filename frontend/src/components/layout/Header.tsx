@@ -66,8 +66,8 @@ export default function Header() {
               </Link>
               <Link href="/my-page" aria-label="profile" className="rounded-full overflow-hidden shadow-md">
                 <Image
-                  src="/2.png"
-                  alt="Profile"
+                  src={user.profileImageUrl}
+                  alt="/2.png"
                   width={32}
                   height={32}
                   priority

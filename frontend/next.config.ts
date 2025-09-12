@@ -13,6 +13,17 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '*.googleusercontent.com',
+        port: '',
+        pathname: '/**', // lh3.googleusercontent.com 도메인의 모든 경로를 허용
+      },
+      // 만약 다른 도메인도 필요하다면 여기에 추가하면 됩니다.
+    ],
+  },
 };
 
 export default nextConfig;

@@ -20,7 +20,7 @@ export default function MyPage() {
     // isLoading이 false인데 user 데이터가 없다면(null 또는 undefined),
     // 아무것도 그리지 않고(null) 컴포넌트를 종료합니다.
     if (!user) return null; 
-  
+    console.log('API로부터 받은 실제 user 데이터:', user);
     // 3-3. 성공 상태일 때 (로딩이 끝났고, user 데이터가 있을 때)
     // 위 두 조건에 해당하지 않으면, 가져온 user 데이터를 사용해 프로필 정보를 화면에 그립니다.
     return (
