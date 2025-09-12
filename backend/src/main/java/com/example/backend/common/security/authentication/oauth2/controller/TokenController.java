@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class TokenController {
     private final OAuth2TokenService oauth2TokenService;
@@ -28,12 +28,12 @@ public class TokenController {
      */
     @PostMapping("/oauth2/{provider}/token")
     public ApiResponse<OAuth2TokenResponse> exchangeToken(
-        @PathVariable String provider,
-        @Valid @RequestBody OAuth2TokenRequest request,
-        HttpServletResponse response) {
+            @PathVariable String provider,
+            @Valid @RequestBody OAuth2TokenRequest request,
+            HttpServletResponse response) {
 
         OAuth2TokenResponse tokenResponse = oauth2TokenService.exchangeCodeForToken(request, provider, response);
-        
+
         return ApiResponse.of(tokenResponse);
     }
 

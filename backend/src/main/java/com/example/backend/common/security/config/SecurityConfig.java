@@ -42,63 +42,61 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-            // CSRF 비활성화 (SameSite 쿠키로 대체)
-            .csrf(AbstractHttpConfigurer::disable)
+                // CSRF 비활성화 (SameSite 쿠키로 대체)
+                .csrf(AbstractHttpConfigurer::disable)
 
-            // CORS 설정
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // CORS 설정
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-            // 세션을 Stateless로 설정
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // 세션을 Stateless로 설정
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-            // 요청 인가 설정
-            .authorizeHttpRequests(auth -> auth
-                // OAuth2 관련 경로
-                .requestMatchers("/auth/oauth2/**").permitAll()
+                // 요청 인가 설정
+                .authorizeHttpRequests(auth -> auth
+                        // OAuth2 관련 경로
+                        .requestMatchers("/api/auth/oauth2/**").permitAll()
 
-                // 공개 API 경로
-                .requestMatchers("/public/**").permitAll()
-                .requestMatchers("/health", "/actuator/health").permitAll()
+                        // 공개 API 경로
+                        .requestMatchers("/public/**").permitAll()
+                        .requestMatchers("/health", "/actuator/health").permitAll()
 
-                // API 문서 관련
-                .requestMatchers("/swagger-ui/**", "/swagger-ui.html").permitAll()
-                .requestMatchers("/v3/api-docs/**", "/swagger-resources/**").permitAll()
-                .requestMatchers("/webjars/**").permitAll()
+                        // API 문서 관련
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-resources/**").permitAll()
+                        .requestMatchers("/webjars/**").permitAll()
 
-                // 정적 리소스
-                .requestMatchers("/favicon.ico", "/robots.txt").permitAll()
-                .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
+                        // 정적 리소스
+                        .requestMatchers("/favicon.ico", "/robots.txt").permitAll()
+                        .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
 
-                // 에러 페이지
-                .requestMatchers("/error").permitAll()
+                        // 에러 페이지
+                        .requestMatchers("/error").permitAll()
 
-                // OPTIONS 요청 허용 (CORS preflight)
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // OPTIONS 요청 허용 (CORS preflight)
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                // 나머지 모든 요청은 인증 필요
-                .anyRequest().authenticated()
-            )
+                        // 나머지 모든 요청은 인증 필요
+                        .anyRequest().authenticated())
 
-            // JWT 인증 필터 추가
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                // JWT 인증 필터 추가
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 
-            // 보안 헤더 설정
-            .headers(headers -> headers
-                .frameOptions(frameOptions -> frameOptions.sameOrigin())
-                .contentTypeOptions(contentTypeOptions -> {})
-                .httpStrictTransportSecurity(hstsConfig -> hstsConfig
-                    .maxAgeInSeconds(31536000)
-                    .includeSubDomains(true)
-                )
-                // XSS 보호 강화
-                .xssProtection(xss -> {})
-                // Content Security Policy (선택사항)
-                .contentSecurityPolicy(csp -> csp
-                    .policyDirectives("default-src 'self'; script-src 'self' 'unsafe-inline'")
-                )
-            )
+                // 보안 헤더 설정
+                .headers(headers -> headers
+                        .frameOptions(frameOptions -> frameOptions.sameOrigin())
+                        .contentTypeOptions(contentTypeOptions -> {
+                        })
+                        .httpStrictTransportSecurity(hstsConfig -> hstsConfig
+                                .maxAgeInSeconds(31536000)
+                                .includeSubDomains(true))
+                        // XSS 보호 강화
+                        .xssProtection(xss -> {
+                        })
+                        // Content Security Policy (선택사항)
+                        .contentSecurityPolicy(csp -> csp
+                                .policyDirectives("default-src 'self'; script-src 'self' 'unsafe-inline'")))
 
-            .build();
+                .build();
     }
 
     /**
@@ -113,16 +111,14 @@ public class SecurityConfig {
 
         // 허용된 HTTP 메서드
         configuration.setAllowedMethods(Arrays.asList(
-            "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
-        ));
+                "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 
         // 허용된 헤더 (CSRF 토큰 관련 헤더 제거)
         configuration.setAllowedHeaders(Arrays.asList(
-            "Content-Type",
-            "Accept",
-            "Origin",
-            "X-Requested-With"
-        ));
+                "Content-Type",
+                "Accept",
+                "Origin",
+                "X-Requested-With"));
 
         // 인증 정보 포함 허용 (쿠키 전송을 위해 필수)
         configuration.setAllowCredentials(true);

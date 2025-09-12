@@ -15,22 +15,22 @@ public final class SecurityPaths {
      * 인증 없이 접근 가능한 모든 HTTP 메서드 경로
      */
     public static final String[] PUBLIC_PATHS = {
-        "/auth/oauth2/**",
-        "/auth/refresh",
-        "/public/**",
-        "/health",
-        "/actuator/health",
-        "/swagger-ui/**",
-        "/swagger-ui.html",
-        "/v3/api-docs/**",
-        "/swagger-resources/**",
-        "/webjars/**",
-        "/favicon.ico",
-        "/robots.txt",
-        "/css/**",
-        "/js/**",
-        "/images/**",
-        "/error"
+            "/api/auth/oauth2/**",
+            "/api/auth/refresh",
+            "/public/**",
+            "/health",
+            "/actuator/health",
+            "/swagger-ui/**",
+            "/swagger-ui.html",
+            "/v3/api-docs/**",
+            "/swagger-resources/**",
+            "/webjars/**",
+            "/favicon.ico",
+            "/robots.txt",
+            "/css/**",
+            "/js/**",
+            "/images/**",
+            "/error"
     };
 
     /**

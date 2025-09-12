@@ -26,7 +26,7 @@ export default function MyPage() {
     return (
       <div style={{ marginTop: '20px', border: '1px solid black', padding: '10px' }}>
         <h3>사용자 프로필</h3>
-        <p>닉네임: {user.nickname}</p>
+        <p>닉네임: {user.name}</p>
         <p>이메일: {user.email}</p>
       </div>
     

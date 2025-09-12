@@ -25,9 +25,10 @@ export default function AuthCallbackPage() {
     if (authCode) {
       const handleGoogleLogin = async (code: string) => {
         try {
+          // console.log('구글 로그인 코드:', code)
           // 3단계: 추출한 코드를 백엔드 API로 전송합니다.
           const user = await googleLoginAPI(code);
-          
+          console.log(user);
           // 백엔드에서 로그인 성공 및 쿠키 설정이 완료된 후, 클라이언트 상태를 업데이트합니다.
           queryClient.setQueryData(['user', 'profile'], user);
           login();

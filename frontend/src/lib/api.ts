@@ -2,10 +2,11 @@
 import apiClient from './apiClient';
 import type { User } from '@/types/index'
 
-const mockUser: User = {
-  id: 1,
+const User: User = {
+  userId: 1,
   email: 'hong.gildong@example.com',
-  nickname: '홍길동',
+  name: '홍길동',
+  profileImageUrl: 'test',
 };
 
 // 로그인 API: 이제 실제 POST 요청을 보냅니다.
