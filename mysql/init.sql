@@ -10,10 +10,11 @@ SET autocommit = 0;
 -- 1. user 테이블 생성 (존재하지 않으면)
 CREATE TABLE IF NOT EXISTS user (
     id INTEGER PRIMARY KEY AUTO_INCREMENT,
-    provider_user_id VARCHAR(255) UNIQUE,
     email VARCHAR(255) NOT NULL,
-    nickname VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    name VARCHAR(255) NOT NULL,
+    profile_image_url VARCHAR(255),
+    oauth2_provider VARCHAR(255) NOT NULL,
+    oauth2_provider_id VARCHAR(255) NOT NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 2. store 테이블 생성 (존재하지 않으면)
