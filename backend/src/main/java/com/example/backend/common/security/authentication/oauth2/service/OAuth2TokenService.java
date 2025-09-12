@@ -13,7 +13,9 @@ import com.example.backend.common.security.authentication.oauth2.provider.OAuth2
 import com.example.backend.common.security.authentication.oauth2.userInfo.OAuth2UserInfo;
 import com.example.backend.user.entity.User;
 import com.example.backend.user.repository.UserRepository;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 
@@ -304,39 +307,68 @@ public class OAuth2TokenService {
      * HttpOnly, Secure, SameSite 설정으로 보안 강화
      */
     private void setCookies(HttpServletResponse response, String accessToken, String refreshToken) {
-        // Access Token 쿠키 설정
+        // Access Token 쿠키 설정 (세션 쿠키)
         Cookie accessTokenCookie = new Cookie("accessToken", accessToken);
         accessTokenCookie.setHttpOnly(true);
         accessTokenCookie.setSecure(false); // 개발환경에서는 false, 운영에서는 true
         accessTokenCookie.setPath("/");
-        accessTokenCookie.setMaxAge((int) accessTokenExpiration); // 설정값 사용
+        accessTokenCookie.setMaxAge(-1); // 세션 쿠키 - 브라우저 닫으면 삭제
         response.addCookie(accessTokenCookie);
 
-        // Refresh Token 쿠키 설정
+        // Refresh Token 쿠키 설정 (세션 쿠키)
         Cookie refreshTokenCookie = new Cookie("refreshToken", refreshToken);
         refreshTokenCookie.setHttpOnly(true);
         refreshTokenCookie.setSecure(false); // 개발환경에서는 false, 운영에서는 true
         refreshTokenCookie.setPath("/");
-        refreshTokenCookie.setMaxAge((int) refreshTokenExpiration); // 설정값 사용
+        refreshTokenCookie.setMaxAge(-1); // 세션 쿠키 - 브라우저 닫으면 삭제
         response.addCookie(refreshTokenCookie);
     }
 
     /**
      * 사용자 로그아웃 - 리프레시 토큰 무효화
      *
-     * @param userInfo 인증된 사용자 정보
+     * @param request HTTP 요청 객체 (쿠키에서 토큰 추출용)
      * @param response HTTP 응답 객체 (쿠키 삭제용)
      */
-    public void logout(JwtUserInfo userInfo, HttpServletResponse response) {
-        if (userInfo == null) {
-            log.warn("로그아웃 요청에 사용자 정보가 없습니다.");
-            throw new BusinessException(ErrorCode.AUTH_USER_NOT_FOUND, "인증된 사용자 정보를 찾을 수 없습니다.");
+    public void logout(HttpServletRequest request, HttpServletResponse response) {
+        try {
+            // 쿠키에서 액세스 토큰 추출하여 사용자 ID 획득
+            String accessToken = extractTokenFromCookie(request);
+            if (accessToken != null) {
+                // 토큰에서 사용자 ID 추출
+                Claims claims = jwtUtil.extractClaims(accessToken);
+                String userId = claims.get("user_id", String.class);
+                if (userId != null) {
+                    refreshTokenService.deleteRefreshToken(userId);
+                    log.info("사용자 로그아웃 완료. userId: {}", userId);
+                }
+            } else {
+                log.warn("액세스 토큰이 없는 상태로 로그아웃 시도");
+            }
+        } catch (Exception e) {
+            log.warn("로그아웃 처리 중 오류 발생: {}", e.getMessage());
+        } finally {
+            // 토큰이 유효하지 않아도 쿠키는 삭제
+            clearCookies(response);
         }
-        
-        String userId = userInfo.userId();
-        refreshTokenService.deleteRefreshToken(userId);
-        clearCookies(response);
-        log.info("사용자 로그아웃 완료. userId: {}", userId);
+    }
+
+    /**
+     * HTTP 요청의 쿠키에서 JWT 토큰을 추출
+     *
+     * @param request HTTP 요청 객체
+     * @return 추출된 JWT 토큰, 없으면 null
+     */
+    private String extractTokenFromCookie(HttpServletRequest request) {
+        if (request.getCookies() == null) {
+            return null;
+        }
+
+        return Arrays.stream(request.getCookies())
+            .filter(cookie -> "accessToken".equals(cookie.getName()))
+            .findFirst()
+            .map(Cookie::getValue)
+            .orElse(null);
     }
 
     /**

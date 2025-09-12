@@ -51,26 +51,10 @@ public class SecurityConfig {
                 // 세션을 Stateless로 설정
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // 요청 인가 설정
-                .authorizeHttpRequests(auth -> auth
-                        // OAuth2 관련 경로
-                        .requestMatchers("/api/auth/oauth2/**").permitAll()
-
-                        // 공개 API 경로
-                        .requestMatchers("/public/**").permitAll()
-                        .requestMatchers("/health", "/actuator/health").permitAll()
-
-                        // API 문서 관련
-                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        .requestMatchers("/v3/api-docs/**", "/swagger-resources/**").permitAll()
-                        .requestMatchers("/webjars/**").permitAll()
-
-                        // 정적 리소스
-                        .requestMatchers("/favicon.ico", "/robots.txt").permitAll()
-                        .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
-
-                        // 에러 페이지
-                        .requestMatchers("/error").permitAll()
+            // 요청 인가 설정
+            .authorizeHttpRequests(auth -> auth
+                // 인증 없이 접근 가능한 경로
+                .requestMatchers(SecurityPaths.PUBLIC_PATHS).permitAll()
 
                         // OPTIONS 요청 허용 (CORS preflight)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
