@@ -15,8 +15,7 @@ public final class SecurityPaths {
      * 인증 없이 접근 가능한 모든 HTTP 메서드 경로
      */
     public static final String[] PUBLIC_PATHS = {
-        "/auth/oauth2/**",
-        "/auth/refresh",
+        "/api/v1/auth/oauth2/**",
         "/public/**",
         "/health",
         "/actuator/health",

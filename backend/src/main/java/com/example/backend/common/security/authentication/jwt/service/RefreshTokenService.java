@@ -96,8 +96,8 @@ public class RefreshTokenService {
         String key = REFRESH_TOKEN_KEY_PREFIX + userId;
         
         try {
-            // 원자적 연산으로 토큰 확인 후 즉시 삭제
-            String storedToken = redisTemplate.opsForValue().getAndDelete(key);
+            // Redis 6.2 미만 버전 호환성을 위한 분리된 연산
+            String storedToken = redisTemplate.opsForValue().get(key);
             
             if (storedToken == null) {
                 log.warn("저장된 리프레시 토큰이 없거나 이미 사용됨. userId: {}", userId);
@@ -107,10 +107,13 @@ public class RefreshTokenService {
             boolean isValid = storedToken.equals(refreshToken);
             
             if (isValid) {
+                // 토큰이 유효한 경우 삭제 (RTR 적용)
+                redisTemplate.delete(key);
                 log.info("리프레시 토큰 검증 및 무효화 완료. userId: {}", userId);
                 return true;
             } else {
-                // 토큰이 일치하지 않는 경우, 보안을 위해 저장된 토큰은 이미 삭제됨
+                // 토큰이 일치하지 않는 경우, 보안을 위해 삭제
+                redisTemplate.delete(key);
                 log.error("리프레시 토큰 불일치 - 잠재적 공격 시도. userId: {}", userId);
                 return false;
             }

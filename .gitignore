@@ -12,7 +12,7 @@ build/
 dist/
 .next/
 .out/
-
+/backend/out
 # npm 또는 Yarn 로그 파일
 npm-debug.log*
 yarn-debug.log*
