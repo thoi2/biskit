@@ -20,7 +20,7 @@ import lombok.Setter;
  * 사용자 엔티티 (간소화 버전)
  */
 @Entity
-@Table(name = "users")
+@Table(name = "user")
 @Getter
 @Setter
 @Builder
