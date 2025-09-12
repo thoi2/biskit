@@ -1,21 +1,17 @@
-"use client";
+// /app/page.tsx
+'use client';
 
-import Link from 'next/link'; // 1. next/link에서 Link를 가져옵니다.
+import { useAuthStore } from '@/store/authStore';
 
-export default function Home() {
+export default function HomePage() {
+  const { isLoggedIn } = useAuthStore();
 
   return (
-    <div>
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <h1 className="text-4xl font-bold">홈페이지</h1>
-      {/* 2. a 태그 대신 Link 컴포넌트를 사용하고, href로 이동할 경로를 지정합니다. */}
-      <Link
-        href="/about"
-        className="mt-8 rounded-lg bg-blue-500 px-6 py-3 text-lg font-semibold text-white transition hover:bg-blue-600"
-      >
-        소개 페이지로 이동하기
-      </Link>
+    <main style={{ padding: '20px' }}>
+      <h1>최종 로그인 구현 예제</h1>
+      <p>
+        현재 로그인 상태: <strong>{isLoggedIn ? '로그인됨' : '로그아웃됨'}</strong>
+      </p>
     </main>
-    </div>
   );
 }

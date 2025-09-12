@@ -1,13 +1,13 @@
 -- 초기 테이블 생성 및 데이터 삽입
-CREATE TABLE IF NOT EXISTS users (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    provider VARCHAR(50) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- CREATE TABLE IF NOT EXISTS users (
+--     id BIGINT AUTO_INCREMENT PRIMARY KEY,
+--     email VARCHAR(255) UNIQUE NOT NULL,
+--     name VARCHAR(255) NOT NULL,
+--     provider VARCHAR(50) NOT NULL,
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- );
 
 -- 샘플 데이터
-INSERT INTO users (email, name, provider) VALUES
-('test@example.com', 'Test User', 'google')
-ON DUPLICATE KEY UPDATE email=email;
+-- INSERT INTO users (email, name, provider) VALUES
+-- ('test@example.com', 'Test User', 'google')
+-- ON DUPLICATE KEY UPDATE email=email;
