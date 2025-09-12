@@ -7,6 +7,8 @@ import { googleLoginAPI } from '@/lib/api'; // 3단계에서 만들 API 함수
 import { useAuthStore } from '@/store/authStore';
 import { useQueryClient } from '@tanstack/react-query';
 
+export const dynamic = 'force-dynamic';
+
 export default function AuthCallbackPage() {
   // URL의 쿼리 파라미터를 읽기 위한 훅
   const searchParams = useSearchParams();
