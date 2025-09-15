@@ -19,6 +19,16 @@ FROM node:18-alpine AS runner
 
 WORKDIR /app
 
+# 🔽🔽🔽 이 부분을 추가합니다 🔽🔽🔽
+# docker-compose로부터 build args를 받기 위한 선언
+ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
+ARG NEXT_PUBLIC_GOOGLE_REDIRECT_URI
+
+# 받은 build args를 이 스테이지의 환경 변수로 설정
+ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
+ENV NEXT_PUBLIC_GOOGLE_REDIRECT_URI=${NEXT_PUBLIC_GOOGLE_REDIRECT_URI}
+# 🔼🔼🔼 여기까지 추가 🔼🔼🔼
+
 # 빌드 단계(builder)에서 생성된 결과물만 복사해옵니다.
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
