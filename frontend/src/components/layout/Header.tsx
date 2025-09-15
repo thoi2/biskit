@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import Button from '@/components/ui/Button/Button';
 import Image from 'next/image';
+// import { LogOut } from "lucide-react"
 import { useAuthStore } from '@/store/authStore'; // 1. authStore 임포트
 import { useUserQuery } from '@/hooks/useUserQuery'; // 2. useUserQuery 훅 임포트
 import { useQueryClient } from '@tanstack/react-query'; // 3. 쿼리 클라이언트 훅 임포트
@@ -47,36 +48,7 @@ export default function Header() {
     <>
     {/* <header className="text-white p-6 shadow-lg border-b border-orange-600/20 bg-gradient-to-r from-amber-600 to-orange-600">
           <div className="flex items-center justify-between max-w-7xl mx-auto">
-            <div className="flex items-center gap-4">
-              {user ? (
-                <>
-                  <div className="text-right">
-                    <p className="text-sm text-orange-100">
-                      안녕하세요,
-                    </p>
-                    <p className="font-semibold text-white">
-                      {user.name || user.email?.split("@")[0]}님
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={signOut}
-                    className="text-white hover:bg-white/20 border border-white/40 backdrop-blur-sm transition-all duration-300 font-medium bg-transparent"
-                  >
-                    <LogOut className="w-4 h-4" />
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  onClick={onLogin}
-                  variant="ghost"
-                  className="text-white hover:bg-white/20 border border-white/40 backdrop-blur-sm"
-                >
-                  로그인
-                </Button>
-              )}
-            </div>
+            
           </div>
         </header> */}
       <header className="text-white p-6 shadow-lg border-b border-orange-600/20 bg-gradient-to-r from-amber-600 to-orange-600">
@@ -102,38 +74,46 @@ export default function Header() {
             </div>
           </Link>
 
-          {/* isLoggedIn (from Zustand)으로 전체적인 UI 분기 처리, 
-            user (from React Query)로 실제 데이터 표시 
-          */}
-          {isLoggedIn && user ? (
-            <div className="flex items-center gap-x-4">
-              <Link href="/my-page" aria-label="profile" className="font-semibold">
-                {user.name}
-              </Link>
-              <Link href="/my-page" aria-label="profile" className="rounded-full overflow-hidden shadow-md">
-                <Image
-                  src={user.profileImageUrl}
-                  alt="/2.png"
-                  width={32}
-                  height={32}
-                  priority
-                />
-              </Link>
-              <Button variant="secondary" onClick={handleLogout}> {/* 수정된 로그아웃 핸들러 연결 */}
-                Logout
-              </Button>
-            </div>
-            
-          ) : (
-            <div className="flex items-center gap-x-2">
-              <Button variant="secondary" onClick={handleLogin}> {/* 수정된 로그인 핸들러 연결 */}
-                Sign In
-              </Button>
-              <Button variant="primary">
-                Get Started
-              </Button>
-            </div>
+          <div className="flex items-center gap-4">
+              {user ? (
+                <>
+                  <div className="text-right">
+                    <p className="text-sm text-orange-100">
+                      안녕하세요,
+                    </p>
+                    <Link href="/my-page" aria-label="profile" className="font-semibold">
+                      {user.name}님
+                    </Link>
+                  </div>
+                  <Link href="/my-page" aria-label="profile" className="rounded-full overflow-hidden shadow-md">
+                      <Image
+                        src={user.profileImageUrl}
+                        alt="/2.png"
+                        width={32}
+                        height={32}
+                        priority
+                      />
+                    </Link>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleLogout}
+                    className="text-white hover:bg-white/20 border border-white/40 backdrop-blur-sm transition-all duration-300 font-medium bg-transparent"
+                  >
+                    로그아웃
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  onClick={handleLogin}
+                  variant="ghost"
+                  className="text-white hover:bg-white/20 border border-white/40 backdrop-blur-sm"
+                >
+                  로그인
+                </Button>
               )}
+            </div>
+
         </div>
       </header>
     </>
