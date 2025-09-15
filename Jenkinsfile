@@ -32,11 +32,24 @@ pipeline {
         }
 
         // 2단계: Docker 이미지 빌드
+        // stage('Build') {
+        //     steps {
+        //         // (★수정★) 불필요한 script 블록을 제거하여 구조를 단순화합니다.
+        //         echo "Starting Docker image build..."
+        //         sh 'docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache'
+        //         echo "Build completed."
+        //     }
+        // }
         stage('Build') {
             steps {
-                // (★수정★) 불필요한 script 블록을 제거하여 구조를 단순화합니다.
-                echo "Starting Docker image build..."
-                sh 'docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache'
+                echo "Starting Docker image build with direct injection..."
+                // 🔽 변수를 사용하지 않고, 실제 값을 직접 넣어 테스트합니다.
+                // 🔽 큰따옴표("")로 값을 감싸고, 가독성을 위해 역슬래시(\)로 줄을 나눴습니다.
+                sh '''
+                    docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache \
+                    --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID="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" \
+                    --build-arg NEXT_PUBLIC_GOOGLE_REDIRECT_URI="https://j13a101.p.ssafy.io/auth/callback"
+                '''
                 echo "Build completed."
             }
         }
