@@ -14,15 +14,21 @@ services:
       - ./backend:/app
 
   frontend:
+    # 개발용 Dockerfile로 빌드 설정을 덮어씁니다.
     build:
       dockerfile: Dockerfile.dev
+    # 개발에만 필요한 포트 포워딩을 추가합니다.
     ports:
       - "3000:3000"
-    env_file:
-      - .env
+    # 개발에만 필요한 볼륨 마운트(핫 리로딩)를 추가합니다.
     volumes:
       - ./frontend:/app
       - /app/node_modules
+    # 개발 서버 실행 명령어로 덮어씁니다.
+    command: yarn dev
+    # 개발용 환경 변수 파일을 추가합니다.
+    env_file:
+      - .env
 
   mysql:
     ports:
