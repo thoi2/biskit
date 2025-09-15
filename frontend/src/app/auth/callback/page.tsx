@@ -9,8 +9,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Suspense } from 'react';
 import AuthCallbackClient from '@/components/Param/AuthCallbackClient'; // 방금 만든 컴포넌트
 
-export const dynamic = 'force-dynamic';
-
 export default function AuthCallbackPage() {
   // URL의 쿼리 파라미터를 읽기 위한 훅
   const searchParams = useSearchParams();
