@@ -10,5 +10,6 @@ export const useUserQuery = () => {
     queryFn: checkAuthStatusAPI,
     enabled: isLoggedIn,
     staleTime: Infinity,
+    select: (data) => data.user, 
   });
 };

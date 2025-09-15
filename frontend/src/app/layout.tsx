@@ -1,8 +1,8 @@
 // app/layout.tsx
 import type { Metadata } from 'next';
-import './globals.css';
-import { AuthProvider } from '@/components/auth-provider';
-import { Header } from '@/components/layout/Header';
+import './globals.css'; // 전역 CSS
+import Header from '@/components/layout/Header';
+import Providers from './providers';
 
 export const metadata: Metadata = {
   title: 'BISKIT',
@@ -17,10 +17,12 @@ export default function RootLayout({
   return (
       <html lang="ko">
       <body>
-      <AuthProvider>
-        <Header />  {/* 🔥 모든 페이지에 Header 자동 적용 */}
-        <main>{children}</main>  {/* 🔥 각 페이지 내용이 여기 들어감 */}
-      </AuthProvider>
+        <Providers>
+          {/* 모든 페이지 상단에 보일 공통 헤더 */}
+          <Header />
+          {/* 이 children 부분에 각 페이지(page.tsx)의 내용이 렌더링됩니다. */}
+          <main>{children}</main>
+        </Providers>
       </body>
       </html>
   );

@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import com.example.backend.common.security.authentication.oauth2.userInfo.JwtUserInfo;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -27,12 +30,12 @@ public class TokenController {
      */
     @PostMapping("oauth2/{provider}/login")
     public ApiResponse<OAuth2TokenResponse> exchangeToken(
-        @PathVariable String provider,
-        @Valid @RequestBody OAuth2TokenRequest request,
-        HttpServletResponse response) {
+            @PathVariable String provider,
+            @Valid @RequestBody OAuth2TokenRequest request,
+            HttpServletResponse response) {
 
         OAuth2TokenResponse tokenResponse = oauth2TokenService.exchangeCodeForToken(request, provider, response);
-        
+
         return ApiResponse.of(tokenResponse);
     }
 
@@ -54,5 +57,12 @@ public class TokenController {
     public ApiResponse<Void> logout(HttpServletRequest request, HttpServletResponse response) {
         oauth2TokenService.logout(request, response);
         return ApiResponse.of();
+    }
+
+    @GetMapping("/check")
+    public ResponseEntity<ApiResponse<JwtUserInfo>> check(
+            @AuthenticationPrincipal JwtUserInfo userInfo) {
+        // @AuthenticationPrincipal 어노테이션이 userInfo 객체를 자동으로 주입해줍니다.
+        return ResponseEntity.ok(ApiResponse.of(userInfo));
     }
 }
