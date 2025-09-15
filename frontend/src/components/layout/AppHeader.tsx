@@ -1,9 +1,8 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
+import Button from '@/components/ui/Button/Button'
 import { LogOut } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
-import { useAuthStore } from '@/store/authStore'
 
 interface User {
   name?: string

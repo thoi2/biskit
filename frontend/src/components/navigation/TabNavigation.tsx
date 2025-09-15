@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button"
+import Button from '@/components/ui/Button/Button'
 import { Search, BarChart3, User } from "lucide-react"
 
 interface TabNavigationProps {

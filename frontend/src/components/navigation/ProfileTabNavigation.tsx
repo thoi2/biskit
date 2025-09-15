@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button"
+import Button from '@/components/ui/Button/Button'
 import { Heart, Search, Brain } from "lucide-react"
 
 interface ProfileTabNavigationProps {
