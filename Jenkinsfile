@@ -48,7 +48,10 @@ pipeline {
                     echo "Jenkins Shell - GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}"
                     echo "==================================================================="
                     
-                    docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache
+                    # --build-arg 옵션을 사용하여 Jenkins 변수를 Docker 빌드 인자로 전달
+                    docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache \
+                        --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID} \
+                        --build-arg NEXT_PUBLIC_GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
                 '''
             }
         }

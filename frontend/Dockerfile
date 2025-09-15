@@ -19,7 +19,6 @@ RUN echo "================= DEBUGGING STEP 2: Docker Build Env =================
     echo "Dockerfile - NEXT_PUBLIC_GOOGLE_REDIRECT_URI: ${NEXT_PUBLIC_GOOGLE_REDIRECT_URI}" && \
     echo "===================================================================="
 
-
 COPY package.json yarn.lock ./
 RUN corepack enable && yarn install --frozen-lockfile
 COPY . .
