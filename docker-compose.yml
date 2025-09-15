@@ -9,7 +9,7 @@ services:
     build:
       context: ./backend
       # 사용할 Dockerfile은 override 또는 prod 파일에서 지정합니다.
-    container_name: startup-backend
+    container_name: backend
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
       - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
@@ -29,24 +29,31 @@ services:
       redis:
         condition: service_started
     networks:
-      - startup-network
+      - my-network
 
   # Next.js 프론트엔드 애플리케이션
   frontend:
     build:
       context: ./frontend
-    container_name: startup-frontend
+      args:
+      # Jenkins 변수를 빌드 인자로 전달
+        - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+        - NEXT_PUBLIC_GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
+    container_name: frontend
+    environment:
+      - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - NEXT_PUBLIC_GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
     depends_on:
       - backend
     networks:
-      - startup-network
+      - my-network
 
   # MySQL 데이터베이스
   mysql:
     image: mysql:8.0
     # (★핵심 수정★) 실행할 플랫폼을 명시적으로 지정합니다.
     platform: linux/amd64
-    container_name: startup-mysql
+    container_name: mysql
     # 이하 나머지 설정은 동일합니다.
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -63,22 +70,22 @@ services:
       retries: 5
       start_period: 30s
     networks:
-      - startup-network
+      - my-network
 
   # Redis 인메모리 데이터 스토어
   redis:
     image: redis:7-alpine
-    container_name: startup-redis
+    container_name: redis
     command: ["redis-server", "--port", "${REDIS_PORT}", "--save", "60", "1000"]
     volumes:
       - redis_data:/data
     networks:
-      - startup-network
+      - my-network
 
 volumes:
   mysql_data:
   redis_data:
 
 networks:
-  startup-network:
-    driver: bridge
+  my-network: # ⬅️ 이름을 'my-network'로 변경
+    driver: bridge # ⬅️ 이 네트워크는 외부에 이미 존재함을 알림

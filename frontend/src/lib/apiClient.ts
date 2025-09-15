@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useAuthStore } from '@/store/authStore'; // 우리의 authStore를 사용
 
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || '/api', // 환경 변수 사용
+  baseURL: process.env.NEXT_PUBLIC_API_URL || '/api/v1', // 환경 변수 사용
   withCredentials: true,
 });
 

@@ -6,21 +6,20 @@ pipeline {
     // Jenkins Credentials에 등록한 비밀 정보들을 환경 변수로 가져옴
     // Jenkins 관리 > Credentials에서 ID를 맞춰주어야 함
     environment {
-        // docker-compose.yml에 정의된 변수들을 모두 이곳에 등록합니다.
-        MYSQL_DATABASE           = credentials('mysql-database')
-        SPRING_DATASOURCE_USERNAME = credentials('spring-datasource-username')
-        SPRING_DATASOURCE_PASSWORD = credentials('spring-datasource-password')
-        REDIS_PORT               = credentials('redis-port')
-        JWT_SECRET               = credentials('jwt-secret')
-        GOOGLE_CLIENT_ID         = credentials('google-client-id')
-        GOOGLE_CLIENT_SECRET     = credentials('google-client-secret')
-        GOOGLE_REDIRECT_URI      = credentials('google-redirect-uri')
-        KT_API_KEY               = credentials('kt-api-key')
-        PUBLIC_DATA_API_KEY      = credentials('public-data-api-key')
-        SPRING_PROFILES_ACTIVE   = credentials('spring-profiles-active')
-        MYSQL_ROOT_PASSWORD      = credentials('mysql-root-password')
-        MYSQL_USER               = credentials('mysql-user')
-        MYSQL_PASSWORD           = credentials('mysql-password')
+        SPRING_DATASOURCE_USERNAME = credentials('mysql-user')
+        MYSQL_USER                 = credentials('mysql-user')
+        SPRING_DATASOURCE_PASSWORD = credentials('mysql-password')
+        MYSQL_PASSWORD             = credentials('mysql-password')
+        MYSQL_DATABASE        = credentials('mysql-database')
+        MYSQL_ROOT_PASSWORD   = credentials('mysql-root-password')
+        REDIS_PORT            = credentials('redis-port')
+        JWT_SECRET            = credentials('jwt-secret')
+        GOOGLE_CLIENT_ID      = credentials('google-client-id')
+        GOOGLE_CLIENT_SECRET  = credentials('google-client-secret')
+        GOOGLE_REDIRECT_URI   = credentials('google-redirect-uri')
+        KT_API_KEY            = credentials('kt-api-key')
+        PUBLIC_DATA_API_KEY   = credentials('public-data-api-key')
+        SPRING_PROFILES_ACTIVE= credentials('spring-profiles-active')
     }
 
     stages {
@@ -28,17 +27,32 @@ pipeline {
         stage('Checkout') {
             steps {
                 // GitHub 저장소에서 최신 코드를 가져옴
-                git branch: 'release-test', credentialsId: 'gitlab-access-token', url: 'https://lab.ssafy.com/s13-bigdata-recom-sub1/S13P21A101.git'
+                git branch: 'release', credentialsId: 'gitlab-access-token', url: 'https://lab.ssafy.com/s13-bigdata-recom-sub1/S13P21A101.git'
             }
         }
 
         // 2단계: Docker 이미지 빌드
+        // stage('Build') {
+        //     steps {
+        //         // (★수정★) 불필요한 script 블록을 제거하여 구조를 단순화합니다.
+        //         echo "Starting Docker image build..."
+        //         sh 'docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache'
+        //         echo "Build completed."
+        //     }
+        // }
         stage('Build') {
             steps {
-                // (★수정★) 불필요한 script 블록을 제거하여 구조를 단순화합니다.
-                echo "Starting Docker image build..."
-                sh 'docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache'
-                echo "Build completed."
+                sh '''
+                    echo "================= DEBUGGING STEP 1: Jenkins Shell ================="
+                    echo "Jenkins Shell - GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}"
+                    echo "Jenkins Shell - GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}"
+                    echo "==================================================================="
+                    
+                    # --build-arg 옵션을 사용하여 Jenkins 변수를 Docker 빌드 인자로 전달
+                    docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache \
+                        --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID} \
+                        --build-arg NEXT_PUBLIC_GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
+                '''
             }
         }
 

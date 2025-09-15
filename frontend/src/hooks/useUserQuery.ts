@@ -33,5 +33,6 @@ export const useUserQuery = () => {
     // 즉, 사용자가 직접 로그아웃하거나 캐시를 무효화(invalidate)하기 전까지는,
     // 창을 다시 포커스해도 불필요한 API 재요청을 하지 않아 성능상 이점을 가집니다.
     staleTime: Infinity,
+    select: (data) => data.user, 
   });
 };
