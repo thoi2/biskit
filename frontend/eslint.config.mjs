@@ -12,6 +12,13 @@ const compat = new FlatCompat({
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
+    // 🔥 규칙 추가
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off", // any 사용 허용
+      // 또는 경고로만 표시하려면: "@typescript-eslint/no-explicit-any": "warn"
+    },
+  },
+  {
     ignores: [
       "node_modules/**",
       ".next/**",
