@@ -1,21 +1,51 @@
-"use client";
+"use client"
 
-import Link from 'next/link'; // 1. next/link에서 Link를 가져옵니다.
+import { useState } from "react"
+import { useAuth } from "@/components/auth-provider"
+import { Sidebar } from "@/components/layout/Sidebar"
+import { MapArea } from "@/components/layout/MapArea"
+import { LoadingScreen } from "@/components/ui/LoadingScreen"
+import { useBiskitData } from "@/hooks/useBiskitData"
 
-export default function Home() {
+export default function HomePage() {
+    const { user, loading } = useAuth()
+    const [activeTab, setActiveTab] = useState("search")
+    const [activeProfileTab, setActiveProfileTab] = useState("favorites")
+    const [searchActive, setSearchActive] = useState(false)
 
-  return (
-    <div>
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <h1 className="text-4xl font-bold">홈페이지</h1>
-      {/* 2. a 태그 대신 Link 컴포넌트를 사용하고, href로 이동할 경로를 지정합니다. */}
-      <Link
-        href="/about"
-        className="mt-8 rounded-lg bg-blue-500 px-6 py-3 text-lg font-semibold text-white transition hover:bg-blue-600"
-      >
-        소개 페이지로 이동하기
-      </Link>
-    </main>
-    </div>
-  );
+    const {
+        selectedCategories,
+        setSelectedCategories,
+        filteredBusinesses,
+        recommendationResults,
+        handlers
+    } = useBiskitData(user, setActiveTab)
+
+    if (loading) return <LoadingScreen />
+
+    return (
+        <div className="min-h-screen bg-gradient-warm">
+            <div className="flex h-[calc(100vh-88px)]">
+                <Sidebar
+                    user={user}
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                    activeProfileTab={activeProfileTab}
+                    setActiveProfileTab={setActiveProfileTab}
+                    selectedCategories={selectedCategories}
+                    filteredBusinesses={filteredBusinesses}
+                    recommendationResults={recommendationResults}
+                    handlers={handlers}
+                />
+
+                <MapArea
+                    businesses={filteredBusinesses}
+                    searchActive={searchActive}
+                    setSearchActive={setSearchActive}
+                    onBusinessClick={handlers.handleBusinessClick}
+                    onMapClick={handlers.handleMapClick}
+                />
+            </div>
+        </div>
+    )
 }

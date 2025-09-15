@@ -37,85 +37,82 @@ interface RecommendationResult {
   isFavorite: boolean
 }
 
+interface SidebarHandlers {
+  handleFilterChange: (categories: string[]) => void
+  handleBusinessSelect: (business: Business) => void
+  handleToggleFavorite: (businessId: string) => void
+  handleAnalysisRequest: (analysisType: string, params: Record<string, any>) => void
+  handleToggleRecommendationFavorite: (id: string) => void
+  handleRestoreSearch: (searchType: string, params: Record<string, any>) => void
+}
+
 interface SidebarProps {
-  user: any
+  user: Record<string, any> | null
   activeTab: string
-  onTabChange: (tab: string) => void
+  setActiveTab: (tab: string) => void          // 🔥 onTabChange → setActiveTab
   activeProfileTab: string
-  onProfileTabChange: (tab: string) => void
+  setActiveProfileTab: (tab: string) => void   // 🔥 onProfileTabChange → setActiveProfileTab
   selectedCategories: string[]
-  onFilterChange: (categories: string[]) => void
   filteredBusinesses: Business[]
-  onBusinessSelect: (business: Business) => void
-  onToggleFavorite: (businessId: string) => void
   recommendationResults: RecommendationResult[]
-  onAnalysisRequest: (analysisType: string, params: any) => void
-  onToggleRecommendationFavorite: (id: string) => void
-  onRestoreSearch: (searchType: string, params: any) => void
-  onLogin: () => void
+  handlers: SidebarHandlers                    // 🔥 handlers 객체로 받기
 }
 
 export function Sidebar({
-  user,
-  activeTab,
-  onTabChange,
-  activeProfileTab,
-  onProfileTabChange,
-  selectedCategories,
-  onFilterChange,
-  filteredBusinesses,
-  onBusinessSelect,
-  onToggleFavorite,
-  recommendationResults,
-  onAnalysisRequest,
-  onToggleRecommendationFavorite,
-  onRestoreSearch,
-  onLogin
-}: SidebarProps) {
+                          user,
+                          activeTab,
+                          setActiveTab,                    // 🔥 변경
+                          activeProfileTab,
+                          setActiveProfileTab,             // 🔥 변경
+                          selectedCategories,
+                          filteredBusinesses,
+                          recommendationResults,
+                          handlers                         // 🔥 handlers 객체로 받기
+                        }: SidebarProps) {
   return (
-    <div className="w-96 bg-white/90 backdrop-blur-sm border-r border-orange-200 p-6 overflow-y-auto">
-      {!user && <GuestModeNotice onLogin={onLogin} />}
+      <div className="w-96 bg-white/90 backdrop-blur-sm border-r border-orange-200 p-6 overflow-y-auto">
+        {!user && <GuestModeNotice onLogin={() => {}} />}
 
-      <TabNavigation
-        activeTab={activeTab}
-        onTabChange={onTabChange}
-        showProfileTab={!!user}
-      />
-
-      {activeTab === "search" && (
-        <div className="space-y-6">
-          <BusinessFilter
-            onFilterChange={onFilterChange}
-            selectedCategories={selectedCategories}
-          />
-          <BusinessList
-            businesses={filteredBusinesses}
-            onBusinessSelect={onBusinessSelect}
-            onToggleFavorite={onToggleFavorite}
-          />
-        </div>
-      )}
-
-      {activeTab === "recommend" && (
-        <RecommendationPanel
-          onAnalysisRequest={onAnalysisRequest}
-          results={recommendationResults}
-          onToggleFavorite={onToggleRecommendationFavorite}
+        <TabNavigation
+            activeTab={activeTab}
+            onTabChange={setActiveTab}        // 🔥 변경
+            showProfileTab={!!user}
         />
-      )}
 
-      {activeTab === "profile" && user && (
-        <div className="space-y-6">
-          <ProfileTabNavigation
-            activeProfileTab={activeProfileTab}
-            onProfileTabChange={onProfileTabChange}
-          />
+        {activeTab === "search" && (
+            <div className="space-y-6">
+              <BusinessFilter
+                  onFilterChange={handlers.handleFilterChange}
+                  selectedCategories={selectedCategories}
+              />
+              <BusinessList
+                  businesses={filteredBusinesses}
+                  onBusinessSelect={handlers.handleBusinessSelect}
+                  onToggleFavorite={handlers.handleToggleFavorite}
+              />
+            </div>
+        )}
 
-          {activeProfileTab === "favorites" && <FavoritesList />}
-          {activeProfileTab === "history" && <SearchHistory onRestoreSearch={onRestoreSearch} />}
-          {activeProfileTab === "survey" && <AiSurvey />}
-        </div>
-      )}
-    </div>
+        {activeTab === "recommend" && (
+            <RecommendationPanel
+                onAnalysisRequest={handlers.handleAnalysisRequest}
+                results={recommendationResults}
+                onToggleFavorite={handlers.handleToggleRecommendationFavorite}
+            />
+        )}
+
+        {activeTab === "profile" && user && (
+            <div className="space-y-6">
+              <ProfileTabNavigation
+                  activeProfileTab={activeProfileTab}
+                  onProfileTabChange={setActiveProfileTab}  // 🔥 변경
+              />
+
+              {activeProfileTab === "favorites" && <FavoritesList />}
+              {activeProfileTab === "history" && <SearchHistory onRestoreSearch={handlers.handleRestoreSearch} />}
+              {activeProfileTab === "survey" && <AiSurvey />}
+            </div>
+        )}
+      </div>
   )
 }
