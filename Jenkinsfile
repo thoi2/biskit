@@ -42,15 +42,14 @@ pipeline {
         // }
         stage('Build') {
             steps {
-                echo "Starting Docker image build with direct injection..."
-                // 🔽 변수를 사용하지 않고, 실제 값을 직접 넣어 테스트합니다.
-                // 🔽 큰따옴표("")로 값을 감싸고, 가독성을 위해 역슬래시(\)로 줄을 나눴습니다.
                 sh '''
-                    docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache \
-                    --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID="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" \
-                    --build-arg NEXT_PUBLIC_GOOGLE_REDIRECT_URI="https://j13a101.p.ssafy.io/auth/callback"
+                    echo "================= DEBUGGING STEP 1: Jenkins Shell ================="
+                    echo "Jenkins Shell - GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}"
+                    echo "Jenkins Shell - GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}"
+                    echo "==================================================================="
+                    
+                    docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache
                 '''
-                echo "Build completed."
             }
         }
 
