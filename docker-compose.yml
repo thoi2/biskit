@@ -35,6 +35,10 @@ services:
   frontend:
     build:
       context: ./frontend
+      args:
+      # Jenkins 변수를 빌드 인자로 전달
+        - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+        - NEXT_PUBLIC_GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
     container_name: frontend
     environment:
       - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
