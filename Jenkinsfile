@@ -20,6 +20,7 @@ pipeline {
         KT_API_KEY            = credentials('kt-api-key')
         PUBLIC_DATA_API_KEY   = credentials('public-data-api-key')
         SPRING_PROFILES_ACTIVE= credentials('spring-profiles-active')
+        KAKAO_MAP_KEY= credentials('kakao-map-key')
     }
 
     stages {
