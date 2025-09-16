@@ -14,6 +14,12 @@ public enum ErrorCode {
     COMMON_INVALID_REQUEST(BAD_REQUEST, "COMMON_INVALID_REQUEST", "잘못된 요청입니다."),
     COMMON_ENTITY_NOT_FOUND(NOT_FOUND, "COMMON_ENTITY_NOT_FOUND", "요청한 엔티티를 찾을 수 없습니다."),
 
+
+
+    // Store 범위 검색 에러
+    STORE_INVALID_BOUNDS(BAD_REQUEST, "STORE_INVALID_BOUNDS", "잘못된 영역 범위입니다."),
+    STORE_TOO_LARGE_BOUNDS(BAD_REQUEST, "STORE_TOO_LARGE_BOUNDS", "검색 범위가 너무 큽니다. 범위를 줄여주세요."),
+
     // 인증 도메인 에러
     AUTH_TOKEN_MISSING(UNAUTHORIZED, "AUTH_TOKEN_MISSING", "인증 토큰이 필요합니다."),
     AUTH_INVALID_SIGNATURE(UNAUTHORIZED, "AUTH_INVALID_SIGNATURE", "토큰 서명이 유효하지 않습니다."),
@@ -39,6 +45,7 @@ public enum ErrorCode {
     AUTH_ACCESS_TOKEN_INVALID(UNAUTHORIZED, "AUTH_ACCESS_TOKEN_INVALID", "액세스 토큰이 유효하지 않습니다."),
     AUTH_ACCESS_TOKEN_EXPIRED(UNAUTHORIZED, "AUTH_ACCESS_TOKEN_EXPIRED", "액세스 토큰이 만료되었습니다."),
     AUTH_ACCESS_TOKEN_MISUSED(UNAUTHORIZED, "AUTH_ACCESS_TOKEN_MISUSED", "액세스 토큰을 잘못된 용도로 사용했습니다.");
+
 
     private final HttpStatus status;
     private final String code;
