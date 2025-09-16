@@ -53,6 +53,7 @@ pipeline {
                     cat ./mysql/conf/custom.cnf
                     echo "--- [DEBUG] Jenkins가 사용하는 init.sql 내용 ---"
                     cat ./mysql/init.sql
+                    cat docker-compose.prod.yml
                     echo "--- [DEBUG] 디버깅 끝 ---"
                 '''
             }
