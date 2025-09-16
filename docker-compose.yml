@@ -36,7 +36,7 @@ services:
     build:
       context: ./frontend
       args:
-      # Jenkins 변수를 빌드 인자로 전달
+        # Jenkins 변수를 빌드 인자로 전달
         - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
         - NEXT_PUBLIC_GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
         - NEXT_PUBLIC_KAKAO_MAP_KEY=${KAKAO_MAP_KEY}
@@ -69,13 +69,23 @@ services:
       # 1. 설정 파일 마운트
       - ./mysql/conf/custom.cnf:/etc/mysql/conf.d/custom.cnf:ro
       # 2. 초기화 스크립트 마운트
-      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./mysql/init:/docker-entrypoint-initdb.d:ro
       # 3. CSV 데이터 파일 마운트
       - ./mysql/input_store.csv:/var/lib/mysql-files/input_store.csv:ro
       # 4. 데이터 영속성을 위한 볼륨 (가장 중요)
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${MYSQL_ROOT_PASSWORD}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
