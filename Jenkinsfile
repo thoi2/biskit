@@ -35,8 +35,6 @@ pipeline {
         stage('Prepare Files') {
             steps {
                 echo "Setting correct permissions for mysql config..."
-                // sh 'chmod 644 ./mysql/conf/custom.cnf'
-                // sh 'chmod 644 ./mysql/input_store.csv'
             }
         }
 
@@ -59,15 +57,7 @@ pipeline {
                 '''
             }
         }
-        // 2단계: Docker 이미지 빌드
-        // stage('Build') {
-        //     steps {
-        //         // (★수정★) 불필요한 script 블록을 제거하여 구조를 단순화합니다.
-        //         echo "Starting Docker image build..."
-        //         sh 'docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache'
-        //         echo "Build completed."
-        //     }
-        // }
+
         stage('Build') {
             steps {
                 sh '''
@@ -92,9 +82,8 @@ pipeline {
                     echo "Stopping and removing old containers..."
                     // 기존에 실행 중인 컨테이너가 있다면 중지하고 삭제
                     // 오류가 발생해도 다음 단계로 진행하도록 설정 (|| true)
-                    sh 'docker compose -f docker-compose.yml -f docker-compose.prod.yml down -v'
+                    sh 'docker compose -f docker-compose.yml -f docker-compose.prod.yml down'
                     // 혹시 남아있을 수 있는 볼륨을 강제로 제거
-                    sh 'docker volume ls -qf "name=webserver2_mysql_data" | xargs docker volume rm || true'
                     echo "Cleanup completed."
                 }
             }
