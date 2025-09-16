@@ -15,7 +15,14 @@ public final class SecurityPaths {
      * 인증 없이 접근 가능한 모든 HTTP 메서드 경로
      */
     public static final String[] PUBLIC_PATHS = {
-        "/api/v1/auth/oauth2/**",
+        "/api/v1/auth/oauth2/*/login",
+        "/api/v1/auth/oauth2/logout",
+        "/api/v1/store/in-bounds",
+        "/api/v1/ai/single",
+        "/api/v1/ai/single-industry",
+        "/api/v1/ai/range",
+        "/api/v1/ai/seoul",
+        "/api/v1/ai/*",
         "/public/**",
         "/health",
         "/actuator/health",
