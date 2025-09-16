@@ -12,6 +12,7 @@ export default function HomePage() {
     const [activeTab, setActiveTab] = useState("search")
     const [activeProfileTab, setActiveProfileTab] = useState("favorites")
     const [searchActive, setSearchActive] = useState(false)
+    const [isCollapsed, setIsCollapsed] = useState(false)
 
     const {
         selectedCategories,
@@ -21,31 +22,36 @@ export default function HomePage() {
         handlers
     } = useBiskitData(user, setActiveTab)
 
+    const handleToggleCollapse = () => {
+        setIsCollapsed(!isCollapsed)
+    }
+
     if (loading) return <LoadingScreen />
 
     return (
-        <div className="min-h-screen bg-gradient-warm">
-            <div className="flex h-[calc(100vh-88px)]">
-                <Sidebar
-                    user={user}
-                    activeTab={activeTab}
-                    setActiveTab={setActiveTab}
-                    activeProfileTab={activeProfileTab}
-                    setActiveProfileTab={setActiveProfileTab}
-                    selectedCategories={selectedCategories}
-                    filteredBusinesses={filteredBusinesses}
-                    recommendationResults={recommendationResults}
-                    handlers={handlers}
-                />
+        <div className="h-full bg-gradient-warm flex overflow-hidden">
+            <Sidebar
+                user={user}
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                activeProfileTab={activeProfileTab}
+                setActiveProfileTab={setActiveProfileTab}
+                selectedCategories={selectedCategories}
+                filteredBusinesses={filteredBusinesses}
+                recommendationResults={recommendationResults}
+                handlers={handlers}
+                isCollapsed={isCollapsed}
+                onToggleCollapse={handleToggleCollapse}
+            />
 
-                <MapArea
-                    businesses={filteredBusinesses}
-                    searchActive={searchActive}
-                    setSearchActive={setSearchActive}
-                    onBusinessClick={handlers.handleBusinessClick}
-                    onMapClick={handlers.handleMapClick}
-                />
-            </div>
+            {/* 🔥 중복 래핑 제거 - MapArea가 직접 flex-1 처리 */}
+            <MapArea
+                businesses={filteredBusinesses}
+                searchActive={searchActive}
+                setSearchActive={setSearchActive}
+                onBusinessClick={handlers.handleBusinessClick}
+                onMapClick={handlers.handleMapClick}
+            />
         </div>
     )
 }
