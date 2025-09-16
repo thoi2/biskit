@@ -71,7 +71,7 @@ services:
       # 2. 초기화 스크립트 마운트
       # - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro 
       # 3. CSV 데이터 파일 마운트
-      - ./mysql/input_store.csv:/var/lib/mysql-files/input_store.csv
+      # - ./mysql/input_store.csv:/var/lib/mysql-files/input_store.csv
       # 4. 데이터 영속성을 위한 볼륨 (가장 중요)
       - mysql_data:/var/lib/mysql
     healthcheck:

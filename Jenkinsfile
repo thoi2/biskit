@@ -35,8 +35,8 @@ pipeline {
         stage('Prepare Files') {
             steps {
                 echo "Setting correct permissions for mysql config..."
-                sh 'chmod 644 ./mysql/conf/custom.cnf'
-                sh 'chmod 644 ./mysql/input_store.csv'
+                // sh 'chmod 644 ./mysql/conf/custom.cnf'
+                // sh 'chmod 644 ./mysql/input_store.csv'
             }
         }
 
