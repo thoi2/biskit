@@ -52,7 +52,7 @@ pipeline {
                     echo "--- [DEBUG] Jenkins가 사용하는 custom.cnf 내용 ---"
                     cat ./mysql/conf/custom.cnf
                     echo "--- [DEBUG] Jenkins가 사용하는 init.sql 내용 ---"
-                    cat ./mysql/init/init.sql
+                    cat ./mysql/init.sql
                     echo "--- [DEBUG] 디버깅 끝 ---"
                 '''
             }
