@@ -39,6 +39,24 @@ pipeline {
             }
         }
 
+            // (★추가★) 디버깅을 위한 새로운 단계
+        stage('Debug - Verify Files') {
+            steps {
+                sh '''
+                    echo "--- [DEBUG] 현재 작업 폴더 위치 ---"
+                    pwd
+                    echo "--- [DEBUG] 전체 파일 목록 및 권한 확인 (재귀적으로) ---"
+                    ls -laR
+                    echo "--- [DEBUG] Jenkins가 사용하는 docker-compose.yml 내용 ---"
+                    cat docker-compose.yml
+                    echo "--- [DEBUG] Jenkins가 사용하는 custom.cnf 내용 ---"
+                    cat ./mysql/conf/custom.cnf
+                    echo "--- [DEBUG] Jenkins가 사용하는 init.sql 내용 ---"
+                    cat ./mysql/init/init.sql
+                    echo "--- [DEBUG] 디버깅 끝 ---"
+                '''
+            }
+        }
         // 2단계: Docker 이미지 빌드
         // stage('Build') {
         //     steps {
