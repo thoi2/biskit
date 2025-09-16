@@ -1,0 +1,16 @@
+# 가상 환경
+genv/
+
+# IDE 관련 파일 (Visual Studio Code, PyCharm 등)
+.vscode/
+.idea/
+
+# macOS 시스템 파일
+.DS_Store
+
+# 캐시 파일
+__pycache__/
+*.pyc
+
+# 로컬 환경 변수
+.env
