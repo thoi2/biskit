@@ -16,10 +16,6 @@ services:
 
   mysql:
     # 보안을 위해 운영 환경에서는 DB 포트를 외부에 노출하지 않습니다.
-    command: --secure-file-priv=/var/lib/mysql-files/
-    volumes:
-      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-      - ./mysql/input_store.csv:/var/lib/mysql-files/input_store.csv
     restart: always
 
   redis:

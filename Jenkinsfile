@@ -31,6 +31,13 @@ pipeline {
             }
         }
 
+        stage('Prepare Files') {
+            steps {
+                echo "Setting correct permissions for mysql config..."
+                sh 'chmod 644 ./mysql/conf/custom.cnf'
+            }
+        }
+
         // 2단계: Docker 이미지 빌드
         // stage('Build') {
         //     steps {
@@ -76,7 +83,7 @@ pipeline {
                     echo "Deploying new containers..."
                     // 새로운 컨테이너를 백그라운드에서 실행
                     // environment 블록의 변수들이 컨테이너로 주입됨
-                    sh 'docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build'
+                    sh 'docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d'
                     echo "Deployment completed successfully!"
                 }
             }
