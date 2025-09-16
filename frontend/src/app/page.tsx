@@ -1,17 +1,51 @@
-// /app/page.tsx
-'use client';
+"use client"
 
-import { useAuthStore } from '@/store/authStore';
+import { useState } from "react"
+import { useAuth } from "@/components/auth-provider"
+import { Sidebar } from "@/components/layout/Sidebar"
+import { MapArea } from "@/components/layout/MapArea"
+import { LoadingScreen } from "@/components/ui/LoadingScreen"
+import { useBiskitData } from "@/hooks/useBiskitData"
 
 export default function HomePage() {
-  const { isLoggedIn } = useAuthStore();
+    const { user, loading } = useAuth()
+    const [activeTab, setActiveTab] = useState("search")
+    const [activeProfileTab, setActiveProfileTab] = useState("favorites")
+    const [searchActive, setSearchActive] = useState(false)
 
-  return (
-    <main style={{ padding: '20px' }}>
-      <h1>최종 로그인 구현 예제</h1>
-      <p>
-        현재 로그인 상태: <strong>{isLoggedIn ? '로그인됨' : '로그아웃됨'}</strong>
-      </p>
-    </main>
-  );
+    const {
+        selectedCategories,
+        setSelectedCategories,
+        filteredBusinesses,
+        recommendationResults,
+        handlers
+    } = useBiskitData(user, setActiveTab)
+
+    if (loading) return <LoadingScreen />
+
+    return (
+        <div className="min-h-screen bg-gradient-warm">
+            <div className="flex h-[calc(100vh-88px)]">
+                <Sidebar
+                    user={user}
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                    activeProfileTab={activeProfileTab}
+                    setActiveProfileTab={setActiveProfileTab}
+                    selectedCategories={selectedCategories}
+                    filteredBusinesses={filteredBusinesses}
+                    recommendationResults={recommendationResults}
+                    handlers={handlers}
+                />
+
+                <MapArea
+                    businesses={filteredBusinesses}
+                    searchActive={searchActive}
+                    setSearchActive={setSearchActive}
+                    onBusinessClick={handlers.handleBusinessClick}
+                    onMapClick={handlers.handleMapClick}
+                />
+            </div>
+        </div>
+    )
 }
