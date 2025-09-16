@@ -55,6 +55,8 @@ dependencies {
     testImplementation("io.projectreactor:reactor-test")                        // Reactor Test : WebFlux 비동기 코드 테스트
     testImplementation("org.springframework.security:spring-security-test")     // Security Test : Security 관련 테스트 지원
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")              // JUnit Launcher : JUnit 테스트 실행 엔진
+// === healthycheck ===
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
 }
 
 
