@@ -6,13 +6,20 @@ interface MapAreaProps {
     businesses: any[]
     searchActive: boolean
     setSearchActive: (active: boolean) => void
-    onBusinessClick: (business: any) => void
+    onBusinessClick: (b: any) => void
     onMapClick: (lat: number, lng: number) => void
 }
 
-export function MapArea({ businesses, searchActive, setSearchActive, onBusinessClick, onMapClick }: MapAreaProps) {
+export function MapArea({
+                            businesses,
+                            searchActive,
+                            setSearchActive,
+                            onBusinessClick,
+                            onMapClick,
+                        }: MapAreaProps) {
     return (
-        <div className="flex-1 relative">
+        <div className="flex-1 min-w-0 min-h-0 overflow-hidden relative">
+            {/* 검색 토글 버튼 */}
             <div className="absolute top-6 left-6 z-10">
                 <Button
                     onClick={() => setSearchActive(!searchActive)}
@@ -27,6 +34,7 @@ export function MapArea({ businesses, searchActive, setSearchActive, onBusinessC
                 </Button>
             </div>
 
+            {/* 🔥 absolute inset-0 제거하고 바로 KakaoMap */}
             <KakaoMap
                 businesses={businesses}
                 searchActive={searchActive}
