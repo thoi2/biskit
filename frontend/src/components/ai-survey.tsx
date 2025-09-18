@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Brain, ArrowRight, ArrowLeft, CheckCircle, Lightbulb } from "lucide-react"
 // import { createClient } from "@/lib/supabase/client" // Removed supabase dependency
-import { useAuth } from "@/components/auth-provider"
+import { useAuth } from "@/hooks/useAuth"
 
 interface SurveyQuestion {
   id: string

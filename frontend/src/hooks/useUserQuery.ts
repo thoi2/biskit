@@ -1,15 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { checkAuthStatusAPI } from '@/lib/api';
-import { useUserStore } from '@/store/userStore';
+import { useAuthStore } from '@/store/authStore';
 
 export const useUserQuery = () => {
-  const { isLoggedIn } = useUserStore();
+  const { isLoggedIn } = useAuthStore();
 
   return useQuery({
     queryKey: ['user', 'profile'],
     queryFn: checkAuthStatusAPI,
     enabled: isLoggedIn,
     staleTime: Infinity,
-    select: (data) => data.user, 
+    select: data => data.user,
   });
 };
