@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Heart, MapPin, Trash2, ExternalLink } from "lucide-react"
 // import { createClient } from "@/lib/supabase/client" // Removed supabase dependency
-import { useAuth } from "@/components/auth-provider"
+import { useAuth } from "@/hooks/useAuth"
 
 interface Favorite {
   id: string

@@ -35,19 +35,29 @@ pipeline {
         stage('Prepare Files') {
             steps {
                 echo "Setting correct permissions for mysql config..."
-                sh 'chmod 644 ./mysql/conf/custom.cnf'
             }
         }
 
-        // 2단계: Docker 이미지 빌드
-        // stage('Build') {
-        //     steps {
-        //         // (★수정★) 불필요한 script 블록을 제거하여 구조를 단순화합니다.
-        //         echo "Starting Docker image build..."
-        //         sh 'docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache'
-        //         echo "Build completed."
-        //     }
-        // }
+            // (★추가★) 디버깅을 위한 새로운 단계
+        stage('Debug - Verify Files') {
+            steps {
+                sh '''
+                    echo "--- [DEBUG] 현재 작업 폴더 위치 ---"
+                    pwd
+                    echo "--- [DEBUG] 전체 파일 목록 및 권한 확인 (재귀적으로) ---"
+                    ls -laR
+                    echo "--- [DEBUG] Jenkins가 사용하는 docker-compose.yml 내용 ---"
+                    cat docker-compose.yml
+                    echo "--- [DEBUG] Jenkins가 사용하는 custom.cnf 내용 ---"
+                    cat ./mysql/conf/custom.cnf
+                    echo "--- [DEBUG] Jenkins가 사용하는 init.sql 내용 ---"
+                    cat ./mysql/init.sql
+                    cat docker-compose.prod.yml
+                    echo "--- [DEBUG] 디버깅 끝 ---"
+                '''
+            }
+        }
+
         stage('Build') {
             steps {
                 sh '''
@@ -59,7 +69,8 @@ pipeline {
                     # --build-arg 옵션을 사용하여 Jenkins 변수를 Docker 빌드 인자로 전달
                     docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache \
                         --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID} \
-                        --build-arg NEXT_PUBLIC_GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
+                        --build-arg NEXT_PUBLIC_GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI} \
+                        --build-arg NEXT_PUBLIC_KAKAO_MAP_KEY=${KAKAO_MAP_KEY}
                 '''
             }
         }
@@ -72,6 +83,7 @@ pipeline {
                     // 기존에 실행 중인 컨테이너가 있다면 중지하고 삭제
                     // 오류가 발생해도 다음 단계로 진행하도록 설정 (|| true)
                     sh 'docker compose -f docker-compose.yml -f docker-compose.prod.yml down'
+                    // 혹시 남아있을 수 있는 볼륨을 강제로 제거
                     echo "Cleanup completed."
                 }
             }

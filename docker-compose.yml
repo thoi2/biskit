@@ -36,16 +36,16 @@ services:
     build:
       context: ./frontend
       args:
-      # Jenkins 변수를 빌드 인자로 전달
+        # Jenkins 변수를 빌드 인자로 전달
         - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
         - NEXT_PUBLIC_GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
-        - NEXT_PUBLIC_KAKAO_MAP_KEY=${NEXT_PUBLIC_KAKAO_MAP_KEY}
+        - NEXT_PUBLIC_KAKAO_MAP_KEY=${KAKAO_MAP_KEY}
       # 사용할 Dockerfile은 override 또는 prod 파일에서 지정합니다.
     container_name: frontend
     environment:
       - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - NEXT_PUBLIC_GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
-      - NEXT_PUBLIC_KAKAO_MAP_KEY=${NEXT_PUBLIC_KAKAO_MAP_KEY}
+      - NEXT_PUBLIC_KAKAO_MAP_KEY=${KAKAO_MAP_KEY}
 
     depends_on:
       - backend
@@ -54,7 +54,7 @@ services:
 
   # MySQL 데이터베이스
   mysql:
-    image: mysql:8.0
+    build: ./mysql # <-- 이 라인으로 교체/추가합니다.
     # (★핵심 수정★) 실행할 플랫폼을 명시적으로 지정합니다.
     platform: linux/amd64
     container_name: mysql
@@ -68,16 +68,22 @@ services:
     volumes:
       # 1. 설정 파일 마운트
       - ./mysql/conf/custom.cnf:/etc/mysql/conf.d/custom.cnf:ro
-      # 2. 초기화 스크립트 마운트
-      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-      # 3. CSV 데이터 파일 마운트
-      - ./mysql/input_store.csv:/var/lib/mysql-files/input_store.csv:ro
-      # 4. 데이터 영속성을 위한 볼륨 (가장 중요)
+      # 2. 데이터 영속성을 위한 볼륨 (가장 중요)
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
-      interval: 10s
-      timeout: 5s
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${MYSQL_ROOT_PASSWORD}",
+        ]
+      interval: 30s
+      timeout: 15s
       retries: 5
       start_period: 30s
     networks:

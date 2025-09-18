@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Search, Clock, Trash2, RotateCcw } from "lucide-react"
 // import { createClient } from "@/lib/supabase/client" // Removed supabase dependency
-import { useAuth } from "@/components/auth-provider"
+import { useAuth } from "@/hooks/useAuth"
 
 interface SearchHistoryItem {
   id: string

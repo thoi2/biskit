@@ -1,42 +1,98 @@
-// components/Param/AuthCallbackClient.tsx
+'use client';
 
-'use client'; // 클라이언트 컴포넌트임을 명시합니다.
-
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { googleLoginAPI } from '@/lib/api';
+import { googleLoginAPI } from '@/lib/authApi';
 import { useAuthStore } from '@/store/authStore';
 import { useQueryClient } from '@tanstack/react-query';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle, CheckCircle } from 'lucide-react';
 
 export default function AuthCallbackClient() {
-  // page.tsx에 있던 모든 훅을 이곳으로 이동합니다.
   const searchParams = useSearchParams();
   const router = useRouter();
   const { login } = useAuthStore();
   const queryClient = useQueryClient();
 
-  // page.tsx에 있던 useEffect 로직을 그대로 가져옵니다.
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>(
+    'loading',
+  );
+  const [errorMessage, setErrorMessage] = useState<string>('');
+
   useEffect(() => {
     const authCode = searchParams.get('code');
 
-    if (authCode) {
-      const handleGoogleLogin = async (code: string) => {
-        try {
-          const user = await googleLoginAPI(code);
-          queryClient.setQueryData(['user', 'profile'], user);
-          login();
-          router.push('/');
-        } catch (error) {
-          console.error('구글 로그인에 실패했습니다:', error);
-          alert('로그인에 실패했습니다. 다시 시도해주세요.');
-          router.push('/'); // 실패 시에도 홈으로 보낼지, 로그인 페이지로 보낼지 결정
-        }
-      };
-
-      handleGoogleLogin(authCode);
+    if (!authCode) {
+      setErrorMessage('유효하지 않은 접근입니다. 로그인 코드가 없습니다.');
+      setStatus('error');
+      return;
     }
-  }, [searchParams, router, login, queryClient]);
 
-  // 로직이 실행되는 동안 보여줄 UI
-  return <div>로그인 정보를 확인 중입니다...</div>;
+    const processLogin = async (code: string) => {
+      try {
+        const user = await googleLoginAPI(code);
+        queryClient.setQueryData(['user', 'profile'], user);
+        login();
+        setStatus('success');
+        setTimeout(() => router.push('/'), 1500); // 1.5초 후 홈으로 이동
+      } catch (error) {
+        console.error('Google login failed:', error);
+        setErrorMessage(
+          '로그인 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+        );
+        setStatus('error');
+      }
+    };
+
+    processLogin(authCode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <Card className="w-full max-w-sm text-center p-8 shadow-lg">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+          <h2 className="text-2xl font-semibold">로그인 중...</h2>
+          <p className="text-muted-foreground mt-2">
+            사용자 정보를 안전하게 확인하고 있습니다.
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
+  if (status === 'error') {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <Card className="w-full max-w-sm text-center p-8 shadow-lg">
+          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-6" />
+          <h2 className="text-2xl font-semibold text-red-600">로그인 실패</h2>
+          <p className="text-muted-foreground mt-2">{errorMessage}</p>
+          <Button onClick={() => router.push('/')} className="mt-8 w-full">
+            홈으로 돌아가기
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  if (status === 'success') {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <Card className="w-full max-w-sm text-center p-8 shadow-lg">
+          <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-6" />
+          <h2 className="text-2xl font-semibold text-green-600">
+            로그인 성공!
+          </h2>
+          <p className="text-muted-foreground mt-2">
+            잠시 후 메인 페이지로 이동합니다.
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
+  return null;
 }
