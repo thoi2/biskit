@@ -12,6 +12,4 @@ __pycache__/
 .ipynb_checkpoints/
 
 # 데이터 (원하면 제외)
-data/*.csv
-data/*.npy
 data/*.parquet
