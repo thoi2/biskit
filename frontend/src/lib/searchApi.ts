@@ -1,26 +1,7 @@
 // lib/api.ts
 import apiClient from './apiClient'; // axios 인스턴스라고 가정
 import type { Store } from '@/types/store';
-interface Location {
-  lat: number;
-  lng: number;
-}
-
-interface Bounds {
-  southwest: Location;
-  northeast: Location;
-}
-
-interface InBoundsRequest {
-  bounds: Bounds;
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  status: number;
-  timestamp: string;
-  body: T;
-}
+import type { ApiResponse, Bounds, InBoundsRequest } from '@/types/api';
 
 /**
  * 지도 경계 내에 있는 매장 목록을 조회하는 API 함수

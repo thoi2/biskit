@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { queryClient } from '@/lib/queryClient';
-import { checkAuthStatusAPI } from '@/lib/api';
+import { checkAuthStatusAPI } from '@/lib/authApi';
 
 interface AuthState {
   isLoggedIn: boolean;

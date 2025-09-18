@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useAuthStore } from '@/store/authStore';
 import { useUserQuery } from '@/hooks/useUserQuery';
 import { useQueryClient } from '@tanstack/react-query';
-import { logoutAPI } from '@/lib/api';
+import { logoutAPI } from '@/lib/authApi';
 import { User, LogOut } from 'lucide-react';
 
 export default function Header() {

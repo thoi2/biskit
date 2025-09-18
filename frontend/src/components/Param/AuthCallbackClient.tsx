@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { googleLoginAPI } from '@/lib/api';
+import { googleLoginAPI } from '@/lib/authApi';
 import { useAuthStore } from '@/store/authStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
