@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { checkAuthStatusAPI } from '@/lib/authApi';
-import { useAuthStore } from '@/store/authStore';
+import { checkAuthStatusAPI } from '@/features/auth/api/authApi';
+import { useAuthStore } from '@/features/auth/store/authStore';
 
 export const useUserQuery = () => {
   const { isLoggedIn } = useAuthStore();

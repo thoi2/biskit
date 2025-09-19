@@ -1,7 +1,7 @@
 'use client';
 
 // 1. 앱의 전역 인증 관리자인 useAuth 훅을 불러옵니다.
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 
 export default function MyPage() {
   // 2. useAuth 훅을 호출하여 현재 사용자 정보와 로딩 상태를 한번에 가져옵니다.

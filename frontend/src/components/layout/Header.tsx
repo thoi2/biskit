@@ -3,16 +3,12 @@
 import Link from 'next/link';
 import Button from '@/components/ui/Button/Button';
 import Image from 'next/image';
-import { useAuthStore } from '@/store/authStore';
-import { useUserQuery } from '@/hooks/useUserQuery';
-import { useQueryClient } from '@tanstack/react-query';
-import { logoutAPI } from '@/lib/authApi';
+import { useAuth } from '@/features/auth/hooks/useAuth';
+import { logoutAPI } from '@/features/auth/api/authApi';
 import { User, LogOut } from 'lucide-react';
 
 export default function Header() {
-  const { isLoggedIn, logout: logoutAction } = useAuthStore();
-  const { data: user } = useUserQuery();
-  const queryClient = useQueryClient();
+  const { user, logout } = useAuth();
 
   const handleLogin = () => {
     const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -24,7 +20,7 @@ export default function Header() {
   const handleLogout = async () => {
     try {
       await logoutAPI();
-      logoutAction(queryClient);
+      logout();
     } catch (error) {
       alert('로그아웃에 실패했습니다.');
     }

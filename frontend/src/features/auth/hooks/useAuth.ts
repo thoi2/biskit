@@ -1,5 +1,5 @@
-import { useAuthStore } from '@/store/authStore';
-import { useUserQuery } from '@/hooks/useUserQuery';
+import { useAuthStore } from '@/features/auth/store/authStore';
+import { useUserQuery } from '@/features/auth/hooks/useUserQuery';
 
 /**
  * 앱 전역에서 사용될 단일 인증 훅.

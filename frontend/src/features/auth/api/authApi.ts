@@ -1,5 +1,5 @@
 // /lib/api.ts
-import apiClient from './apiClient';
+import apiClient from '@/lib/apiClient';
 
 // 로그아웃 API
 export const logoutAPI = async () => {

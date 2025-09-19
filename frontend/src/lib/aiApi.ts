@@ -5,7 +5,7 @@ import type {
   RecommendationItem,
   SingleIndustryRecommendationRequest,
   SingleRecommendationRequest,
-} from '@/types/recommendation';
+} from '@/lib/types/recommendation';
 
 // ---- API 함수들 ----
 
