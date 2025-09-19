@@ -1,13 +1,10 @@
 // Sidebar.tsx
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { BusinessFilter } from '@/lib/components/business-filter';
-import { BusinessList } from '@/lib/components/business-list';
-import { RecommendationPanel } from '@/lib/components/recommendation-panel';
-import { FavoritesList } from '@/lib/components/favorites-list';
-import { SearchHistory } from '@/lib/components/search-history';
-import { AiSurvey } from '@/lib/components/ai-survey';
-import { TabNavigation } from '@/lib/components/navigation/TabNavigation';
-import { ProfileTabNavigation } from '@/lib/components/navigation/ProfileTabNavigation';
+import { BusinessFilter } from '@/components/business-filter';
+import { RecommendationPanel } from '@/components/recommendation-panel';
+import { ResultPanel } from '@/components/ResultPanel';
+import { GuestModeNotice } from '@/components/ui/GuestModeNotice';
+import { TabNavigation } from '@/components/navigation/TabNavigation';
 
 interface Business {
   id: string;
@@ -42,6 +39,7 @@ interface SidebarHandlers {
   handleFilterChange: (categories: string[]) => void;
   handleBusinessSelect: (business: Business) => void;
   handleToggleFavorite: (businessId: string) => void;
+  handleToggleHideStore: (businessId: string) => void;
   handleAnalysisRequest: (
     analysisType: string,
     params: Record<string, any>,
@@ -63,26 +61,23 @@ interface SidebarProps {
   filteredBusinesses: Business[];
   recommendationResults: RecommendationResult[];
   handlers: SidebarHandlers;
-  isCollapsed: boolean; // 👈 props로 받음
-  onToggleCollapse: () => void; // 👈 토글 함수도 props로 받음
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
 export function Sidebar({
   user,
   activeTab,
   setActiveTab,
-  activeProfileTab,
-  setActiveProfileTab,
   selectedCategories,
   filteredBusinesses,
   recommendationResults,
   handlers,
-  isCollapsed, // 👈 props로 받음
-  onToggleCollapse, // 👈 props로 받음
+  isCollapsed,
+  onToggleCollapse,
 }: SidebarProps) {
   return (
     <div className="relative flex">
-      {/* 사이드바 메인 */}
       <div
         className={`
                 ${isCollapsed ? 'w-0' : 'w-[576px]'} 
@@ -94,10 +89,12 @@ export function Sidebar({
           <div className="h-full flex flex-col">
             <div className="flex-1 overflow-y-auto sidebar-scrollbar pr-2">
               <div className="p-6">
+                {!user && <GuestModeNotice onLogin={() => {}} />}
+
                 <TabNavigation
                   activeTab={activeTab}
                   onTabChange={setActiveTab}
-                  showProfileTab={!!user}
+                  showProfileTab={false}
                 />
 
                 {activeTab === 'search' && (
@@ -105,11 +102,7 @@ export function Sidebar({
                     <BusinessFilter
                       onFilterChange={handlers.handleFilterChange}
                       selectedCategories={selectedCategories}
-                    />
-                    <BusinessList
-                      businesses={filteredBusinesses}
-                      onBusinessSelect={handlers.handleBusinessSelect}
-                      onToggleFavorite={handlers.handleToggleFavorite}
+                      setActiveTab={setActiveTab} // ← BusinessFilter props 추가
                     />
                   </div>
                 )}
@@ -117,28 +110,22 @@ export function Sidebar({
                 {activeTab === 'recommend' && (
                   <RecommendationPanel
                     onAnalysisRequest={handlers.handleAnalysisRequest}
-                    results={recommendationResults}
-                    onToggleFavorite={
-                      handlers.handleToggleRecommendationFavorite
-                    }
+                    setActiveTab={setActiveTab} // ← RecommendationPanel props 추가
                   />
                 )}
 
-                {activeTab === 'profile' && user && (
-                  <div className="space-y-6">
-                    <ProfileTabNavigation
-                      activeProfileTab={activeProfileTab}
-                      onProfileTabChange={setActiveProfileTab}
-                    />
-
-                    {activeProfileTab === 'favorites' && <FavoritesList />}
-                    {activeProfileTab === 'history' && (
-                      <SearchHistory
-                        onRestoreSearch={handlers.handleRestoreSearch}
-                      />
-                    )}
-                    {activeProfileTab === 'survey' && <AiSurvey />}
-                  </div>
+                {activeTab === 'result' && (
+                  <ResultPanel
+                    user={user}
+                    filteredBusinesses={filteredBusinesses}
+                    recommendationResults={recommendationResults}
+                    onToggleFavorite={handlers.handleToggleFavorite}
+                    onToggleRecommendationFavorite={
+                      handlers.handleToggleRecommendationFavorite
+                    }
+                    onToggleHideStore={handlers.handleToggleHideStore}
+                    onRestoreSearch={handlers.handleRestoreSearch}
+                  />
                 )}
               </div>
             </div>
@@ -149,7 +136,7 @@ export function Sidebar({
       {/* 토글 버튼 */}
       <div className="relative">
         <button
-          onClick={onToggleCollapse} // 👈 props 함수 사용
+          onClick={onToggleCollapse}
           className="
                         absolute top-1/2 left-1 transform -translate-y-1/2 z-20
                         w-8 h-8 bg-amber-700 hover:bg-amber-800

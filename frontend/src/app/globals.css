@@ -86,3 +86,32 @@ html {
         @apply text-blue-600 hover:underline;
     }
 }
+
+/* 기존 globals.css에 이것만 추가 */
+
+/* 오렌지 버튼 클래스 - Tailwind 스타일로 */
+.btn-orange {
+    width: 100% !important;
+    background-color: #d97706 !important;  /* bg-amber-600 */
+    color: white !important;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05) !important;  /* shadow-sm */
+    border: none !important;
+    padding: 8px 16px !important;
+    border-radius: 6px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+.btn-orange:hover:not(:disabled) {
+    background-color: #c2410c !important;  /* hover:bg-orange-700 */
+}
+
+.btn-orange:disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+}
+
+
+

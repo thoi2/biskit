@@ -1,31 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/lib/components/ui/card';
-import { Button } from '@/lib/components/ui/button';
-import { Input } from '@/lib/components/ui/input';
-import { Label } from '@/lib/components/ui/label';
-import { Badge } from '@/lib/components/ui/badge';
-import { Progress } from '@/lib/components/ui/progress';
-import { ScrollArea } from '@/lib/components/ui/scroll-area';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/lib/components/ui/select';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/lib/components/ui/tabs';
+} from '@/components/ui/select';
 import {
   MapPin,
   Target,
@@ -33,37 +19,16 @@ import {
   Building2,
   Map,
   BarChart3,
-  TrendingUp,
-  Heart,
 } from 'lucide-react';
-
-interface RecommendationResult {
-  id: string;
-  businessName: string;
-  address: string;
-  businessType: string;
-  closureProbability: {
-    year1: number;
-    year2: number;
-    year3: number;
-    year4: number;
-    year5: number;
-  };
-  coordinates: { lat: number; lng: number };
-  riskLevel: 'low' | 'medium' | 'high';
-  isFavorite: boolean;
-}
 
 interface RecommendationPanelProps {
   onAnalysisRequest: (analysisType: string, params: any) => void;
-  results: RecommendationResult[];
-  onToggleFavorite: (id: string) => void;
+  setActiveTab: (tab: string) => void;
 }
 
 export function RecommendationPanel({
   onAnalysisRequest,
-  results,
-  onToggleFavorite,
+  setActiveTab,
 }: RecommendationPanelProps) {
   const [activeAnalysis, setActiveAnalysis] = useState('single');
   const [coordinates, setCoordinates] = useState({ lat: '', lng: '' });
@@ -72,6 +37,7 @@ export function RecommendationPanel({
   const [resultCount, setResultCount] = useState('5');
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [selectedNeighborhood, setSelectedNeighborhood] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const districts = [
     '강남구',
@@ -93,7 +59,6 @@ export function RecommendationPanel({
     '잠실동',
     '신천동',
   ];
-
   const businessTypes = [
     '카페',
     '음식점',
@@ -105,67 +70,76 @@ export function RecommendationPanel({
     '병원',
   ];
 
-  const handleSingleAnalysis = () => {
+  const handleSingleAnalysis = async () => {
     if (!coordinates.lat || !coordinates.lng) return;
-    onAnalysisRequest('single', { coordinates, businessType });
-  };
+    setIsAnalyzing(true);
 
-  const handleRangeAnalysis = () => {
-    if (!coordinates.lat || !coordinates.lng) return;
-    onAnalysisRequest('range', {
-      coordinates,
-      businessType,
-      radius: rangeRadius,
-      count: resultCount,
-    });
-  };
-
-  const handleSeoulAnalysis = () => {
-    if (!businessType) return;
-    onAnalysisRequest('seoul', { businessType, count: resultCount });
-  };
-
-  const handleDistrictAnalysis = () => {
-    if (!selectedDistrict || !businessType) return;
-    onAnalysisRequest('district', {
-      district: selectedDistrict,
-      businessType,
-      count: resultCount,
-    });
-  };
-
-  const handleNeighborhoodAnalysis = () => {
-    if (!selectedNeighborhood || !businessType) return;
-    onAnalysisRequest('neighborhood', {
-      neighborhood: selectedNeighborhood,
-      businessType,
-      count: resultCount,
-    });
-  };
-
-  const getRiskColor = (level: string) => {
-    switch (level) {
-      case 'low':
-        return 'text-green-600';
-      case 'medium':
-        return 'text-yellow-600';
-      case 'high':
-        return 'text-red-600';
-      default:
-        return 'text-muted-foreground';
+    try {
+      await onAnalysisRequest('single', { coordinates, businessType });
+      setActiveTab('result');
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
-  const getRiskBadgeVariant = (level: string) => {
-    switch (level) {
-      case 'low':
-        return 'default';
-      case 'medium':
-        return 'secondary';
-      case 'high':
-        return 'destructive';
-      default:
-        return 'outline';
+  const handleRangeAnalysis = async () => {
+    if (!coordinates.lat || !coordinates.lng) return;
+    setIsAnalyzing(true);
+
+    try {
+      await onAnalysisRequest('range', {
+        coordinates,
+        businessType,
+        radius: rangeRadius,
+        count: resultCount,
+      });
+      setActiveTab('result');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleSeoulAnalysis = async () => {
+    if (!businessType) return;
+    setIsAnalyzing(true);
+
+    try {
+      await onAnalysisRequest('seoul', { businessType, count: resultCount });
+      setActiveTab('result');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleDistrictAnalysis = async () => {
+    if (!selectedDistrict || !businessType) return;
+    setIsAnalyzing(true);
+
+    try {
+      await onAnalysisRequest('district', {
+        district: selectedDistrict,
+        businessType,
+        count: resultCount,
+      });
+      setActiveTab('result');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleNeighborhoodAnalysis = async () => {
+    if (!selectedNeighborhood || !businessType) return;
+    setIsAnalyzing(true);
+
+    try {
+      await onAnalysisRequest('neighborhood', {
+        neighborhood: selectedNeighborhood,
+        businessType,
+        count: resultCount,
+      });
+      setActiveTab('result');
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -179,13 +153,37 @@ export function RecommendationPanel({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeAnalysis} onValueChange={setActiveAnalysis}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="single">단일/범위</TabsTrigger>
-              <TabsTrigger value="area">지역별</TabsTrigger>
-            </TabsList>
+          {/* 통일된 탭 스타일 */}
+          <div className="flex gap-2 mb-4 p-1 bg-orange-100 rounded-xl">
+            <Button
+              variant={activeAnalysis === 'single' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveAnalysis('single')}
+              className={`flex-1 transition-all duration-300 ${
+                activeAnalysis === 'single'
+                  ? 'bg-amber-600 hover:bg-orange-700 text-white shadow-sm'
+                  : 'hover:bg-orange-200 text-orange-700'
+              }`}
+            >
+              단일/범위
+            </Button>
+            <Button
+              variant={activeAnalysis === 'area' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveAnalysis('area')}
+              className={`flex-1 transition-all duration-300 ${
+                activeAnalysis === 'area'
+                  ? 'bg-amber-600 hover:bg-orange-700 text-white shadow-sm'
+                  : 'hover:bg-orange-200 text-orange-700'
+              }`}
+            >
+              지역별
+            </Button>
+          </div>
 
-            <TabsContent value="single" className="space-y-4 mt-4">
+          {/* 단일/범위 탭 콘텐츠 */}
+          {activeAnalysis === 'single' && (
+            <div className="space-y-4 mt-4">
               {/* Single Coordinate Analysis */}
               <Card>
                 <CardHeader>
@@ -211,6 +209,7 @@ export function RecommendationPanel({
                           }))
                         }
                         className="text-sm"
+                        disabled={isAnalyzing}
                       />
                     </div>
                     <div>
@@ -228,6 +227,7 @@ export function RecommendationPanel({
                           }))
                         }
                         className="text-sm"
+                        disabled={isAnalyzing}
                       />
                     </div>
                   </div>
@@ -238,6 +238,7 @@ export function RecommendationPanel({
                     <Select
                       value={businessType}
                       onValueChange={setBusinessType}
+                      disabled={isAnalyzing}
                     >
                       <SelectTrigger className="text-sm">
                         <SelectValue placeholder="업종 선택" />
@@ -253,10 +254,11 @@ export function RecommendationPanel({
                   </div>
                   <Button
                     onClick={handleSingleAnalysis}
-                    className="w-full"
+                    className="btn-orange"
                     size="sm"
+                    disabled={isAnalyzing}
                   >
-                    단일 분석 실행
+                    {isAnalyzing ? '분석 중...' : '단일 분석 실행'}
                   </Button>
                 </CardContent>
               </Card>
@@ -278,6 +280,7 @@ export function RecommendationPanel({
                       <Select
                         value={rangeRadius}
                         onValueChange={setRangeRadius}
+                        disabled={isAnalyzing}
                       >
                         <SelectTrigger className="text-sm">
                           <SelectValue />
@@ -297,6 +300,7 @@ export function RecommendationPanel({
                       <Select
                         value={resultCount}
                         onValueChange={setResultCount}
+                        disabled={isAnalyzing}
                       >
                         <SelectTrigger className="text-sm">
                           <SelectValue />
@@ -311,16 +315,20 @@ export function RecommendationPanel({
                   </div>
                   <Button
                     onClick={handleRangeAnalysis}
-                    className="w-full"
+                    className="btn-orange"
                     size="sm"
+                    disabled={isAnalyzing}
                   >
-                    범위 분석 실행
+                    {isAnalyzing ? '분석 중...' : '범위 분석 실행'}
                   </Button>
                 </CardContent>
               </Card>
-            </TabsContent>
+            </div>
+          )}
 
-            <TabsContent value="area" className="space-y-4 mt-4">
+          {/* 지역별 탭 콘텐츠 */}
+          {activeAnalysis === 'area' && (
+            <div className="space-y-4 mt-4">
               {/* Seoul Wide Analysis */}
               <Card>
                 <CardHeader>
@@ -337,6 +345,7 @@ export function RecommendationPanel({
                     <Select
                       value={businessType}
                       onValueChange={setBusinessType}
+                      disabled={isAnalyzing}
                     >
                       <SelectTrigger className="text-sm">
                         <SelectValue placeholder="업종 선택" />
@@ -352,10 +361,11 @@ export function RecommendationPanel({
                   </div>
                   <Button
                     onClick={handleSeoulAnalysis}
-                    className="w-full"
+                    className="btn-orange"
                     size="sm"
+                    disabled={isAnalyzing}
                   >
-                    서울 전체 분석
+                    {isAnalyzing ? '분석 중...' : '서울 전체 분석'}
                   </Button>
                 </CardContent>
               </Card>
@@ -376,6 +386,7 @@ export function RecommendationPanel({
                     <Select
                       value={selectedDistrict}
                       onValueChange={setSelectedDistrict}
+                      disabled={isAnalyzing}
                     >
                       <SelectTrigger className="text-sm">
                         <SelectValue placeholder="구 선택" />
@@ -391,10 +402,11 @@ export function RecommendationPanel({
                   </div>
                   <Button
                     onClick={handleDistrictAnalysis}
-                    className="w-full"
+                    className="btn-orange"
                     size="sm"
+                    disabled={isAnalyzing}
                   >
-                    구별 분석 실행
+                    {isAnalyzing ? '분석 중...' : '구별 분석 실행'}
                   </Button>
                 </CardContent>
               </Card>
@@ -415,6 +427,7 @@ export function RecommendationPanel({
                     <Select
                       value={selectedNeighborhood}
                       onValueChange={setSelectedNeighborhood}
+                      disabled={isAnalyzing}
                     >
                       <SelectTrigger className="text-sm">
                         <SelectValue placeholder="동 선택" />
@@ -430,99 +443,27 @@ export function RecommendationPanel({
                   </div>
                   <Button
                     onClick={handleNeighborhoodAnalysis}
-                    className="w-full"
+                    className="btn-orange"
                     size="sm"
+                    disabled={isAnalyzing}
                   >
-                    동별 분석 실행
+                    {isAnalyzing ? '분석 중...' : '동별 분석 실행'}
                   </Button>
                 </CardContent>
               </Card>
-            </TabsContent>
-          </Tabs>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Results Display */}
-      {results.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5" />
-                분석 결과
-              </div>
-              <Badge variant="outline">{results.length}개</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-96">
-              <div className="space-y-3">
-                {results.map(result => (
-                  <Card key={result.id} className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <h3 className="font-medium text-sm mb-1">
-                          {result.businessName}
-                        </h3>
-                        <p className="text-xs text-muted-foreground mb-1">
-                          {result.businessType}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {result.address}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant={getRiskBadgeVariant(result.riskLevel)}
-                          className="text-xs"
-                        >
-                          {result.riskLevel === 'low'
-                            ? '낮음'
-                            : result.riskLevel === 'medium'
-                            ? '보통'
-                            : '높음'}
-                        </Badge>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onToggleFavorite(result.id)}
-                        >
-                          <Heart
-                            className={`w-4 h-4 ${
-                              result.isFavorite
-                                ? 'fill-red-500 text-red-500'
-                                : 'text-muted-foreground'
-                            }`}
-                          />
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <h4 className="text-xs font-medium">5개년 폐업 확률</h4>
-                      {Object.entries(result.closureProbability).map(
-                        ([year, probability]) => (
-                          <div key={year} className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs">
-                                {year.replace('year', '')}년차
-                              </span>
-                              <span className="text-xs font-medium">
-                                {probability}%
-                              </span>
-                            </div>
-                            <Progress value={probability} className="h-1" />
-                          </div>
-                        ),
-                      )}
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      )}
+      {/* 분석 실행 후 안내 메시지 */}
+      <Card className="border-orange-200">
+        <CardContent className="p-4 bg-orange-50">
+          <p className="text-sm text-orange-700 text-center">
+            분석 결과는 <strong>결과 탭</strong>에서 확인하세요
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }
