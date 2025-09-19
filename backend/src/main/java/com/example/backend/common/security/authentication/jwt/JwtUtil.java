@@ -136,13 +136,13 @@ public class JwtUtil {
      */
     public JwtUserInfo validateRefreshToken(String refreshToken) {
         Claims claims = extractClaims(refreshToken);
-        
+
         // 토큰 타입 검증
         String tokenType = claims.get("token_type", String.class);
         if (!"REFRESH".equals(tokenType)) {
             throw new JwtException("REFRESH 토큰이 아닙니다: " + tokenType);
         }
-        
+
         return createJwtUserInfo(claims);
     }
 }

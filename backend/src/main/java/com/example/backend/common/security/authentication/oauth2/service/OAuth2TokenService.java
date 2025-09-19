@@ -278,7 +278,7 @@ public class OAuth2TokenService {
         
         JwtUserInfo jwtUserInfo = new JwtUserInfo(
             userId,
-            user.getEmail(),
+            user.getName(),
             user.getOauth2Provider().name(),
             user.getOauth2ProviderId()
         );

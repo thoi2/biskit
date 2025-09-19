@@ -33,7 +33,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")     // Validation : 입력 데이터 유효성 검증
     implementation("org.springframework.boot:spring-boot-starter-web")            // Web : REST API 웹 서버 구축
     implementation("org.springframework.boot:spring-boot-starter-webflux")        // WebFlux : 비동기 외부 API 호출 클라이언트
-
+    implementation("org.springframework.boot:spring-boot-starter-websocket")      // WebSocket : 서버/클라이언트 실시간 통신
+    implementation("org.springframework:spring-messaging")                        // // STOMP 기반 WebSocket 메시징 기능 제공
 // === JWT 토큰 처리 ===
     implementation("io.jsonwebtoken:jjwt-api:0.12.6")        // JWT API : JWT 토큰 생성/검증 인터페이스
     implementation("io.jsonwebtoken:jjwt-impl:0.12.6")       // JWT Impl : JWT 토큰 구현체
