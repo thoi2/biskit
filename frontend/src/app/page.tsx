@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useAuth } from "@/components/auth-provider"
+import { useAuth } from "@/hooks/useAuth"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { MapArea } from "@/components/layout/MapArea"
 import { LoadingScreen } from "@/components/ui/LoadingScreen"
