@@ -1,14 +1,15 @@
 // Sidebar.tsx
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { BusinessFilter } from '@/components/business-filter';
-import { RecommendationPanel } from '@/components/recommendation-panel';
-import { ResultPanel } from '@/components/ResultPanel';
-import { GuestModeNotice } from '@/components/ui/GuestModeNotice';
-import { TabNavigation } from '@/components/navigation/TabNavigation';
+import { BusinessFilter } from '@/lib/components/ui/business-filter';
+import { RecommendationPanel } from '@/lib/components/recommendation-panel';
+import { ResultPanel } from '@/lib/components/result-panel';
+import { GuestModeNotice } from '@/lib/components/ui/GuestModeNotice';
+import { TabNavigation } from '@/lib/components/navigation/TabNavigation';
 
 interface Business {
   id: string;
   name: string;
+  s;
   category: string;
   address: string;
   closureProbability: number;

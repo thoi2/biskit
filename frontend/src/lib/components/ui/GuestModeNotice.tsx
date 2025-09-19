@@ -1,8 +1,8 @@
-import Button from '@/components/ui/Button/Button'
-import { Sparkles } from "lucide-react"
+import Button from '@/lib/components/ui/Button/Button';
+import { Sparkles } from 'lucide-react';
 
 interface GuestModeNoticeProps {
-  onLogin: () => void
+  onLogin: () => void;
 }
 
 export function GuestModeNotice({ onLogin }: GuestModeNoticeProps) {
@@ -13,15 +13,12 @@ export function GuestModeNotice({ onLogin }: GuestModeNoticeProps) {
         <p className="font-semibold text-orange-900">게스트 모드</p>
       </div>
       <p className="text-sm text-orange-700 mb-4">
-        모든 기능을 이용할 수 있습니다. 로그인하면 찜과 검색기록을 저장할 수 있어요!
+        모든 기능을 이용할 수 있습니다. 로그인하면 찜과 검색기록을 저장할 수
+        있어요!
       </p>
-      <Button
-        onClick={onLogin}
-        size="sm"
-        className="btn-orange"
-      >
+      <Button onClick={onLogin} size="sm" className="btn-orange">
         로그인하고 더 많은 기능 이용하기
       </Button>
     </div>
-  )
+  );
 }

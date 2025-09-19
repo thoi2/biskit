@@ -1,5 +1,5 @@
 import Button from '@/lib/components/ui/Button/Button';
-import { Search, BarChart3, User } from 'lucide-react';
+import { Search, BarChart3, FileText } from 'lucide-react'; // User → FileText
 
 interface TabNavigationProps {
   activeTab: string;
@@ -40,21 +40,20 @@ export function TabNavigation({
         <BarChart3 className="w-4 h-4 mr-2" />
         추천
       </Button>
-      {showProfileTab && (
-        <Button
-          variant={activeTab === 'profile' ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => onTabChange('profile')}
-          className={`flex-1 transition-all duration-300 ${
-            activeTab === 'profile'
-              ? 'bg-amber-600 hover:bg-orange-700 text-white shadow-sm'
-              : 'hover:bg-orange-200 text-orange-700'
-          }`}
-        >
-          <User className="w-4 h-4 mr-2" />
-          마이
-        </Button>
-      )}
+      {/* showProfileTab 조건 제거 - 항상 보이게 */}
+      <Button
+        variant={activeTab === 'result' ? 'default' : 'ghost'}
+        size="sm"
+        onClick={() => onTabChange('result')}
+        className={`flex-1 transition-all duration-300 ${
+          activeTab === 'result'
+            ? 'bg-amber-600 hover:bg-orange-700 text-white shadow-sm'
+            : 'hover:bg-orange-200 text-orange-700'
+        }`}
+      >
+        <FileText className="w-4 h-4 mr-2" /> {/* User → FileText */}
+        결과 {/* 마이 → 결과 */}
+      </Button>
     </div>
   );
 }

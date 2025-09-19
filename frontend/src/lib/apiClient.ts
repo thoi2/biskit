@@ -10,9 +10,7 @@ apiClient.interceptors.response.use(
   response => response,
   async error => {
     if (error.response?.status === 401) {
-      console.error(
-        '401 Unauthorized. API 호출자가 이 에러를 처리해야 합니다.',
-      );
+      console.log('401 Unauthorized. API 호출자가 이 에러를 처리해야 합니다.');
     }
     return Promise.reject(error);
   },
