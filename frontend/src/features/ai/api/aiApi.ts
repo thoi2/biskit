@@ -1,11 +1,11 @@
-import apiClient from './apiClient';
+import apiClient from '../../../lib/apiClient';
+import type { ApiResponse } from '@/lib/types/api';
 import type {
-  AiApiResponse,
   RangeRecommendationRequest,
   RecommendationItem,
   SingleIndustryRecommendationRequest,
   SingleRecommendationRequest,
-} from '@/lib/types/recommendation';
+} from '@/features/ai/types/recommendation';
 
 // ---- API 함수들 ----
 
@@ -15,11 +15,11 @@ import type {
 export const getSingleRecommendationAPI = async (
   data: SingleRecommendationRequest,
 ) => {
-  const response = await apiClient.post<AiApiResponse<RecommendationItem[]>>(
+  const response = await apiClient.post<ApiResponse<RecommendationItem[]>>(
     '/api/v1/ai/single',
     data,
   );
-  return response.data.data;
+  return response.data;
 };
 
 // 2. 추천 - 좌표 + 업종 API
@@ -28,11 +28,11 @@ export const getSingleRecommendationAPI = async (
 export const getSingleIndustryRecommendationAPI = async (
   data: SingleIndustryRecommendationRequest,
 ) => {
-  const response = await apiClient.post<AiApiResponse<RecommendationItem[]>>(
+  const response = await apiClient.post<ApiResponse<RecommendationItem[]>>(
     '/api/v1/ai/single-industry',
     data,
   );
-  return response.data.data;
+  return response.data;
 };
 
 // 3. 추천 - 범위 + 업종 API
@@ -41,9 +41,9 @@ export const getSingleIndustryRecommendationAPI = async (
 export const getRangeRecommendationAPI = async (
   data: RangeRecommendationRequest,
 ) => {
-  const response = await apiClient.post<AiApiResponse<RecommendationItem[]>>(
+  const response = await apiClient.post<ApiResponse<RecommendationItem[]>>(
     '/api/v1/ai/range',
     data,
   );
-  return response.data.data;
+  return response.data;
 };

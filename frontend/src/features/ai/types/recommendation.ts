@@ -22,8 +22,3 @@ export interface RecommendationItem {
   score: number;
   industry?: string;
 }
-
-export interface AiApiResponse<T> {
-  message: string;
-  data: T;
-}
