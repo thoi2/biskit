@@ -1,55 +1,39 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useEffect, useState } from "react"
-import { useAuthStore } from "@/store/authStore"
-
-interface User {
-  userId: number;
-  email: string;
-  name: string;
-  profileImageUrl: string;
-}
+import { createContext, useContext } from "react"
+import { useUserStore } from "@/store/userStore"
 
 interface AuthContextType {
-  user: User | null
+  user: any  // 🔥 간단하게 any 사용
   loading: boolean
-  signOut: () => Promise<void>
+  signOut: () => void
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
-  loading: true,
-  signOut: async () => {},
+  loading: false,
+  signOut: () => {},
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const { isLoggedIn, logout } = useAuthStore()
+  const { user, isLoggedIn, logout } = useUserStore()
 
-  useEffect(() => {
-    // 기존 zustand store 상태를 기반으로 user 설정
-    if (isLoggedIn) {
-      // 로그인 상태면 mock user data 설정 (실제로는 API에서 가져와야 함)
-      setUser({
-        userId: 1,
-        email: "user@example.com",
-        name: "사용자",
-        profileImageUrl: ""
-      })
-    } else {
-      setUser(null)
-    }
-    setLoading(false)
-  }, [isLoggedIn])
-
-  const signOut = async () => {
+  const signOut = () => {
     logout()
-    setUser(null)
   }
 
-  return <AuthContext.Provider value={{ user, loading, signOut }}>{children}</AuthContext.Provider>
+  return (
+      <AuthContext.Provider
+          value={{
+            user: isLoggedIn ? { name: "사용자", email: "user@example.com" } : null,
+            loading: false,
+            signOut
+          }}
+      >
+        {children}
+      </AuthContext.Provider>
+  )
 }
 
 export const useAuth = () => {
