@@ -39,13 +39,13 @@ services:
       # Jenkins 변수를 빌드 인자로 전달
         - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
         - NEXT_PUBLIC_GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
-        - NEXT_PUBLIC_KAKAO_MAP_KEY=${NEXT_PUBLIC_KAKAO_MAP_KEY}
+        - NEXT_PUBLIC_KAKAO_MAP_KEY=${KAKAO_MAP_KEY}
       # 사용할 Dockerfile은 override 또는 prod 파일에서 지정합니다.
     container_name: frontend
     environment:
       - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - NEXT_PUBLIC_GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
-      - NEXT_PUBLIC_KAKAO_MAP_KEY=${NEXT_PUBLIC_KAKAO_MAP_KEY}
+      - NEXT_PUBLIC_KAKAO_MAP_KEY=${KAKAO_MAP_KEY}
 
     depends_on:
       - backend

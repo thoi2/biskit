@@ -14,6 +14,7 @@ const mockBusinesses = [
         openHours: "07:00-22:00",
         coordinates: { lat: 37.5665, lng: 126.978 },
         isFavorite: false,
+        hidden: false,  // ← 추가
     },
     {
         id: "2",
@@ -25,6 +26,7 @@ const mockBusinesses = [
         openHours: "11:00-21:00",
         coordinates: { lat: 37.5636, lng: 126.9834 },
         isFavorite: true,
+        hidden: false,  // ← 추가
     },
     {
         id: "3",
@@ -36,6 +38,7 @@ const mockBusinesses = [
         openHours: "10:00-20:00",
         coordinates: { lat: 37.5563, lng: 126.9236 },
         isFavorite: false,
+        hidden: false,  // ← 추가
     },
 ]
 
@@ -122,6 +125,20 @@ export function useBiskitData(user: Record<string, any> | null, setActiveTab: (t
         )
     }
 
+    // ← 새로 추가: 점포 숨김/보임 토글
+    const handleToggleHideStore = (businessId: string) => {
+        setBusinesses((prev) =>
+            prev.map((business) =>
+                business.id === businessId ? { ...business, hidden: !business.hidden } : business,
+            ),
+        )
+        setFilteredBusinesses((prev) =>
+            prev.map((business) =>
+                business.id === businessId ? { ...business, hidden: !business.hidden } : business,
+            ),
+        )
+    }
+
     const handleAnalysisRequest = (analysisType: string, params: Record<string, any>) => {
         console.log("Analysis requested:", analysisType, params)
         setRecommendationResults(mockRecommendationResults)
@@ -167,6 +184,7 @@ export function useBiskitData(user: Record<string, any> | null, setActiveTab: (t
         handleFilterChange,
         handleBusinessSelect,
         handleToggleFavorite,
+        handleToggleHideStore,  // ← 새로 추가
         handleAnalysisRequest,
         handleToggleRecommendationFavorite,
         handleRestoreSearch,

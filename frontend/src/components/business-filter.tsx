@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, SetStateAction} from 'react';
+import { useState, useMemo, useEffect} from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,15 +35,30 @@ const businessCategories = makeTree(storeCategories as Raw[]);
 interface Props {
   selectedCategories: string[];
   onFilterChange: (codes: string[]) => void;
+  setActiveTab: (tab: string) => void;  // ← 추가
 }
 
-export function BusinessFilter({selectedCategories, onFilterChange}: Props) {
+export function BusinessFilter({selectedCategories, onFilterChange, setActiveTab}: Props) {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedMajor, setExpandedMajor] = useState<string[]>([]);
   const [expandedMinor, setExpandedMinor] = useState<string[]>([]);
 
   const toggle = (list: string[], v: string, setter: (s: string[]) => void) =>
       setter(list.includes(v) ? list.filter(x => x !== v) : [...list, v]);
+
+  // ← 업종 선택 시 결과 탭으로 자동 이동
+  const handleCategorySelect = (sub: string) => {
+    const newCategories = selectedCategories.includes(sub)
+        ? selectedCategories.filter(c => c !== sub)
+        : [...selectedCategories, sub];
+
+    onFilterChange(newCategories);
+
+    // 업종이 선택되면(추가되면) 결과 탭으로 이동
+    if (!selectedCategories.includes(sub)) {
+      setTimeout(() => setActiveTab("result"), 300); // 약간의 딜레이로 자연스럽게
+    }
+  };
 
   /* ---------- ③ 검색 필터 ---------- */
   const filtered = useMemo(() => {
@@ -106,6 +121,16 @@ export function BusinessFilter({selectedCategories, onFilterChange}: Props) {
                       </Badge>
                   ))}
                 </div>
+
+                {/* 결과 확인 버튼 */}
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => setActiveTab("result")}
+                >
+                  선택한 업종 결과 확인하기 ({selectedCategories.length}개)
+                </Button>
               </div>
           )}
 
@@ -161,13 +186,7 @@ export function BusinessFilter({selectedCategories, onFilterChange}: Props) {
                                         selectedCategories.includes(sub) ? 'secondary' : 'ghost'
                                       }
                                       className="w-full justify-start p-2 text-sm"
-                                      onClick={() =>
-                                          onFilterChange(
-                                              selectedCategories.includes(sub)
-                                                  ? selectedCategories.filter(c => c !== sub)
-                                                  : [...selectedCategories, sub],
-                                          )
-                                      }
+                                      onClick={() => handleCategorySelect(sub)}  // ← 수정된 핸들러
                                   >
                                     {sub}
                                   </Button>

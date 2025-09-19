@@ -18,7 +18,7 @@ export function GuestModeNotice({ onLogin }: GuestModeNoticeProps) {
       <Button
         onClick={onLogin}
         size="sm"
-        className="w-full bg-amber-600 hover:bg-orange-700 text-white shadow-sm"
+        className="btn-orange"
       >
         로그인하고 더 많은 기능 이용하기
       </Button>
