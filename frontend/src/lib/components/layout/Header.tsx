@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import Button from '@/components/ui/Button/Button';
+import Button from '@/lib/components/ui/Button/Button';
 import Image from 'next/image';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { logoutAPI } from '@/features/auth/api/authApi';

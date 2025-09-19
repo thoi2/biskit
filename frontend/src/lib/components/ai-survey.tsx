@@ -1,13 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/lib/components/ui/card';
+import { Button } from '@/lib/components/ui/button';
+import { Badge } from '@/lib/components/ui/badge';
+import { Progress } from '@/lib/components/ui/progress';
+import { RadioGroup, RadioGroupItem } from '@/lib/components/ui/radio-group';
+import { Label } from '@/lib/components/ui/label';
+import { Textarea } from '@/lib/components/ui/textarea';
 import {
   Brain,
   ArrowRight,

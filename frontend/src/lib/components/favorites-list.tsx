@@ -1,9 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/lib/components/ui/card';
+import { Button } from '@/lib/components/ui/button';
+import { Badge } from '@/lib/components/ui/badge';
 import { Heart, MapPin, Trash2, ExternalLink } from 'lucide-react';
 // import { createClient } from "@/lib/supabase/client" // Removed supabase dependency
 import { useAuth } from '@/features/auth/hooks/useAuth';

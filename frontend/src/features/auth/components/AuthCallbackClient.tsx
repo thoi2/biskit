@@ -5,8 +5,8 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { googleLoginAPI } from '@/features/auth/api/authApi';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { useQueryClient } from '@tanstack/react-query';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card } from '@/lib/components/ui/card';
+import { Button } from '@/lib/components/ui/button';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
 
 export default function AuthCallbackClient() {

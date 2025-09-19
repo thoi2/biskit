@@ -1,13 +1,13 @@
 // Sidebar.tsx
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { BusinessFilter } from '@/components/business-filter';
-import { BusinessList } from '@/components/business-list';
-import { RecommendationPanel } from '@/components/recommendation-panel';
-import { FavoritesList } from '@/components/favorites-list';
-import { SearchHistory } from '@/components/search-history';
-import { AiSurvey } from '@/components/ai-survey';
-import { TabNavigation } from '@/components/navigation/TabNavigation';
-import { ProfileTabNavigation } from '@/components/navigation/ProfileTabNavigation';
+import { BusinessFilter } from '@/lib/components/business-filter';
+import { BusinessList } from '@/lib/components/business-list';
+import { RecommendationPanel } from '@/lib/components/recommendation-panel';
+import { FavoritesList } from '@/lib/components/favorites-list';
+import { SearchHistory } from '@/lib/components/search-history';
+import { AiSurvey } from '@/lib/components/ai-survey';
+import { TabNavigation } from '@/lib/components/navigation/TabNavigation';
+import { ProfileTabNavigation } from '@/lib/components/navigation/ProfileTabNavigation';
 
 interface Business {
   id: string;

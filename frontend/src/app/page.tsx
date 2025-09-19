@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { Sidebar } from '@/components/layout/Sidebar';
-import { MapArea } from '@/components/layout/MapArea';
-import { LoadingScreen } from '@/components/ui/LoadingScreen';
+import { Sidebar } from '@/lib/components/layout/Sidebar';
+import { MapArea } from '@/lib/components/layout/MapArea';
+import { LoadingScreen } from '@/lib/components/ui/LoadingScreen';
 import { useBiskitData } from '@/lib/useBiskitData';
 
 export default function HomePage() {

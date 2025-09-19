@@ -1,104 +1,173 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { MapPin, Target, Circle, Building2, Map, BarChart3, TrendingUp, Heart } from "lucide-react"
+import { useState } from 'react';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/lib/components/ui/card';
+import { Button } from '@/lib/components/ui/button';
+import { Input } from '@/lib/components/ui/input';
+import { Label } from '@/lib/components/ui/label';
+import { Badge } from '@/lib/components/ui/badge';
+import { Progress } from '@/lib/components/ui/progress';
+import { ScrollArea } from '@/lib/components/ui/scroll-area';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/lib/components/ui/select';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/lib/components/ui/tabs';
+import {
+  MapPin,
+  Target,
+  Circle,
+  Building2,
+  Map,
+  BarChart3,
+  TrendingUp,
+  Heart,
+} from 'lucide-react';
 
 interface RecommendationResult {
-  id: string
-  businessName: string
-  address: string
-  businessType: string
+  id: string;
+  businessName: string;
+  address: string;
+  businessType: string;
   closureProbability: {
-    year1: number
-    year2: number
-    year3: number
-    year4: number
-    year5: number
-  }
-  coordinates: { lat: number; lng: number }
-  riskLevel: "low" | "medium" | "high"
-  isFavorite: boolean
+    year1: number;
+    year2: number;
+    year3: number;
+    year4: number;
+    year5: number;
+  };
+  coordinates: { lat: number; lng: number };
+  riskLevel: 'low' | 'medium' | 'high';
+  isFavorite: boolean;
 }
 
 interface RecommendationPanelProps {
-  onAnalysisRequest: (analysisType: string, params: any) => void
-  results: RecommendationResult[]
-  onToggleFavorite: (id: string) => void
+  onAnalysisRequest: (analysisType: string, params: any) => void;
+  results: RecommendationResult[];
+  onToggleFavorite: (id: string) => void;
 }
 
-export function RecommendationPanel({ onAnalysisRequest, results, onToggleFavorite }: RecommendationPanelProps) {
-  const [activeAnalysis, setActiveAnalysis] = useState("single")
-  const [coordinates, setCoordinates] = useState({ lat: "", lng: "" })
-  const [businessType, setBusinessType] = useState("")
-  const [rangeRadius, setRangeRadius] = useState("1000")
-  const [resultCount, setResultCount] = useState("5")
-  const [selectedDistrict, setSelectedDistrict] = useState("")
-  const [selectedNeighborhood, setSelectedNeighborhood] = useState("")
+export function RecommendationPanel({
+  onAnalysisRequest,
+  results,
+  onToggleFavorite,
+}: RecommendationPanelProps) {
+  const [activeAnalysis, setActiveAnalysis] = useState('single');
+  const [coordinates, setCoordinates] = useState({ lat: '', lng: '' });
+  const [businessType, setBusinessType] = useState('');
+  const [rangeRadius, setRangeRadius] = useState('1000');
+  const [resultCount, setResultCount] = useState('5');
+  const [selectedDistrict, setSelectedDistrict] = useState('');
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState('');
 
-  const districts = ["강남구", "서초구", "송파구", "강동구", "마포구", "용산구", "중구", "종로구"]
-  const neighborhoods = ["역삼동", "논현동", "청담동", "삼성동", "대치동", "개포동", "잠실동", "신천동"]
+  const districts = [
+    '강남구',
+    '서초구',
+    '송파구',
+    '강동구',
+    '마포구',
+    '용산구',
+    '중구',
+    '종로구',
+  ];
+  const neighborhoods = [
+    '역삼동',
+    '논현동',
+    '청담동',
+    '삼성동',
+    '대치동',
+    '개포동',
+    '잠실동',
+    '신천동',
+  ];
 
-  const businessTypes = ["카페", "음식점", "미용실", "편의점", "의류매장", "화장품매장", "학원", "병원"]
+  const businessTypes = [
+    '카페',
+    '음식점',
+    '미용실',
+    '편의점',
+    '의류매장',
+    '화장품매장',
+    '학원',
+    '병원',
+  ];
 
   const handleSingleAnalysis = () => {
-    if (!coordinates.lat || !coordinates.lng) return
-    onAnalysisRequest("single", { coordinates, businessType })
-  }
+    if (!coordinates.lat || !coordinates.lng) return;
+    onAnalysisRequest('single', { coordinates, businessType });
+  };
 
   const handleRangeAnalysis = () => {
-    if (!coordinates.lat || !coordinates.lng) return
-    onAnalysisRequest("range", { coordinates, businessType, radius: rangeRadius, count: resultCount })
-  }
+    if (!coordinates.lat || !coordinates.lng) return;
+    onAnalysisRequest('range', {
+      coordinates,
+      businessType,
+      radius: rangeRadius,
+      count: resultCount,
+    });
+  };
 
   const handleSeoulAnalysis = () => {
-    if (!businessType) return
-    onAnalysisRequest("seoul", { businessType, count: resultCount })
-  }
+    if (!businessType) return;
+    onAnalysisRequest('seoul', { businessType, count: resultCount });
+  };
 
   const handleDistrictAnalysis = () => {
-    if (!selectedDistrict || !businessType) return
-    onAnalysisRequest("district", { district: selectedDistrict, businessType, count: resultCount })
-  }
+    if (!selectedDistrict || !businessType) return;
+    onAnalysisRequest('district', {
+      district: selectedDistrict,
+      businessType,
+      count: resultCount,
+    });
+  };
 
   const handleNeighborhoodAnalysis = () => {
-    if (!selectedNeighborhood || !businessType) return
-    onAnalysisRequest("neighborhood", { neighborhood: selectedNeighborhood, businessType, count: resultCount })
-  }
+    if (!selectedNeighborhood || !businessType) return;
+    onAnalysisRequest('neighborhood', {
+      neighborhood: selectedNeighborhood,
+      businessType,
+      count: resultCount,
+    });
+  };
 
   const getRiskColor = (level: string) => {
     switch (level) {
-      case "low":
-        return "text-green-600"
-      case "medium":
-        return "text-yellow-600"
-      case "high":
-        return "text-red-600"
+      case 'low':
+        return 'text-green-600';
+      case 'medium':
+        return 'text-yellow-600';
+      case 'high':
+        return 'text-red-600';
       default:
-        return "text-muted-foreground"
+        return 'text-muted-foreground';
     }
-  }
+  };
 
   const getRiskBadgeVariant = (level: string) => {
     switch (level) {
-      case "low":
-        return "default"
-      case "medium":
-        return "secondary"
-      case "high":
-        return "destructive"
+      case 'low':
+        return 'default';
+      case 'medium':
+        return 'secondary';
+      case 'high':
+        return 'destructive';
       default:
-        return "outline"
+        return 'outline';
     }
-  }
+  };
 
   return (
     <div className="space-y-4">
@@ -135,7 +204,12 @@ export function RecommendationPanel({ onAnalysisRequest, results, onToggleFavori
                         id="lat"
                         placeholder="37.5665"
                         value={coordinates.lat}
-                        onChange={(e) => setCoordinates((prev) => ({ ...prev, lat: e.target.value }))}
+                        onChange={e =>
+                          setCoordinates(prev => ({
+                            ...prev,
+                            lat: e.target.value,
+                          }))
+                        }
                         className="text-sm"
                       />
                     </div>
@@ -147,7 +221,12 @@ export function RecommendationPanel({ onAnalysisRequest, results, onToggleFavori
                         id="lng"
                         placeholder="126.9780"
                         value={coordinates.lng}
-                        onChange={(e) => setCoordinates((prev) => ({ ...prev, lng: e.target.value }))}
+                        onChange={e =>
+                          setCoordinates(prev => ({
+                            ...prev,
+                            lng: e.target.value,
+                          }))
+                        }
                         className="text-sm"
                       />
                     </div>
@@ -156,12 +235,15 @@ export function RecommendationPanel({ onAnalysisRequest, results, onToggleFavori
                     <Label htmlFor="business-type" className="text-xs">
                       업종 (선택사항)
                     </Label>
-                    <Select value={businessType} onValueChange={setBusinessType}>
+                    <Select
+                      value={businessType}
+                      onValueChange={setBusinessType}
+                    >
                       <SelectTrigger className="text-sm">
                         <SelectValue placeholder="업종 선택" />
                       </SelectTrigger>
                       <SelectContent>
-                        {businessTypes.map((type) => (
+                        {businessTypes.map(type => (
                           <SelectItem key={type} value={type}>
                             {type}
                           </SelectItem>
@@ -169,7 +251,11 @@ export function RecommendationPanel({ onAnalysisRequest, results, onToggleFavori
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button onClick={handleSingleAnalysis} className="w-full" size="sm">
+                  <Button
+                    onClick={handleSingleAnalysis}
+                    className="w-full"
+                    size="sm"
+                  >
                     단일 분석 실행
                   </Button>
                 </CardContent>
@@ -189,7 +275,10 @@ export function RecommendationPanel({ onAnalysisRequest, results, onToggleFavori
                       <Label htmlFor="radius" className="text-xs">
                         반경 (m)
                       </Label>
-                      <Select value={rangeRadius} onValueChange={setRangeRadius}>
+                      <Select
+                        value={rangeRadius}
+                        onValueChange={setRangeRadius}
+                      >
                         <SelectTrigger className="text-sm">
                           <SelectValue />
                         </SelectTrigger>
@@ -205,7 +294,10 @@ export function RecommendationPanel({ onAnalysisRequest, results, onToggleFavori
                       <Label htmlFor="count" className="text-xs">
                         결과 개수
                       </Label>
-                      <Select value={resultCount} onValueChange={setResultCount}>
+                      <Select
+                        value={resultCount}
+                        onValueChange={setResultCount}
+                      >
                         <SelectTrigger className="text-sm">
                           <SelectValue />
                         </SelectTrigger>
@@ -217,7 +309,11 @@ export function RecommendationPanel({ onAnalysisRequest, results, onToggleFavori
                       </Select>
                     </div>
                   </div>
-                  <Button onClick={handleRangeAnalysis} className="w-full" size="sm">
+                  <Button
+                    onClick={handleRangeAnalysis}
+                    className="w-full"
+                    size="sm"
+                  >
                     범위 분석 실행
                   </Button>
                 </CardContent>
@@ -238,12 +334,15 @@ export function RecommendationPanel({ onAnalysisRequest, results, onToggleFavori
                     <Label htmlFor="seoul-business-type" className="text-xs">
                       업종
                     </Label>
-                    <Select value={businessType} onValueChange={setBusinessType}>
+                    <Select
+                      value={businessType}
+                      onValueChange={setBusinessType}
+                    >
                       <SelectTrigger className="text-sm">
                         <SelectValue placeholder="업종 선택" />
                       </SelectTrigger>
                       <SelectContent>
-                        {businessTypes.map((type) => (
+                        {businessTypes.map(type => (
                           <SelectItem key={type} value={type}>
                             {type}
                           </SelectItem>
@@ -251,7 +350,11 @@ export function RecommendationPanel({ onAnalysisRequest, results, onToggleFavori
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button onClick={handleSeoulAnalysis} className="w-full" size="sm">
+                  <Button
+                    onClick={handleSeoulAnalysis}
+                    className="w-full"
+                    size="sm"
+                  >
                     서울 전체 분석
                   </Button>
                 </CardContent>
@@ -270,12 +373,15 @@ export function RecommendationPanel({ onAnalysisRequest, results, onToggleFavori
                     <Label htmlFor="district" className="text-xs">
                       구 선택
                     </Label>
-                    <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
+                    <Select
+                      value={selectedDistrict}
+                      onValueChange={setSelectedDistrict}
+                    >
                       <SelectTrigger className="text-sm">
                         <SelectValue placeholder="구 선택" />
                       </SelectTrigger>
                       <SelectContent>
-                        {districts.map((district) => (
+                        {districts.map(district => (
                           <SelectItem key={district} value={district}>
                             {district}
                           </SelectItem>
@@ -283,7 +389,11 @@ export function RecommendationPanel({ onAnalysisRequest, results, onToggleFavori
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button onClick={handleDistrictAnalysis} className="w-full" size="sm">
+                  <Button
+                    onClick={handleDistrictAnalysis}
+                    className="w-full"
+                    size="sm"
+                  >
                     구별 분석 실행
                   </Button>
                 </CardContent>
@@ -302,12 +412,15 @@ export function RecommendationPanel({ onAnalysisRequest, results, onToggleFavori
                     <Label htmlFor="neighborhood" className="text-xs">
                       동 선택
                     </Label>
-                    <Select value={selectedNeighborhood} onValueChange={setSelectedNeighborhood}>
+                    <Select
+                      value={selectedNeighborhood}
+                      onValueChange={setSelectedNeighborhood}
+                    >
                       <SelectTrigger className="text-sm">
                         <SelectValue placeholder="동 선택" />
                       </SelectTrigger>
                       <SelectContent>
-                        {neighborhoods.map((neighborhood) => (
+                        {neighborhoods.map(neighborhood => (
                           <SelectItem key={neighborhood} value={neighborhood}>
                             {neighborhood}
                           </SelectItem>
@@ -315,7 +428,11 @@ export function RecommendationPanel({ onAnalysisRequest, results, onToggleFavori
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button onClick={handleNeighborhoodAnalysis} className="w-full" size="sm">
+                  <Button
+                    onClick={handleNeighborhoodAnalysis}
+                    className="w-full"
+                    size="sm"
+                  >
                     동별 분석 실행
                   </Button>
                 </CardContent>
@@ -340,22 +457,41 @@ export function RecommendationPanel({ onAnalysisRequest, results, onToggleFavori
           <CardContent>
             <ScrollArea className="h-96">
               <div className="space-y-3">
-                {results.map((result) => (
+                {results.map(result => (
                   <Card key={result.id} className="p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
-                        <h3 className="font-medium text-sm mb-1">{result.businessName}</h3>
-                        <p className="text-xs text-muted-foreground mb-1">{result.businessType}</p>
-                        <p className="text-xs text-muted-foreground">{result.address}</p>
+                        <h3 className="font-medium text-sm mb-1">
+                          {result.businessName}
+                        </h3>
+                        <p className="text-xs text-muted-foreground mb-1">
+                          {result.businessType}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {result.address}
+                        </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge variant={getRiskBadgeVariant(result.riskLevel)} className="text-xs">
-                          {result.riskLevel === "low" ? "낮음" : result.riskLevel === "medium" ? "보통" : "높음"}
+                        <Badge
+                          variant={getRiskBadgeVariant(result.riskLevel)}
+                          className="text-xs"
+                        >
+                          {result.riskLevel === 'low'
+                            ? '낮음'
+                            : result.riskLevel === 'medium'
+                            ? '보통'
+                            : '높음'}
                         </Badge>
-                        <Button variant="ghost" size="sm" onClick={() => onToggleFavorite(result.id)}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onToggleFavorite(result.id)}
+                        >
                           <Heart
                             className={`w-4 h-4 ${
-                              result.isFavorite ? "fill-red-500 text-red-500" : "text-muted-foreground"
+                              result.isFavorite
+                                ? 'fill-red-500 text-red-500'
+                                : 'text-muted-foreground'
                             }`}
                           />
                         </Button>
@@ -364,15 +500,21 @@ export function RecommendationPanel({ onAnalysisRequest, results, onToggleFavori
 
                     <div className="space-y-2">
                       <h4 className="text-xs font-medium">5개년 폐업 확률</h4>
-                      {Object.entries(result.closureProbability).map(([year, probability]) => (
-                        <div key={year} className="space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs">{year.replace("year", "")}년차</span>
-                            <span className="text-xs font-medium">{probability}%</span>
+                      {Object.entries(result.closureProbability).map(
+                        ([year, probability]) => (
+                          <div key={year} className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs">
+                                {year.replace('year', '')}년차
+                              </span>
+                              <span className="text-xs font-medium">
+                                {probability}%
+                              </span>
+                            </div>
+                            <Progress value={probability} className="h-1" />
                           </div>
-                          <Progress value={probability} className="h-1" />
-                        </div>
-                      ))}
+                        ),
+                      )}
                     </div>
                   </Card>
                 ))}
@@ -382,5 +524,5 @@ export function RecommendationPanel({ onAnalysisRequest, results, onToggleFavori
         </Card>
       )}
     </div>
-  )
+  );
 }
