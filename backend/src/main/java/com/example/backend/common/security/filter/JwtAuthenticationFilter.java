@@ -20,7 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
-import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
@@ -28,8 +27,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import static com.example.backend.common.security.config.SecurityPaths.PUBLIC_GET_PATHS;
-import static com.example.backend.common.security.config.SecurityPaths.PUBLIC_PATHS;
 
 /**
  * JWT 기반 인증을 처리하는 필터 클래스
@@ -44,7 +41,6 @@ import static com.example.backend.common.security.config.SecurityPaths.PUBLIC_PA
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String JWT_COOKIE_NAME = "accessToken";
-    private static final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     private final JwtUtil jwtUtil;
     private final RefreshTokenService refreshTokenService;
@@ -111,29 +107,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    /**
-     * JWT 인증 필터를 건너뛸 요청 경로 판단
-     * 특정 공개 API 엔드포인트에 대해서는 JWT 인증을 수행하지 않습니다.
-     *
-     * @param request HTTP 요청 객체
-     * @return 필터를 건너뛸 경우 true, JWT 인증이 필요한 경우 false
-     */
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getRequestURI();
-        String method = request.getMethod();
-
-        if ("OPTIONS".equals(method)) {
-            return true;
-        }
-
-        boolean isPublicPath = Arrays.stream(PUBLIC_PATHS)
-            .anyMatch(pattern -> pathMatcher.match(pattern, path));
-        boolean isPublicGetPath = "GET".equals(method) && Arrays.stream(PUBLIC_GET_PATHS)
-            .anyMatch(pattern -> pathMatcher.match(pattern, path));
-
-        return isPublicPath || isPublicGetPath;
-    }
+    // shouldNotFilter 제거: SecurityConfig에서 이미 PUBLIC_PATHS를 처리하므로 중복 불필요
 
     /**
      * JWT 사용자 정보를 기반으로 Spring Security Authentication 객체 생성

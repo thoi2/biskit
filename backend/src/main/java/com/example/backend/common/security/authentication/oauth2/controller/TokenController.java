@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import com.example.backend.common.security.authentication.oauth2.userInfo.JwtUserInfo;
+import com.example.backend.common.security.authentication.jwt.JwtUserInfo;
 
 @RestController
 @RequestMapping("/api/v1/auth")
