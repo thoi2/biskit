@@ -12,7 +12,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 4. 소스 코드 및 데이터 복사
 # 나머지 소스 코드와 데이터를 이미지에 복사합니다.
 COPY ./app ./app
-COPY ./data ./data
 
 # 5. 포트 노출
 # FastAPI 기본 포트인 8000번을 노출합니다.
