@@ -6,7 +6,7 @@ services:
   ai:
     restart: always
     volumes:
-      - /home/ubuntu/ai_data:/ai_app/data
+      - /home/ubuntu/data:/ai_app/data
   backend:
     # 운영 환경에서는 기본 Dockerfile을 사용합니다.
     build:
