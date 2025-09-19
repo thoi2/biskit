@@ -4,6 +4,14 @@
 # - 프론트엔드, 백엔드, DB, Redis 서비스의 기본 구조를 정의합니다.
 # ===================================================================
 services:
+  ai:
+    build:
+      context: ./ai
+      # 사용할 Dockerfile은 override 또는 prod 파일에서 지정합니다.
+    container_name: ai
+
+    networks:
+      - my-network
   # Spring Boot 백엔드 애플리케이션
   backend:
     build:
@@ -49,6 +57,7 @@ services:
 
     depends_on:
       - backend
+      - ai
     networks:
       - my-network
 
