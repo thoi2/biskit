@@ -1,7 +1,7 @@
 // app/layout.tsx
 import type { Metadata } from 'next';
-import './globals.css'; // 전역 CSS
-import Header from '@/components/layout/Header';
+import './globals.css';
+import Header from '@/lib/components/layout/Header';
 import Providers from './providers';
 
 export const metadata: Metadata = {
@@ -10,20 +10,28 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({
-                                     children,
-                                   }: {
+  children,
+}: {
   children: React.ReactNode;
 }) {
   return (
-      <html lang="ko">
-      <body>
+    <html lang="ko" suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <Providers>
-          {/* 모든 페이지 상단에 보일 공통 헤더 */}
-          <Header />
-          {/* 이 children 부분에 각 페이지(page.tsx)의 내용이 렌더링됩니다. */}
-          <main>{children}</main>
+          <div className="h-screen flex flex-col">
+            {' '}
+            {/* 👈 전체 레이아웃 컨테이너 */}
+            {/* 헤더 - 상단 고정 */}
+            <Header />
+            {/* 메인 콘텐츠 - 나머지 공간 차지 */}
+            <main className="flex-1 overflow-hidden">
+              {' '}
+              {/* 👈 flex-1로 나머지 공간 차지 */}
+              {children}
+            </main>
+          </div>
         </Providers>
       </body>
-      </html>
+    </html>
   );
 }

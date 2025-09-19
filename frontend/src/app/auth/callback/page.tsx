@@ -1,7 +1,7 @@
 // /app/auth/callback/page.tsx
 
 import { Suspense } from 'react';
-import AuthCallbackClient from '@/components/Param/AuthCallbackClient'; // 경로가 맞는지 확인해주세요.
+import AuthCallbackClient from '@/features/auth/components/AuthCallbackClient'; // 경로가 맞는지 확인해주세요.
 
 // 'use client'와 모든 로직을 제거합니다.
 export default function AuthCallbackPage() {
