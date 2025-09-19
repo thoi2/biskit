@@ -9,7 +9,6 @@ import { TabNavigation } from '@/lib/components/navigation/TabNavigation';
 interface Business {
   id: string;
   name: string;
-  s;
   category: string;
   address: string;
   closureProbability: number;
