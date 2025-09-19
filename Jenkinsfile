@@ -96,7 +96,7 @@ pipeline {
                     echo "Deploying new containers..."
                     // 새로운 컨테이너를 백그라운드에서 실행
                     // environment 블록의 변수들이 컨테이너로 주입됨
-                    sh 'docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d'
+                    sh 'docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans'
                     echo "Deployment completed successfully!"
                 }
             }
