@@ -28,7 +28,7 @@ import {
 
 interface RecommendationPanelProps {
   onAnalysisRequest: (analysisType: string, params: any) => void;
-  setActiveTab: (tab: string) => void;
+  setActiveTab: (tab: 'search' | 'recommend' | 'result' | 'profile') => void;
 }
 
 export function RecommendationPanel({
