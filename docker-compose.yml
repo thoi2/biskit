@@ -75,9 +75,6 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       TZ: Asia/Seoul
     volumes:
-      # 1. 설정 파일 마운트
-      - ./mysql/conf/custom.cnf:/etc/mysql/conf.d/custom.cnf:ro
-      # 2. 데이터 영속성을 위한 볼륨 (가장 중요)
       - mysql_data:/var/lib/mysql
     healthcheck:
       test:
