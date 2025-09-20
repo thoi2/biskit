@@ -1,46 +1,43 @@
-import { Button } from '@/lib/components/ui/button';
-import { Search } from 'lucide-react';
 import { KakaoMap } from '@/lib/components/kakao-map';
+import { Store } from '@/lib/types/store';
+import { RecommendationResult } from '@/lib/types/recommendation';
+
+interface MapBounds {
+    sw: { lat: number; lng: number };
+    ne: { lat: number; lng: number };
+}
 
 interface MapAreaProps {
-  businesses: any[];
-  searchActive: boolean;
-  setSearchActive: (active: boolean) => void;
-  onBusinessClick: (b: any) => void;
-  onMapClick: (lat: number, lng: number) => void;
+    stores?: Store[];
+    recommendations?: RecommendationResult[];
+    onStoreClick?: (store: Store) => void;
+    onRecommendationClick?: (recommendation: RecommendationResult) => void;
+    onMapClick?: (lat: number, lng: number) => void;
+    onSearchInArea?: (bounds: MapBounds) => void;
+    isSearching?: boolean;
 }
 
 export function MapArea({
-  businesses,
-  searchActive,
-  setSearchActive,
-  onBusinessClick,
-  onMapClick,
-}: MapAreaProps) {
-  return (
-    <div className="flex-1 min-w-0 min-h-0 overflow-hidden relative">
-      {/* 검색 토글 버튼 */}
-      <div className="absolute top-6 left-6 z-10">
-        <Button
-          onClick={() => setSearchActive(!searchActive)}
-          className={`transition-all duration-300 ${
-            searchActive
-              ? 'bg-primary hover:bg-orange-700 text-white'
-              : 'bg-white/90 hover:bg-white text-orange-900'
-          }`}
-        >
-          <Search className="w-4 h-4 mr-2" />
-          {searchActive ? '검색 중지' : '지도에서 검색'}
-        </Button>
-      </div>
-
-      {/* 🔥 absolute inset-0 제거하고 바로 KakaoMap */}
-      <KakaoMap
-        businesses={businesses}
-        searchActive={searchActive}
-        onBusinessClick={onBusinessClick}
-        onMapClick={onMapClick}
-      />
-    </div>
-  );
+                            stores,
+                            recommendations,
+                            onStoreClick,
+                            onRecommendationClick,
+                            onMapClick,
+                            onSearchInArea,
+                            isSearching,
+                        }: MapAreaProps) {
+    return (
+        <div className="flex-1 min-w-0 min-h-0 overflow-hidden relative">
+            <KakaoMap
+                stores={stores}
+                recommendations={recommendations}
+                onStoreClick={onStoreClick}
+                onRecommendationClick={onRecommendationClick}
+                onMapClick={onMapClick}
+                onSearchInArea={onSearchInArea}
+                isSearching={isSearching}
+                showSearchControls={true}
+            />
+        </div>
+    );
 }
