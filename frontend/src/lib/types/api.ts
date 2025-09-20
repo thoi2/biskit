@@ -1,3 +1,4 @@
+// types/api.ts (타입만)
 export interface Location {
   lat: number;
   lng: number;
@@ -15,6 +16,20 @@ export interface InBoundsRequest {
 export interface ApiResponse<T> {
   success: boolean;
   status: number;
-  timestamp: string; // searchApi.ts에만 존재하지만, 다른 API에서도 사용될 가능성을 고려하여 포함
+  timestamp: string;
   body: T;
+}
+
+export interface ApiError {
+  code: string;
+  message: string;
+  timestamp: string;
+}
+
+export interface ApiErrorResponse {
+  success: false;
+  status: number;
+  body: {
+    error: ApiError;
+  };
 }

@@ -1,4 +1,5 @@
-export interface UserHistory{  
+// types/userHistory.ts
+export interface UserHistory{
   id: number;
   user_id: string;
   type: number;
