@@ -3,7 +3,7 @@ import { Search, BarChart3, FileText } from 'lucide-react'; // User → FileText
 
 interface TabNavigationProps {
   activeTab: string;
-  onTabChange: (tab: string) => void;
+  onTabChange: (tab: 'search' | 'recommend' | 'result' | 'profile') => void;
   showProfileTab: boolean;
 }
 
