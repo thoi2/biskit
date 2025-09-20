@@ -1,49 +1,17 @@
 // hooks/useBiskitData.ts
 import { useState } from "react"
-import { saveSearchHistory } from "@/lib/search-history"
+import { Store } from "@/lib/types/store"
+import { RecommendationResult } from "@/lib/types/recommendation"
+import { getStoresInBoundsAPI, mapBoundsToApiBounds } from "@/lib/store-api"
 
-// Mock business data
-const mockBusinesses = [
-    {
-        id: "1",
-        name: "강남 카페 로스터리",
-        category: "카페",
-        address: "서울시 강남구 테헤란로 123",
-        closureProbability: 78,
-        rating: 4.2,
-        openHours: "07:00-22:00",
-        coordinates: { lat: 37.5665, lng: 126.978 },
-        isFavorite: false,
-        hidden: false,  // ← 추가
-    },
-    {
-        id: "2",
-        name: "명동 한정식",
-        category: "한정식",
-        address: "서울시 중구 명동길 45",
-        closureProbability: 62,
-        rating: 4.5,
-        openHours: "11:00-21:00",
-        coordinates: { lat: 37.5636, lng: 126.9834 },
-        isFavorite: true,
-        hidden: false,  // ← 추가
-    },
-    {
-        id: "3",
-        name: "홍대 미용실",
-        category: "미용실",
-        address: "서울시 마포구 홍익로 67",
-        closureProbability: 90,
-        rating: 3.8,
-        openHours: "10:00-20:00",
-        coordinates: { lat: 37.5563, lng: 126.9236 },
-        isFavorite: false,
-        hidden: false,  // ← 추가
-    },
-]
+// MapBounds 타입 정의
+interface MapBounds {
+    sw: { lat: number; lng: number };
+    ne: { lat: number; lng: number };
+}
 
 // Mock recommendation results
-const mockRecommendationResults = [
+const mockRecommendationResults: RecommendationResult[] = [
     {
         id: "rec1",
         businessName: "강남역 스타벅스",
@@ -59,6 +27,7 @@ const mockRecommendationResults = [
         coordinates: { lat: 37.5665, lng: 126.978 },
         riskLevel: "medium" as const,
         isFavorite: false,
+        hidden: false,
     },
     {
         id: "rec2",
@@ -75,66 +44,98 @@ const mockRecommendationResults = [
         coordinates: { lat: 37.5563, lng: 126.9236 },
         riskLevel: "high" as const,
         isFavorite: true,
+        hidden: false,
     },
 ]
 
 export function useBiskitData(user: Record<string, any> | null, setActiveTab: (tab: string) => void) {
     const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-    const [businesses, setBusinesses] = useState(mockBusinesses)
-    const [filteredBusinesses, setFilteredBusinesses] = useState(mockBusinesses)
-    const [recommendationResults, setRecommendationResults] = useState(mockRecommendationResults)
+    const [stores, setStores] = useState<Store[]>([])
+    const [filteredStores, setFilteredStores] = useState<Store[]>([])
+    const [recommendationResults, setRecommendationResults] = useState<RecommendationResult[]>(mockRecommendationResults)
+    const [isSearching, setIsSearching] = useState(false)
+    const [searchError, setSearchError] = useState<string | null>(null)
+
+    // 🔥 지도 영역 검색 API 호출 함수
+    const handleSearchInArea = async (bounds: MapBounds) => {
+        setIsSearching(true)
+        setSearchError(null)
+
+        try {
+            console.log('지도 검색 시작:', bounds)
+
+            // MapBounds를 API Bounds 형식으로 변환
+            const apiBounds = mapBoundsToApiBounds(bounds)
+
+            // API 호출
+            const storeData = await getStoresInBoundsAPI(apiBounds)
+
+            console.log(`검색 완료: ${storeData.length}개 상가 발견`)
+
+            // 상가 데이터 업데이트
+            setStores(storeData)
+
+            // 선택된 카테고리 필터 적용
+            applyFilters(storeData, selectedCategories)
+
+            // 결과가 있으면 result 탭으로 이동
+            if (storeData.length > 0) {
+                setActiveTab("result")
+            } else {
+                // 결과가 없을 때 알림
+                setSearchError("해당 영역에서 상가를 찾을 수 없습니다.")
+            }
+
+        } catch (error) {
+            console.error('지도 검색 실패:', error)
+            setSearchError(error instanceof Error ? error.message : '상가 검색 중 오류가 발생했습니다.')
+            setStores([])
+            setFilteredStores([])
+        } finally {
+            setIsSearching(false)
+        }
+    }
+
+    // 카테고리 필터 적용 함수
+    const applyFilters = (storeData: Store[], categories: string[]) => {
+        if (categories.length === 0) {
+            setFilteredStores(storeData)
+        } else {
+            const filtered = storeData.filter((store) =>
+                categories.some((category) =>
+                    (store.categoryName || store.bizCategoryCode).includes(category)
+                ),
+            )
+            setFilteredStores(filtered)
+        }
+    }
 
     const handleFilterChange = (categories: string[]) => {
         setSelectedCategories(categories)
-        if (categories.length === 0) {
-            setFilteredBusinesses(businesses)
-        } else {
-            const filtered = businesses.filter((business) =>
-                categories.some((category) => business.category.includes(category)),
-            )
-            setFilteredBusinesses(filtered)
-        }
-
-        if (user) {
-            saveSearchHistory({
-                search_type: "filter",
-                search_params: { categories },
-            })
-        }
+        applyFilters(stores, categories)
     }
 
-    const handleBusinessSelect = (business: Record<string, any>) => {
-        console.log("Selected business:", business)
+    const handleStoreSelect = (store: Store) => {
+        console.log("Selected store:", store)
     }
 
-    const handleToggleFavorite = (businessId: string) => {
-        if (!user) {
-            alert("찜 기능을 사용하려면 로그인이 필요합니다.")
-            return
-        }
-
-        setBusinesses((prev) =>
-            prev.map((business) =>
-                business.id === businessId ? { ...business, isFavorite: !business.isFavorite } : business,
-            ),
-        )
-        setFilteredBusinesses((prev) =>
-            prev.map((business) =>
-                business.id === businessId ? { ...business, isFavorite: !business.isFavorite } : business,
-            ),
-        )
+    const handleStoreClick = (store: Store) => {
+        console.log("Store clicked on map:", store)
     }
 
-    // ← 새로 추가: 점포 숨김/보임 토글
-    const handleToggleHideStore = (businessId: string) => {
-        setBusinesses((prev) =>
-            prev.map((business) =>
-                business.id === businessId ? { ...business, hidden: !business.hidden } : business,
+    const handleRecommendationClick = (recommendation: RecommendationResult) => {
+        console.log("Recommendation clicked on map:", recommendation)
+    }
+
+    const handleToggleHideStore = (storeId: number) => {
+        setStores((prev) =>
+            prev.map((store) =>
+                store.id === storeId ? { ...store, hidden: !store.hidden } : store,
             ),
         )
-        setFilteredBusinesses((prev) =>
-            prev.map((business) =>
-                business.id === businessId ? { ...business, hidden: !business.hidden } : business,
+        setFilteredStores((prev) =>
+            prev.map((store) =>
+                store.id === storeId ? { ...store, hidden: !store.hidden } : store,
             ),
         )
     }
@@ -142,13 +143,7 @@ export function useBiskitData(user: Record<string, any> | null, setActiveTab: (t
     const handleAnalysisRequest = (analysisType: string, params: Record<string, any>) => {
         console.log("Analysis requested:", analysisType, params)
         setRecommendationResults(mockRecommendationResults)
-
-        if (user) {
-            saveSearchHistory({
-                search_type: "recommendation",
-                search_params: { analysisType, ...params },
-            })
-        }
+        setActiveTab("result")
     }
 
     const handleToggleRecommendationFavorite = (id: string) => {
@@ -158,45 +153,58 @@ export function useBiskitData(user: Record<string, any> | null, setActiveTab: (t
         }
 
         setRecommendationResults((prev) =>
-            prev.map((result) => (result.id === id ? { ...result, isFavorite: !result.isFavorite } : result)),
+            prev.map((result) =>
+                result.id === id ? { ...result, isFavorite: !result.isFavorite } : result
+            ),
         )
     }
 
-    const handleRestoreSearch = (searchType: string, params: Record<string, any>) => {
-        if (searchType === "filter") {
-            setActiveTab("search")
-            setSelectedCategories(params.categories || [])
-            handleFilterChange(params.categories || [])
-        } else if (searchType === "recommendation") {
-            setActiveTab("recommend")
-        }
+    const handleToggleHideRecommendation = (id: string) => {
+        setRecommendationResults((prev) =>
+            prev.map((result) =>
+                result.id === id ? { ...result, hidden: !result.hidden } : result
+            )
+        )
+    }
+
+    const handleDeleteRecommendation = (id: string) => {
+        setRecommendationResults((prev) => prev.filter((result) => result.id !== id))
     }
 
     const handleMapClick = (lat: number, lng: number) => {
         console.log(`지도 클릭: ${lat}, ${lng}`)
     }
 
-    const handleBusinessClick = (business: Record<string, any>) => {
-        console.log("선택된 상가:", business)
+    // 검색 결과 초기화
+    const handleClearResults = () => {
+        setStores([])
+        setFilteredStores([])
+        setSelectedCategories([])
+        setSearchError(null)
     }
 
     const handlers = {
         handleFilterChange,
-        handleBusinessSelect,
-        handleToggleFavorite,
-        handleToggleHideStore,  // ← 새로 추가
+        handleStoreSelect,
+        handleStoreClick,
+        handleRecommendationClick,
+        handleToggleHideStore,
         handleAnalysisRequest,
         handleToggleRecommendationFavorite,
-        handleRestoreSearch,
+        handleToggleHideRecommendation,
+        handleDeleteRecommendation,
         handleMapClick,
-        handleBusinessClick,
+        handleSearchInArea, // 🔥 새로 추가
+        handleClearResults, // 🔥 새로 추가
     }
 
     return {
         selectedCategories,
         setSelectedCategories,
-        filteredBusinesses,
+        stores: filteredStores,
         recommendationResults,
+        isSearching, // 🔥 새로 추가
+        searchError, // 🔥 새로 추가
         handlers,
     }
 }
