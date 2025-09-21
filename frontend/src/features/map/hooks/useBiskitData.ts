@@ -1,7 +1,7 @@
 // hooks/useBiskitData.ts
 import { useState, useEffect } from 'react';
 import { Store } from '@/lib/types/store';
-import { RecommendationResult } from '@/lib/types/recommendation';
+import { RecommendationResult } from '@/features/ai/types/recommendation';
 import { getStoresInBoundsAPI, mapBoundsToApiBounds } from '@/lib/store-api';
 import { useMapStore } from '../store/mapStore';
 import { MapBounds } from '../types';
@@ -49,22 +49,25 @@ export function useBiskitData(user: Record<string, any> | null) {
     stores,
     isSearching,
     mapBounds,
+    selectedCategories, // 🔥 Zustand에서 가져옴
     setStores,
     setIsSearching,
     selectStore,
     selectRecommendation,
     clearResults,
     setActiveTab,
+    setSelectedCategories, // 🔥 Zustand에서 가져옴
   } = useMapStore();
 
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  // 🔥 로컬 useState 제거 (Zustand 사용)
   const [filteredStores, setFilteredStores] = useState<Store[]>([]);
   const [recommendationResults, setRecommendationResults] = useState<
-    RecommendationResult[]
+      RecommendationResult[]
   >(mockRecommendationResults);
   const [searchError, setSearchError] = useState<string | null>(null);
 
   // 🔥 지도 영역 검색 API 호출 함수
+  // 🔥 지도 영역 검색 API 호출 함수 - 탭 이동 제거
   const handleSearchInArea = async (bounds: MapBounds) => {
     setIsSearching(true);
     setSearchError(null);
@@ -72,10 +75,7 @@ export function useBiskitData(user: Record<string, any> | null) {
     try {
       console.log('지도 검색 시작:', bounds);
 
-      // MapBounds를 API Bounds 형식으로 변환
       const apiBounds = mapBoundsToApiBounds(bounds);
-
-      // API 호출
       const storeData = await getStoresInBoundsAPI(apiBounds);
 
       console.log(`검색 완료: ${storeData.length}개 상가 발견`);
@@ -86,19 +86,18 @@ export function useBiskitData(user: Record<string, any> | null) {
       // 선택된 카테고리 필터 적용
       applyFilters(storeData, selectedCategories);
 
-      // 결과가 있으면 result 탭으로 이동
-      if (storeData.length > 0) {
-        setActiveTab('result');
-      } else {
-        // 결과가 없을 때 알림
+      if (storeData.length === 0) {
         setSearchError('해당 영역에서 상가를 찾을 수 없습니다.');
+      } else {
+        // 🔥 성공 메시지 표시 (옵션)
+        console.log(`✅ ${storeData.length}개 상가 로딩 완료 - 왼쪽 필터에서 업종을 선택하세요`);
       }
     } catch (error) {
       console.error('지도 검색 실패:', error);
       setSearchError(
-        error instanceof Error
-          ? error.message
-          : '상가 검색 중 오류가 발생했습니다.',
+          error instanceof Error
+              ? error.message
+              : '상가 검색 중 오류가 발생했습니다.',
       );
       setStores([]);
       setFilteredStores([]);
@@ -106,6 +105,7 @@ export function useBiskitData(user: Record<string, any> | null) {
       setIsSearching(false);
     }
   };
+
 
   // 🔥 mapBounds가 변경되면 검색 실행
   useEffect(() => {
@@ -121,16 +121,17 @@ export function useBiskitData(user: Record<string, any> | null) {
       setFilteredStores(storeData);
     } else {
       const filtered = storeData.filter(store =>
-        categories.some(category =>
-          (store.categoryName || store.bizCategoryCode).includes(category),
-        ),
+          categories.some(category =>
+              (store.categoryName || store.bizCategoryCode).includes(category),
+          ),
       );
       setFilteredStores(filtered);
     }
   };
 
+  // 🔥 필터 변경 시 Zustand 업데이트
   const handleFilterChange = (categories: string[]) => {
-    setSelectedCategories(categories);
+    setSelectedCategories(categories); // 🔥 Zustand에 업데이트
     applyFilters(stores, categories);
   };
 
@@ -144,6 +145,21 @@ export function useBiskitData(user: Record<string, any> | null) {
     selectStore(store);
   };
 
+  // 🔥 완전 삭제 함수 (X 버튼용)
+  const handleDeleteStore = (storeId: number) => {
+    console.log('Deleting store:', storeId);
+
+    // 1. Zustand 스토어에서 완전 제거
+    const newStores = stores.filter(store => store.id !== storeId);
+    setStores(newStores);
+
+    // 2. 로컬 필터된 스토어에서도 완전 제거
+    setFilteredStores(prev => prev.filter(store => store.id !== storeId));
+
+    // 3. 선택된 상가가 삭제된 상가라면 선택 해제
+    selectStore(null);
+  };
+
   const handleRecommendationClick = (recommendation: RecommendationResult) => {
     console.log('Recommendation clicked on map:', recommendation);
     selectRecommendation(recommendation);
@@ -151,19 +167,19 @@ export function useBiskitData(user: Record<string, any> | null) {
 
   const handleToggleHideStore = (storeId: number) => {
     const newStores = stores.map(store =>
-      store.id === storeId ? { ...store, hidden: !store.hidden } : store,
+        store.id === storeId ? { ...store, hidden: !store.hidden } : store,
     );
     setStores(newStores);
     setFilteredStores(prev =>
-      prev.map(store =>
-        store.id === storeId ? { ...store, hidden: !store.hidden } : store,
-      ),
+        prev.map(store =>
+            store.id === storeId ? { ...store, hidden: !store.hidden } : store,
+        ),
     );
   };
 
   const handleAnalysisRequest = (
-    analysisType: string,
-    params: Record<string, any>,
+      analysisType: string,
+      params: Record<string, any>,
   ) => {
     console.log('Analysis requested:', analysisType, params);
     setRecommendationResults(mockRecommendationResults);
@@ -177,19 +193,19 @@ export function useBiskitData(user: Record<string, any> | null) {
     }
 
     setRecommendationResults(prev =>
-      prev.map(result =>
-        result.id === id
-          ? { ...result, isFavorite: !result.isFavorite }
-          : result,
-      ),
+        prev.map(result =>
+            result.id === id
+                ? { ...result, isFavorite: !result.isFavorite }
+                : result,
+        ),
     );
   };
 
   const handleToggleHideRecommendation = (id: string) => {
     setRecommendationResults(prev =>
-      prev.map(result =>
-        result.id === id ? { ...result, hidden: !result.hidden } : result,
-      ),
+        prev.map(result =>
+            result.id === id ? { ...result, hidden: !result.hidden } : result,
+        ),
     );
   };
 
@@ -203,10 +219,14 @@ export function useBiskitData(user: Record<string, any> | null) {
 
   // 검색 결과 초기화
   const handleClearResults = () => {
-    clearResults();
+    clearResults(); // 이미 selectedCategories 초기화 포함됨
     setFilteredStores([]);
-    setSelectedCategories([]);
     setSearchError(null);
+  };
+
+  const handleStoreHighlight = (store: Store) => {
+    console.log('Store highlighted:', store);
+    selectStore(store);
   };
 
   const handlers = {
@@ -220,13 +240,14 @@ export function useBiskitData(user: Record<string, any> | null) {
     handleToggleHideRecommendation,
     handleDeleteRecommendation,
     handleMapClick,
-    handleSearchInArea, // 🔥 지도에서 직접 호출하지는 않지만, 다른 곳에서 필요할 수 있음
+    handleSearchInArea,
     handleClearResults,
+    handleDeleteStore,
+    handleStoreHighlight,
   };
 
   return {
-    selectedCategories,
-    setSelectedCategories,
+    selectedCategories, // 🔥 Zustand에서 가져온 것 반환
     stores: filteredStores,
     recommendationResults,
     isSearching,

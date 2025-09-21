@@ -30,7 +30,9 @@ export default function HomePage() {
         handlers={handlers}
       />
 
-      <MapArea />
+        <div className="flex-1 h-full">
+            <MapArea />
+        </div>
 
       {/* 검색 오류 표시 */}
       {searchError && (
