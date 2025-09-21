@@ -1,12 +1,11 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { StoreFilter } from '@/lib/components/store-filter';
-import { StoreList } from '@/lib/components/store-list';
 import { RecommendationPanel } from '@/features/ai/components/recommendation-panel';
 import { ResultPanel } from '@/lib/components/result-panel';
 import { GuestModeNotice } from '@/lib/components/ui/GuestModeNotice';
 import { TabNavigation } from '@/lib/components/navigation/TabNavigation';
 import { Store } from '@/lib/types/store';
-import { RecommendationResult } from '@/lib/types/recommendation';
+import { RecommendationResult } from '@/features/ai/types/recommendation';
 import { useMapStore } from '@/features/map/store/mapStore'; // 스토어 import
 import { useState } from 'react';
 
@@ -21,6 +20,7 @@ interface SidebarHandlers {
   handleToggleRecommendationFavorite: (id: string) => void;
   handleToggleHideRecommendation: (id: string) => void;
   handleDeleteRecommendation: (id: string) => void;
+  handleDeleteStore: (storeId: number) => void;
 }
 
 interface SidebarProps {
@@ -70,6 +70,7 @@ export function Sidebar({
                     <StoreFilter
                       onFilterChange={handlers.handleFilterChange}
                       selectedCategories={selectedCategories}
+                      stores={stores}
                     />
                   </div>
                 )}
@@ -83,26 +84,16 @@ export function Sidebar({
 
                 {activeTab === 'result' && (
                   <div className="space-y-6">
-                    {/* StoreList를 ResultPanel과 분리해서 표시 */}
-                    <StoreList
-                      stores={stores}
-                      onStoreSelect={handlers.handleStoreSelect}
-                    />
 
                     <ResultPanel
-                      user={user}
-                      stores={stores}
-                      recommendationResults={recommendationResults}
-                      onToggleHideStore={handlers.handleToggleHideStore}
-                      onToggleRecommendationFavorite={
-                        handlers.handleToggleRecommendationFavorite
-                      }
-                      onToggleHideRecommendation={
-                        handlers.handleToggleHideRecommendation
-                      }
-                      onDeleteRecommendation={
-                        handlers.handleDeleteRecommendation
-                      }
+                        user={user}
+                        stores={stores}
+                        recommendationResults={recommendationResults}
+                        onToggleHideStore={handlers.handleToggleHideStore}
+                        onDeleteStore={handlers.handleDeleteStore} // ← 이제 작동해야 합니다
+                        onToggleRecommendationFavorite={handlers.handleToggleRecommendationFavorite}
+                        onToggleHideRecommendation={handlers.handleToggleHideRecommendation}
+                        onDeleteRecommendation={handlers.handleDeleteRecommendation}
                     />
                   </div>
                 )}
