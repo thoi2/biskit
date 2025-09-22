@@ -1,35 +1,24 @@
-// components/StoreListSection.tsx
-
 import { useState, useEffect, useRef } from 'react';
 import { Badge } from '@/lib/components/ui/badge';
 import { MapPin, ChevronDown, ChevronUp } from 'lucide-react';
-import { Store } from '@/lib/types/store';
 import { useMapStore } from '@/features/map/store/mapStore';
-import { StoreItem } from './StoreItem';
-import { EmptyState } from './EmptyState';
+import { useStoreStore } from '@/features/stores/store/storesStore';
+import { StoreItem } from '../../map/components/StoreItem';
+import { EmptyState } from '../../../lib/components/EmptyState';
 
-interface StoreListSectionProps {
-    stores: Store[];
-    selectedCategories: string[];
-    onToggleHideStore: (id: number) => void;
-    onDeleteStore: (id: number) => void;
-}
-
-export function StoreListSection({
-                                     stores,
-                                     selectedCategories,
-                                     onToggleHideStore,
-                                     onDeleteStore,
-                                 }: StoreListSectionProps) {
-    const [isExpanded, setIsExpanded] = useState(true);
-    const scrollRef = useRef<HTMLDivElement>(null);
-
+export function StoreListSection() {
+    // 🔥 Zustand에서 직접 상태 가져오기
+    const { stores, toggleStoreHide, deleteStore } = useStoreStore();
     const {
+        selectedCategories,
         setHighlightedStore,
         setHighlightedRecommendation,
         highlightedStoreId,
-        activeTab, // 🔥 추가
+        activeTab,
     } = useMapStore();
+
+    const [isExpanded, setIsExpanded] = useState(true);
+    const scrollRef = useRef<HTMLDivElement>(null);
 
     // 필터링된 상가
     const filteredStores = stores.filter(store => {
@@ -40,7 +29,7 @@ export function StoreListSection({
         );
     });
 
-    // 🔥 자동 스크롤 (activeTab 체크 추가)
+    // 자동 스크롤
     useEffect(() => {
         if (highlightedStoreId && scrollRef.current && activeTab === 'result') {
             const highlightedElement = scrollRef.current.querySelector(`[data-store-id="${highlightedStoreId}"]`);
@@ -54,10 +43,10 @@ export function StoreListSection({
                         block: 'center',
                         inline: 'nearest'
                     });
-                }, isExpanded ? 100 : 400); // 🔥 이미 펼쳐져 있으면 짧게, 아니면 길게
+                }, isExpanded ? 100 : 400);
             }
         }
-    }, [highlightedStoreId, activeTab, isExpanded]); // 🔥 activeTab 의존성 추가
+    }, [highlightedStoreId, activeTab, isExpanded]);
 
     const handleStoreClick = (storeId: number) => {
         setHighlightedStore(storeId);
@@ -108,8 +97,8 @@ export function StoreListSection({
                                         key={`store-${store.id}`}
                                         store={store}
                                         isHighlighted={highlightedStoreId === store.id}
-                                        onToggleHide={onToggleHideStore}
-                                        onDelete={onDeleteStore}
+                                        onToggleHide={toggleStoreHide} // 🔥 직접 Zustand 액션
+                                        onDelete={deleteStore} // 🔥 직접 Zustand 액션
                                         onClick={handleStoreClick}
                                     />
                                 ))}

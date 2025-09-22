@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useMapStore } from '../store/mapStore';
-import { useBiskitData } from '../hooks/useBiskitData';
+import { useStoreStore } from '../../stores/store/storesStore';  // 🔥 추가
+import { useRecommendationStore } from '../../ai/store';  // 🔥 추가
+import { useBiskitData } from '../../stores/hooks/useBiskitData';
 import { useMapMarkers } from '../hooks/useMapMarkers';
 import { MapBounds, MapMarkerItem } from '../types';
 import { MapControls } from './MapControls';
@@ -18,18 +20,21 @@ declare global {
 }
 
 export function KakaoMap() {
+  // 🔥 분리된 store들에서 데이터 가져오기
+  const { stores } = useStoreStore();
+  const { recommendations } = useRecommendationStore();
   const {
-    stores,
-    recommendations,
     isSearching,
-    selectStore,
-    selectRecommendation,
-    setMapBounds,
     selectedCategories,
+    setMapBounds,
     setActiveTab,
     setHighlightedStore,
     setHighlightedRecommendation,
   } = useMapStore();
+
+  // Store 액션들
+  const { selectStore } = useStoreStore();
+  const { selectRecommendation } = useRecommendationStore();
 
   const { handlers } = useBiskitData(null);
 
@@ -44,13 +49,17 @@ export function KakaoMap() {
   const MAX_SEARCH_LEVEL = 2;
   const isSearchAvailable = currentLevel <= MAX_SEARCH_LEVEL;
 
-  // 필터링된 상가만 계산
+  // 필터링된 상가만 계산 - 🔥 안전한 기본값 적용
   const mapItems: MapMarkerItem[] = useMemo(() => {
-    if (selectedCategories.length === 0) {
+    if (!selectedCategories || selectedCategories.length === 0) {
       return [];
     }
 
-    const filteredStores = stores
+    // 🔥 안전한 기본값으로 undefined 체크
+    const safeStores = stores || [];
+    const safeRecommendations = recommendations || [];
+
+    const filteredStores = safeStores
         .filter(store => !store.hidden)
         .filter(store => {
           const categoryName = store.categoryName || store.bizCategoryCode;
@@ -69,21 +78,20 @@ export function KakaoMap() {
           closureProbability: undefined,
         }));
 
-    return [
-      ...filteredStores,
-      ...(recommendations.length > 0 ? recommendations : [])
-          .filter(rec => !rec.hidden)
-          .map(rec => ({
-            id: `recommendation-${rec.id}`,
-            name: rec.businessName,
-            category: rec.businessType,
-            address: rec.address,
-            coordinates: rec.coordinates,
-            type: 'recommendation' as const,
-            closureProbability: rec.closureProbability.year1,
-            riskLevel: rec.riskLevel,
-          }))
-    ];
+    const filteredRecommendations = safeRecommendations
+        .filter(rec => !rec.hidden)
+        .map(rec => ({
+          id: `recommendation-${rec.id}`,
+          name: rec.businessName,
+          category: rec.businessType,
+          address: rec.address,
+          coordinates: rec.coordinates,
+          type: 'recommendation' as const,
+          closureProbability: rec.closureProbability.year1,
+          riskLevel: rec.riskLevel,
+        }));
+
+    return [...filteredStores, ...filteredRecommendations];
   }, [stores, selectedCategories, recommendations]);
 
   // 마커 클릭 핸들러
@@ -93,7 +101,7 @@ export function KakaoMap() {
     setActiveTab('result');
 
     if (item.type === 'store') {
-      const store = stores.find(s => `store-${s.id}` === item.id);
+      const store = (stores || []).find(s => `store-${s.id}` === item.id);
       if (store) {
         selectStore(store);
         setHighlightedStore(store.id);
@@ -101,7 +109,7 @@ export function KakaoMap() {
         setTimeout(() => setHighlightedStore(null), 3000);
       }
     } else if (item.type === 'recommendation') {
-      const recommendation = recommendations.find(
+      const recommendation = (recommendations || []).find(
           r => `recommendation-${r.id}` === item.id,
       );
       if (recommendation) {
@@ -139,8 +147,8 @@ export function KakaoMap() {
   const { markers } = useMapMarkers({
     map,
     mapItems,
-    stores,
-    recommendations,
+    stores: stores || [],  // 🔥 안전한 기본값
+    recommendations: recommendations || [],  // 🔥 안전한 기본값
     onMarkerClick: handleMarkerClick,
     onClusterClick: handleClusterClick,
   });
