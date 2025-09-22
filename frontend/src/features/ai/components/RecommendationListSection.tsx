@@ -1,38 +1,34 @@
-// components/RecommendationListSection.tsx
-
 import { useState, useEffect, useRef } from 'react';
 import { Badge } from '@/lib/components/ui/badge';
 import { Heart, ChevronDown, ChevronUp } from 'lucide-react';
-import { RecommendationResult } from '@/features/ai/types/recommendation';
 import { useMapStore } from '@/features/map/store/mapStore';
+import { useRecommendationStore } from '@/features/ai/store';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 import { RecommendationItem } from './RecommendationItem';
 
-interface RecommendationListSectionProps {
-    recommendations: RecommendationResult[];
-    user: Record<string, any> | null;
-    onToggleFavorite: (id: string) => void;
-    onToggleHide: (id: string) => void;
-    onDelete: (id: string) => void;
-}
-
-export function RecommendationListSection({
-                                              recommendations,
-                                              user,
-                                              onToggleFavorite,
-                                              onToggleHide,
-                                              onDelete,
-                                          }: RecommendationListSectionProps) {
-    const [isExpanded, setIsExpanded] = useState(true);
-    const scrollRef = useRef<HTMLDivElement>(null);
+export function RecommendationListSection() {
+    // 🔥 Zustand에서 직접 상태 가져오기
+    const {
+        recommendations,
+        toggleRecommendationFavorite,
+        toggleRecommendationHide,
+        deleteRecommendation,
+    } = useRecommendationStore();
 
     const {
         setHighlightedStore,
         setHighlightedRecommendation,
         highlightedRecommendationId,
-        activeTab, // 🔥 추가
+        activeTab,
     } = useMapStore();
 
-    // 🔥 자동 스크롤 (activeTab 체크 추가)
+    // 🔥 직접 useAuth 사용
+    const { user } = useAuth();
+
+    const [isExpanded, setIsExpanded] = useState(true);
+    const scrollRef = useRef<HTMLDivElement>(null);
+
+    // 자동 스크롤
     useEffect(() => {
         if (highlightedRecommendationId && scrollRef.current && activeTab === 'result') {
             const highlightedElement = scrollRef.current.querySelector(`[data-recommendation-id="${highlightedRecommendationId}"]`);
@@ -46,10 +42,10 @@ export function RecommendationListSection({
                         block: 'center',
                         inline: 'nearest'
                     });
-                }, isExpanded ? 100 : 400); // 🔥 이미 펼쳐져 있으면 짧게, 아니면 길게
+                }, isExpanded ? 100 : 400);
             }
         }
-    }, [highlightedRecommendationId, activeTab, isExpanded]); // 🔥 activeTab 의존성 추가
+    }, [highlightedRecommendationId, activeTab, isExpanded]);
 
     const handleRecommendationClick = (recommendationId: string) => {
         setHighlightedRecommendation(recommendationId);
@@ -97,9 +93,9 @@ export function RecommendationListSection({
                                     recommendation={rec}
                                     isHighlighted={highlightedRecommendationId === rec.id}
                                     user={user}
-                                    onToggleFavorite={onToggleFavorite}
-                                    onToggleHide={onToggleHide}
-                                    onDelete={onDelete}
+                                    onToggleFavorite={toggleRecommendationFavorite} // 🔥 직접 Zustand 액션
+                                    onToggleHide={toggleRecommendationHide} // 🔥 직접 Zustand 액션
+                                    onDelete={deleteRecommendation} // 🔥 직접 Zustand 액션
                                     onClick={handleRecommendationClick}
                                 />
                             ))}

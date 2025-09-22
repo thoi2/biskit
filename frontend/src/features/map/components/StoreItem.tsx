@@ -3,7 +3,7 @@
 import { Button } from '@/lib/components/ui/button';
 import { Badge } from '@/lib/components/ui/badge';
 import { Eye, EyeOff, Trash2 } from 'lucide-react';
-import { Store } from '@/lib/types/store';
+import { Store } from '@/features/stores/types/store';
 
 interface StoreItemProps {
     store: Store;

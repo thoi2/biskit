@@ -1,6 +1,6 @@
 // lib/store-api.ts
-import apiClient from './apiClient';
-import type { Store } from '@/lib/types/store';
+import apiClient from '../../../lib/apiClient';
+import type { Store } from '@/features/stores/types/store';
 import type { ApiResponse, Bounds, InBoundsRequest } from '@/lib/types/api'; // 🔥 기존 타입 import
 import storeCategories from '@/lib/data/store_categories.json';
 

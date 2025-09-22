@@ -11,15 +11,17 @@ import { Button } from '@/lib/components/ui/button';
 import { Input } from '@/lib/components/ui/input';
 import { Badge } from '@/lib/components/ui/badge';
 import { ScrollArea } from '@/lib/components/ui/scroll-area';
-import { ChevronDown, ChevronRight, Search, Filter, X, CheckSquare, Square } from 'lucide-react';
+import { ChevronRight, Search, Filter, X, CheckSquare, Square } from 'lucide-react';
 import storeCategories from '@/lib/data/store_categories.json';
-import { useMapStore } from '@/features/map/store/mapStore'; // 🔥 추가
+import { useMapStore } from '@/features/map/store/mapStore';
+import { useStoreStore } from '@/features/stores/store/storesStore';
 
 type Raw = {
   상권업종대분류명: string;
   상권업종중분류명: string;
   상권업종소분류명: string;
 };
+
 type Tree = Record<string, Record<string, string[]>>;
 
 function makeTree(rows: Raw[]): Tree {
@@ -39,24 +41,10 @@ function makeTree(rows: Raw[]): Tree {
 
 const businessCategories = makeTree(storeCategories as Raw[]);
 
-interface Store {
-  categoryName?: string;
-  bizCategoryCode: string;
-}
-
-interface StoreFilterProps {
-  selectedCategories: string[];
-  onFilterChange: (categories: string[]) => void;
-  stores?: Store[]; // 🔥 이제 사용하지 않음 (호환성 유지용)
-}
-
-export function StoreFilter({
-                              selectedCategories,
-                              onFilterChange,
-                              stores = [] // 🔥 사용하지 않음
-                            }: StoreFilterProps) {
-  // 🔥 Zustand에서 전체 상가 데이터 직접 가져오기
-  const { stores: allStores } = useMapStore();
+export function StoreFilter() {
+  // 🔥 Zustand에서 직접 상태 가져오기
+  const { stores } = useStoreStore();
+  const { selectedCategories, setSelectedCategories } = useMapStore();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedMajor, setExpandedMajor] = useState<string[]>([]);
@@ -101,15 +89,14 @@ export function StoreFilter({
     setExpandedMinor(newExpandedMinor);
   }, [searchTerm]);
 
-  // 🔥 전체 상가 데이터로 개수 계산 (필터 선택과 무관하게 항상 전체 기준)
+  // 전체 상가 데이터로 개수 계산
   const storeCountCache = useMemo(() => {
     const cache: Record<string, number> = {};
 
-    // 전체 카테고리에 대해 미리 계산
     Object.entries(businessCategories).forEach(([major, minors]) => {
       Object.entries(minors).forEach(([minor, subs]) => {
         subs.forEach(sub => {
-          cache[sub] = allStores.filter(store => { // 🔥 allStores 사용
+          cache[sub] = stores.filter(store => {
             const storeCategoryName = store.categoryName || store.bizCategoryCode;
             return storeCategoryName.includes(sub);
           }).length;
@@ -118,7 +105,7 @@ export function StoreFilter({
     });
 
     return cache;
-  }, [allStores]); // 🔥 allStores 의존성
+  }, [stores]);
 
   // 캐시된 결과를 사용하는 함수들
   const getStoreCountForCategory = (categoryName: string) => {
@@ -166,9 +153,9 @@ export function StoreFilter({
     const isAllSelected = allSubs.every(sub => selectedCategories.includes(sub));
 
     if (isAllSelected) {
-      onFilterChange(selectedCategories.filter(cat => !allSubs.includes(cat)));
+      setSelectedCategories(selectedCategories.filter(cat => !allSubs.includes(cat)));
     } else {
-      onFilterChange([...new Set([...selectedCategories, ...allSubs])]);
+      setSelectedCategories([...new Set([...selectedCategories, ...allSubs])]);
     }
   };
 
@@ -177,9 +164,9 @@ export function StoreFilter({
     const isAllSelected = subs.every(sub => selectedCategories.includes(sub));
 
     if (isAllSelected) {
-      onFilterChange(selectedCategories.filter(cat => !subs.includes(cat)));
+      setSelectedCategories(selectedCategories.filter(cat => !subs.includes(cat)));
     } else {
-      onFilterChange([...new Set([...selectedCategories, ...subs])]);
+      setSelectedCategories([...new Set([...selectedCategories, ...subs])]);
     }
   };
 
@@ -223,17 +210,18 @@ export function StoreFilter({
       <Card className="h-full">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-          <span className="flex items-center gap-2">
-            <Filter className="w-5 h-5" /> 업종별 필터
-          </span>
+            <span className="flex items-center gap-2">
+              <Filter className="w-5 h-5" /> 업종별 필터
+            </span>
             {selectedCategories.length > 0 && (
                 <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onFilterChange([])}
-                    className="hover:bg-red-50 transition-colors"
+                    onClick={() => setSelectedCategories([])} // 🔥 직접 Zustand 액션 호출
+                    className="hover:bg-red-50 transition-colors text-red-600 hover:text-red-700"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-4 h-4 mr-1" />
+                  전체삭제
                 </Button>
             )}
           </CardTitle>
@@ -244,7 +232,7 @@ export function StoreFilter({
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-                placeholder={`업종 검색... (총 ${allStores.length}개 상가)`} // 🔥 allStores.length 사용
+                placeholder={`업종 검색... (총 ${stores.length}개 상가)`} // 🔥 직접 stores 사용
                 value={searchTerm}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setSearchTerm(e.target.value)
@@ -266,7 +254,7 @@ export function StoreFilter({
                           variant="secondary"
                           className="cursor-pointer hover:bg-red-100 transition-all duration-200 transform hover:scale-105"
                           onClick={() =>
-                              onFilterChange(selectedCategories.filter(c => c !== cat))
+                              setSelectedCategories(selectedCategories.filter(c => c !== cat)) // 🔥 직접 Zustand 액션 호출
                           }
                       >
                         {cat} <X className="w-3 h-3 ml-1" />
@@ -276,7 +264,7 @@ export function StoreFilter({
               </div>
           )}
 
-          {/* 🔥 애니메이션이 들어간 카테고리 트리 */}
+          {/* 카테고리 트리 */}
           <ScrollArea className="flex-1 h-[calc(100vh-520px)]">
             <div className="space-y-1">
               {filtered.map(([major, minors]) => {
@@ -299,8 +287,8 @@ export function StoreFilter({
                               }`}
                           />
                           <span className="flex-1 text-left">
-                        {highlightSearchTerm(major)}
-                      </span>
+                            {highlightSearchTerm(major)}
+                          </span>
                           <Badge
                               variant="outline"
                               className={`ml-auto transition-all duration-200 ${
@@ -328,10 +316,10 @@ export function StoreFilter({
                         </Button>
                       </div>
 
-                      {/* 부드러운 애니메이션으로 중분류 펼치기 */}
+                      {/* 중분류 펼치기 */}
                       <div
                           className={`ml-6 overflow-hidden transition-all duration-300 ease-in-out ${
-                              isMajorExpanded ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
+                              isMajorExpanded ? 'max-h-[9999px] opacity-100' : 'max-h-0 opacity-0'
                           }`}
                       >
                         <div className="space-y-1 py-1">
@@ -355,8 +343,8 @@ export function StoreFilter({
                                           }`}
                                       />
                                       <span className="flex-1 text-left">
-                                  {highlightSearchTerm(minor)}
-                                </span>
+                                        {highlightSearchTerm(minor)}
+                                      </span>
                                       <Badge
                                           variant="outline"
                                           className={`ml-auto transition-all duration-200 ${
@@ -384,10 +372,10 @@ export function StoreFilter({
                                     </Button>
                                   </div>
 
-                                  {/* 부드러운 애니메이션으로 소분류 펼치기 */}
+                                  {/* 소분류 펼치기 */}
                                   <div
                                       className={`ml-6 overflow-hidden transition-all duration-300 ease-in-out ${
-                                          isMinorExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+                                          isMinorExpanded ? 'max-h-[9999px] opacity-100' : 'max-h-0 opacity-0'
                                       }`}
                                   >
                                     <div className="space-y-1 py-1">
@@ -405,16 +393,16 @@ export function StoreFilter({
                                                         : 'hover:bg-gray-50'
                                                 }`}
                                                 onClick={() =>
-                                                    onFilterChange(
+                                                    setSelectedCategories( // 🔥 직접 Zustand 액션 호출
                                                         selectedCategories.includes(sub)
                                                             ? selectedCategories.filter(c => c !== sub)
                                                             : [...selectedCategories, sub],
                                                     )
                                                 }
                                             >
-                                      <span className="text-left flex-1">
-                                        {highlightSearchTerm(sub)}
-                                      </span>
+                                              <span className="text-left flex-1">
+                                                {highlightSearchTerm(sub)}
+                                              </span>
                                               {subCount > 0 && (
                                                   <Badge
                                                       variant="outline"

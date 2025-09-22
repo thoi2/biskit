@@ -1,7 +1,5 @@
-// components/FavoritesSection.tsx
-
 import { useState, useEffect } from 'react';
-import { Heart, ChevronDown, ChevronUp, MapPin, Trash2 } from 'lucide-react';
+import { Heart, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { Badge } from '@/lib/components/ui/badge';
 import { Button } from '@/lib/components/ui/button';
 import { useAuth } from '@/features/auth/hooks/useAuth';
@@ -25,11 +23,10 @@ interface FavoriteRecommendation {
     createdAt: string;
 }
 
-interface FavoritesSectionProps {
-    user: Record<string, any> | null;
-}
+export function FavoritesSection() {
+    // 🔥 직접 useAuth 사용
+    const { user } = useAuth();
 
-export function FavoritesSection({ user }: FavoritesSectionProps) {
     const [isExpanded, setIsExpanded] = useState(true);
     const [favorites, setFavorites] = useState<FavoriteRecommendation[]>([]);
     const [loading, setLoading] = useState(false);
