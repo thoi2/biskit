@@ -3,6 +3,10 @@
 # - Jenkins 등 CI/CD를 통해 실제 서버에 배포할 때 사용합니다.
 # ===================================================================
 services:
+  ai:
+    restart: always
+    volumes:
+      - /home/ubuntu/data:/app/data
   backend:
     # 운영 환경에서는 기본 Dockerfile을 사용합니다.
     build:
