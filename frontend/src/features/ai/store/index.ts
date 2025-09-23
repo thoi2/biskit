@@ -1,91 +1,45 @@
 import { create } from 'zustand';
-import { RecommendationResult } from '@/features/ai/types/recommendation';
+import type { SingleBuildingRecommendationResponse } from '@/features/ai/types';
 
-// Recommendation 상태
-interface RecommendationState {
-    recommendations: RecommendationResult[];
-    selectedRecommendation: RecommendationResult | null;
+// 스토어의 상태(State) 타입
+interface RecommendState {
+  // 3가지 API의 응답 타입이 다르므로, 이를 모두 받을 수 있도록 타입을 정의합니다.
+  // getRangeRecommendationAPI는 배열을 반환할 수 있으므로 배열 타입도 추가합니다.
+  recommendationResult:
+    | SingleBuildingRecommendationResponse
+    | SingleBuildingRecommendationResponse[]
+    | null;
+  isLoading: boolean;
+  error: string | null;
 }
 
-// Recommendation 액션
-interface RecommendationActions {
-    setRecommendations: (recommendations: RecommendationResult[]) => void;
-    selectRecommendation: (recommendation: RecommendationResult | null) => void;
-    addRecommendation: (recommendation: RecommendationResult) => void;
-    updateRecommendation: (id: string, updates: Partial<RecommendationResult>) => void;
-    toggleRecommendationFavorite: (id: string) => void;
-    toggleRecommendationHide: (id: string) => void;
-    deleteRecommendation: (id: string) => void;
-    clearRecommendations: () => void;
+// 스토어의 액션(Actions) 타입
+interface RecommendActions {
+  startRequest: () => void;
+  setRequestSuccess: (
+    result:
+      | SingleBuildingRecommendationResponse
+      | SingleBuildingRecommendationResponse[],
+  ) => void;
+  setRequestError: (error: string) => void;
+  clearResult: () => void;
 }
 
-// Recommendation Store
-export const useRecommendationStore = create<RecommendationState & RecommendationActions>((set, get) => ({
-    // 초기 상태
-    recommendations: [],
-    selectedRecommendation: null,
-
-    // 액션들
-    setRecommendations: (recommendations) => set({ recommendations }),
-    selectRecommendation: (recommendation) => set({ selectedRecommendation: recommendation }),
-
-    addRecommendation: (recommendation) => set((state) => ({
-        recommendations: [...state.recommendations, recommendation]
-    })),
-
-    updateRecommendation: (id, updates) => set((state) => ({
-        recommendations: state.recommendations.map(rec =>
-            rec.id === id
-                ? { ...rec, ...updates }
-                : rec
-        )
-    })),
-
-    toggleRecommendationFavorite: (id) => set((state) => ({
-        recommendations: state.recommendations.map(rec =>
-            rec.id === id
-                ? { ...rec, isFavorite: !rec.isFavorite }
-                : rec
-        )
-    })),
-
-    toggleRecommendationHide: (id) => set((state) => ({
-        recommendations: state.recommendations.map(rec =>
-            rec.id === id
-                ? { ...rec, hidden: !rec.hidden }
-                : rec
-        )
-    })),
-
-    deleteRecommendation: (id) => set((state) => ({
-        recommendations: state.recommendations.filter(rec => rec.id !== id),
-        // 선택된 추천이 삭제되는 경우 선택 해제
-        selectedRecommendation: state.selectedRecommendation?.id === id ? null : state.selectedRecommendation,
-    })),
-
-    clearRecommendations: () => set({
-        recommendations: [],
-        selectedRecommendation: null,
-    }),
-}));
-
-// 🔥 Recommendation Selector 함수들
-export const useRecommendationSelectors = () => {
-    const { recommendations } = useRecommendationStore();
-
-    return {
-        // 필터링된 추천들 (숨김 제외)
-        visibleRecommendations: recommendations.filter(rec => !rec.hidden),
-
-        // 찜한 추천들
-        favoriteRecommendations: recommendations.filter(rec => rec.isFavorite),
-
-        // 통계 정보
-        recommendationStats: {
-            totalRecommendations: recommendations.length,
-            hiddenRecommendations: recommendations.filter(r => r.hidden).length,
-            favoriteRecommendations: recommendations.filter(r => r.isFavorite).length,
-            visibleRecommendations: recommendations.filter(r => !r.hidden).length,
-        }
-    };
+const initialState: RecommendState = {
+  recommendationResult: null,
+  isLoading: false,
+  error: null,
 };
+
+// 스토어 생성
+export const useRecommendationStore = create<RecommendState & RecommendActions>(
+  set => ({
+    ...initialState,
+    startRequest: () =>
+      set({ isLoading: true, error: null, recommendationResult: null }),
+    setRequestSuccess: result =>
+      set({ isLoading: false, recommendationResult: result }),
+    setRequestError: error => set({ isLoading: false, error }),
+    clearResult: () => set(initialState),
+  }),
+);
