@@ -3,7 +3,7 @@ import { Badge } from '@/lib/components/ui/badge';
 import { MapPin, ChevronDown, ChevronUp } from 'lucide-react';
 import { useMapStore } from '@/features/map/store/mapStore';
 import { useStoreStore } from '@/features/stores/store/storesStore';
-import { StoreItem } from '../../map/components/StoreItem';
+import { StoreItem } from './StoreItem';
 import { EmptyState } from '../../../lib/components/EmptyState';
 
 export function StoreListSection() {
