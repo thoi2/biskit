@@ -31,6 +31,8 @@ services:
       - KT_API_KEY=${KT_API_KEY}
       - PUBLIC_DATA_API_KEY=${PUBLIC_DATA_API_KEY}
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+      - AI_GMS_API_KEY=${AI_GMS_API_KEY}
+      - AI_GMS_BASE_URL=${AI_GMS_BASE_URL}
     depends_on:
       mysql:
         condition: service_healthy
