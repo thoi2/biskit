@@ -14,6 +14,7 @@ import { Label } from '@/lib/components/ui/label';
 import { Target, BarChart3 } from 'lucide-react';
 import { useRecommendationForm } from '../hooks/useRecommendationForm'; // ✅ 1. 새로 만든 폼 훅 import
 import { CategorySearch } from './CategorySearch'; // ✅ 2. 업종 검색 UI를 별도 컴포넌트로 분리 (선택사항)
+import { useMapStore } from '@/features/map/store/mapStore';
 
 export function RecommendationPanel() {
   // ✅ 3. 훅을 호출하여 상태와 함수를 모두 가져옴
@@ -26,6 +27,7 @@ export function RecommendationPanel() {
     error,
     handleSubmit,
   } = useRecommendationForm();
+  const { coordinates, setCoordinates } = useMapStore();
 
   return (
     <div className="space-y-4">
