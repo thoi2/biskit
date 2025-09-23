@@ -3,6 +3,7 @@ package com.example.backend.user.controller;
 import com.example.backend.common.exception.BusinessException;
 import com.example.backend.common.exception.ErrorCode;
 import com.example.backend.common.response.ApiResponse;
+import com.example.backend.common.security.authentication.jwt.JwtUserInfo;
 import com.example.backend.user.dto.*;
 import com.example.backend.user.entity.User;
 import com.example.backend.user.repository.UserRepository;
@@ -189,12 +190,21 @@ public class UserIndustryController {
         }
 
         try {
+            // Principal에서 JwtUserInfo 객체 직접 가져오기
+            Object principal = authentication.getPrincipal();
+            if (principal instanceof JwtUserInfo userInfo) {
+                return Long.parseLong(userInfo.userId());
+            }
+
+            // 혹시 문자열로 온 경우 (backup)
             return Long.parseLong(authentication.getName());
+
         } catch (NumberFormatException e) {
-            log.error("사용자 ID 파싱 실패: {}", authentication.getName(), e);
+            log.error("사용자 ID 파싱 실패: {}", authentication.getPrincipal(), e);
             throw new BusinessException(ErrorCode.AUTH_INVALID_SIGNATURE);
         }
     }
+
 
     /**
      * 기본적인 업종 형식만 검증 (프론트를 신뢰하는 접근)
