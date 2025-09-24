@@ -44,13 +44,16 @@ public class Room {
     @Column(name = "creator_username", nullable = false, length = 50)
     private String creatorUsername;
 
+    @Column(name = "big_category", length = 20)
+    private String bigCategory; // 상권업종대분류명 (소매, 음식, 교육 등)
+
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     private Boolean isActive = true;
 
     @Column(name = "max_participants")
     @Builder.Default
-    private Integer maxParticipants = 100; // 최대 참여자 수
+    private Integer maxParticipants = 1000; // 최대 참여자 수
 
     @Column(name = "current_participants")
     @Builder.Default

@@ -1,4 +1,4 @@
-package com.example.backend.chat.dto;
+package com.example.backend.chat.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Builder;
@@ -15,6 +15,7 @@ public record RoomResponse(
     String roomName,
     String creatorId,
     String creatorUsername,
+    String bigCategory,
     Integer maxParticipants,
     Integer currentParticipants,
     Boolean isActive,

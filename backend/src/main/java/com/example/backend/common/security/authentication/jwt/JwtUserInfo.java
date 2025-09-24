@@ -13,13 +13,15 @@ public record JwtUserInfo(
     String userId,
     String username,
     String oauth2Provider,
-    String oauth2ProviderId
+    String oauth2ProviderId,
+    String profileImageUrl
 ) {
     public JwtUserInfo {
         validateRequired(userId, "User ID");
         validateRequired(username, "Username");
         validateRequired(oauth2Provider, "OAuth2 provider");
         validateRequired(oauth2ProviderId, "OAuth2 provider ID");
+        // profileImageUrl은 선택적 필드이므로 검증하지 않음
     }
 
     private static void validateRequired(String value, String fieldName) {

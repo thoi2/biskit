@@ -9,13 +9,13 @@ export const logoutAPI = async () => {
 // 인증 상태 확인 API
 export const checkAuthStatusAPI = async () => {
   const response = await apiClient.get('/auth/check');
-  return response.data.body;
+  return response.data; // apiClient에서 이미 .body를 추출함
 };
 
 // 구글 로그인 API: 백엔드로 인증 코드를 전송합니다.
 export const googleLoginAPI = async (code: string) => {
   // 백엔드의 구글 로그인 처리 엔드포인트는 /auth/google 이라고 가정
-  const response = await apiClient.post('auth/oauth2/google/login', { code });
+  const response = await apiClient.post('/auth/oauth2/google/login', { code });
   return response.data.body; // 성공 시 백엔드가 보내주는 유저 정보를 반환
 };
 

@@ -17,47 +17,46 @@ public class ChatMessage {
     private String id;
     private String type; // "JOIN", "CHAT", "LEAVE", "TYPING", "HISTORY", "ERROR"
     private String roomId;
-    private String sender;
+    private String senderId;        // 사용자 ID (구분용)
+    private String senderName;      // 사용자 이름 (표시용)
+    private String profileImageUrl; // 프로필 이미지 URL
     private String content;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime timestamp;
 
-    // 편의 생성자들
-    public ChatMessage(String type, String roomId, String sender, String content) {
-        this.type = type;
-        this.roomId = roomId;
-        this.sender = sender;
-        this.content = content;
-        this.timestamp = LocalDateTime.now();
-    }
-
-    public static ChatMessage createChatMessage(String roomId, String sender, String content) {
+    public static ChatMessage createChatMessage(String roomId, String senderId, String senderName, String profileImageUrl, String content) {
         return ChatMessage.builder()
             .type("CHAT")
             .roomId(roomId)
-            .sender(sender)
+            .senderId(senderId)
+            .senderName(senderName)
+            .profileImageUrl(profileImageUrl)
             .content(content)
             .timestamp(LocalDateTime.now())
             .build();
     }
 
-    public static ChatMessage createJoinMessage(String roomId, String sender) {
+    public static ChatMessage createJoinMessage(String roomId, String senderId, String senderName, String profileImageUrl) {
         return ChatMessage.builder()
             .type("JOIN")
             .roomId(roomId)
-            .sender(sender)
-            .content(sender + "님이 입장했습니다.")
+            .senderId(senderId)
+            .senderName(senderName)
+            .profileImageUrl(profileImageUrl)
+            .content(senderName + "님이 입장했습니다.")
             .timestamp(LocalDateTime.now())
             .build();
     }
 
-    public static ChatMessage createLeaveMessage(String roomId, String sender) {
+    public static ChatMessage createLeaveMessage(String roomId, String senderId, String senderName, String profileImageUrl) {
         return ChatMessage.builder()
             .type("LEAVE")
             .roomId(roomId)
-            .sender(sender)
-            .content(sender + "님이 나갔습니다.")
+            .senderId(senderId)
+            .senderName(senderName)
+            .profileImageUrl(profileImageUrl)
+            .content(senderName + "님이 나갔습니다.")
             .timestamp(LocalDateTime.now())
             .build();
     }
@@ -66,17 +65,20 @@ public class ChatMessage {
         return ChatMessage.builder()
             .type("ERROR")
             .roomId(roomId)
-            .sender("시스템")
+            .senderId("system")
+            .senderName("시스템")
             .content(content)
             .timestamp(LocalDateTime.now())
             .build();
     }
 
-    public static ChatMessage createHistoryMessage(String roomId, String sender, String content, LocalDateTime timestamp) {
+    public static ChatMessage createHistoryMessage(String roomId, String senderId, String senderName, String profileImageUrl, String content, LocalDateTime timestamp) {
         return ChatMessage.builder()
             .type("HISTORY")
             .roomId(roomId)
-            .sender(sender)
+            .senderId(senderId)
+            .senderName(senderName)
+            .profileImageUrl(profileImageUrl)
             .content(content)
             .timestamp(timestamp)
             .build();

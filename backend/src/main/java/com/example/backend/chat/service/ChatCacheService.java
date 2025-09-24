@@ -187,7 +187,7 @@ public class ChatCacheService {
     private List<ChatMessage> getFromDatabase(String roomId) {
         try {
             List<ChatMessageEntity> entities = chatMessageRepository
-                .findRecentMessagesByRoomId(roomId, PageRequest.of(0, REDIS_CACHE_SIZE));
+                .findRecentMessages(roomId, PageRequest.of(0, REDIS_CACHE_SIZE));
 
             // 시간순으로 정렬 (오래된 것부터)
             return entities.stream()
@@ -302,7 +302,8 @@ public class ChatCacheService {
             .id(entity.getMessageId())
             .type(entity.getMessageType())
             .roomId(entity.getRoomId())
-            .sender(entity.getSender())
+            .senderId(entity.getSenderId())
+            .senderName(entity.getSenderName())
             .content(entity.getContent())
             .timestamp(entity.getCreatedAt())
             .build();

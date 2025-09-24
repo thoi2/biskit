@@ -3,6 +3,7 @@ package com.example.backend.common.security.filter;
 import com.example.backend.common.security.authentication.jwt.JwtUserInfo;
 import com.example.backend.common.security.authentication.jwt.JwtUtil;
 import com.example.backend.common.security.authentication.jwt.service.RefreshTokenService;
+import com.example.backend.common.security.config.SecurityPaths;
 import com.example.backend.common.security.exception.JwtAuthenticationExceptionHandler;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -20,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
@@ -41,10 +43,36 @@ import java.util.Map;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String JWT_COOKIE_NAME = "accessToken";
+    private static final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     private final JwtUtil jwtUtil;
     private final RefreshTokenService refreshTokenService;
     private final JwtAuthenticationExceptionHandler exceptionHandler;
+
+    /**
+     * 요청이 이 필터에서 처리되지 않아야 하는지 결정
+     * PUBLIC_PATHS와 PUBLIC_GET_PATHS에 포함된 경로나 OPTIONS 메서드는 필터링하지 않음
+     *
+     * @param request HTTP 요청 객체
+     * @return 필터링하지 않아야 하면 true, 필터링해야 하면 false
+     * @throws ServletException 서블릿 예외 발생 시
+     */
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        String method = request.getMethod();
+
+        if ("OPTIONS".equals(method)) {
+            return true;
+        }
+
+        boolean isPublicPath = Arrays.stream(SecurityPaths.PUBLIC_PATHS)
+            .anyMatch(pattern -> pathMatcher.match(pattern, path));
+        boolean isPublicGetPath = "GET".equals(method) && Arrays.stream(SecurityPaths.PUBLIC_GET_PATHS)
+            .anyMatch(pattern -> pathMatcher.match(pattern, path));
+
+        return isPublicPath || isPublicGetPath;
+    }
 
     /**
      * 각 HTTP 요청에 대해 JWT 인증을 처리하는 메인 메서드
@@ -63,26 +91,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String token = extractTokenFromCookie(request);
 
-            if (!StringUtils.hasText(token)) {
-                exceptionHandler.handleAccessTokenMissing(response, request.getRequestURI());
-                return;
+            // JWT 토큰이 있는 경우에만 인증 처리
+            if (StringUtils.hasText(token)) {
+                Claims tokenClaims = jwtUtil.extractClaims(token);
+
+                if (!validateAccessToken(tokenClaims, response)) {
+                    return;
+                }
+
+                // RTR 보안: 리프레시 토큰을 액세스 토큰으로 잘못 사용하는 경우 감지
+                if (isRefreshTokenMisused(tokenClaims, response)) {
+                    return;
+                }
+
+                JwtUserInfo userInfo = jwtUtil.createJwtUserInfo(tokenClaims);
+                UsernamePasswordAuthenticationToken authentication = createAuthentication(userInfo);
+                SecurityContextHolder.getContext().setAuthentication(authentication);
             }
-
-            Claims tokenClaims = jwtUtil.extractClaims(token);
-
-            if (!validateAccessToken(tokenClaims, response)) {
-                return;
-            }
-
-            // RTR 보안: 리프레시 토큰을 액세스 토큰으로 잘못 사용하는 경우 감지
-            if (isRefreshTokenMisused(tokenClaims, response)) {
-                return;
-            }
-
-            JwtUserInfo userInfo = jwtUtil.createJwtUserInfo(tokenClaims);
-
-            UsernamePasswordAuthenticationToken authentication = createAuthentication(userInfo);
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            // JWT 토큰이 없어도 다음 필터로 진행할 수 있지만, shouldNotFilter에서 이미 필터링됨
 
         } catch (MissingClaimException e) {
             exceptionHandler.handleAccessTokenMissingRequiredClaim(response, e.getClaimName());
@@ -107,7 +133,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    // shouldNotFilter 제거: SecurityConfig에서 이미 PUBLIC_PATHS를 처리하므로 중복 불필요
 
     /**
      * JWT 사용자 정보를 기반으로 Spring Security Authentication 객체 생성
@@ -186,10 +211,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 리프레시 토큰이 액세스 토큰으로 사용되는 경우
         if ("REFRESH".equals(tokenType)) {
             String userId = tokenClaims.get("user_id", String.class);
-            
+
             // 보안 로그 기록
             log.error("RTR 보안 위반: 리프레시 토큰이 액세스 토큰으로 잘못 사용됨. userId: {}", userId);
-            
+
             // 해당 사용자의 모든 리프레시 토큰 무효화 (보안 조치)
             if (userId != null) {
                 try {
