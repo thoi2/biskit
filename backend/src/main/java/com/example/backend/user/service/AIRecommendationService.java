@@ -8,21 +8,36 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class AIRecommendationService {
 
-    private final WebClient aiWebClient;
+    private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+
+    @Value("${ai.gms.api-key}")
+    private String apiKey;
+
+    @Value("${ai.gms.base-url}")
+    private String baseUrl;
 
     // 미리 준비된 창업 관련 질문들
     private static final List<String> PREDEFINED_QUESTIONS = List.of(
@@ -33,36 +48,67 @@ public class AIRecommendationService {
             "리스크가 적고 수익성이 높은 업종을 우선순위로 추천해주세요."
     );
 
-    public Mono<AIRecommendationResponse> generateRecommendations(AIRecommendationRequest request, Long userId) {
-        String prompt = buildPrompt(request, userId);
+    @Async
+    public CompletableFuture<AIRecommendationResponse> generateRecommendations(
+            AIRecommendationRequest request, Long userId) {
 
-        Map<String, Object> requestBody = Map.of(
-                "model", "gpt-5-mini",
-                "messages", List.of(
-                        Map.of("role", "developer", "content", "Answer in Korean"),
-                        Map.of("role", "system", "content", getSystemPrompt()),
-                        Map.of("role", "user", "content", prompt)
-                ),
-                "max_completion_tokens", 2000  // max_tokens → max_completion_tokens 변경
-        );
+        log.info("🎯 AI 서비스 @Async 시작: userId={}, thread={}", userId, Thread.currentThread().getName());
 
-        return aiWebClient.post()
-                .uri("/api.openai.com/v1/chat/completions")
-                .bodyValue(requestBody)
-                .retrieve()
-                .onStatus(status -> status.isError(), response ->
-                        response.bodyToMono(String.class)
-                                .map(body -> {
-                                    log.error("GMS API 오류: status={}, body={}", response.statusCode(), body);
-                                    return new RuntimeException("GMS API 오류: " + body);
-                                })
-                )
-                .bodyToMono(Map.class)
-                .map(this::parseResponse)
-                .doOnSuccess(response -> log.info("AI 추천 완료: userId={}", userId))
-                .doOnError(error -> log.error("AI API 호출 실패: userId={}", userId, error))
-                .onErrorReturn(createErrorResponse());
+        try {
+            final String AI_API_URL = "https://gms.ssafy.io/gmsapi/api.openai.com/v1/chat/completions";
+
+            String prompt = buildPrompt(request, userId);
+            String fullPrompt = getSystemPrompt() + "\n\n" + prompt;
+
+            String jsonBody = String.format("""
+        {
+          "model": "gpt-5-mini",
+          "messages": [
+            {
+              "role": "developer",
+              "content": "Answer in Korean"
+            },
+            {
+              "role": "user",
+              "content": "%s"
+            }
+          ],
+          "max_completion_tokens": 2000
+        }
+        """, fullPrompt.replace("\"", "\\\"").replace("\n", "\\n"));
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Authorization", "Bearer " + apiKey);
+
+            HttpEntity<String> entity = new HttpEntity<>(jsonBody, headers);
+
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    AI_API_URL, HttpMethod.POST, entity, Map.class);
+
+            log.info("✅ AI API 응답 받음: status={}", response.getStatusCode());
+
+            // ✅ 실제 AI 응답 파싱
+            AIRecommendationResponse result = parseResponse(response.getBody());
+
+            log.info("✅ AI 추천 완료: userId={}, thread={}", userId, Thread.currentThread().getName());
+            return CompletableFuture.completedFuture(result);
+
+        } catch (Exception e) {
+            log.error("🚨 AI API 호출 실패: userId={}, error={}", userId, e.getMessage(), e);
+
+            if (e instanceof HttpClientErrorException) {
+                HttpClientErrorException httpError = (HttpClientErrorException) e;
+                log.error("📄 응답 본문: {}", httpError.getResponseBodyAsString());
+            }
+
+            return CompletableFuture.completedFuture(createErrorResponse());
+        }
     }
+
+
+
+
 
     private String getSystemPrompt() {
         return """

@@ -12,13 +12,20 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.async.DeferredResult;
 import reactor.core.publisher.Mono;
+import reactor.util.context.Context;
 
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/v1/user/industry")
@@ -147,37 +154,78 @@ public class UserIndustryController {
 
     /**
      * AI 기반 업종 추천 (POST /api/v1/user/industry/ai-recommend)
-     * JWT 토큰에서 사용자 ID 추출
+     * 비동기 처리 + ResponseBodyAdvice 호환
+     */
+    /**
+     * AI 기반 업종 추천 (POST /api/v1/user/industry/ai-recommend)
+     * SecurityContext 보존하여 Reactive 환경에서 인증 정보 유지
+     */
+    /**
+     * AI 기반 업종 추천 (POST /api/v1/user/industry/ai-recommend)
+     * SecurityContext 보존하여 Reactive 환경에서 인증 정보 유지
+     */
+    /**
+     * AI 기반 업종 추천 (POST /api/v1/user/industry/ai-recommend)
+     * Spring Security Context 완벽 전파 방식
+     */
+    /**
+     * AI 기반 업종 추천 (POST /api/v1/user/industry/ai-recommend)
+     * Spring Security + Reactive 완벽 호환
+     */
+    /**
+     * AI 기반 업종 추천 (POST /api/v1/user/industry/ai-recommend)
+     * RestTemplate + @Async 방식으로 Spring Security 완벽 호환
      */
     @PostMapping("/ai-recommend")
-    public Mono<ApiResponse<AIRecommendationResponse>> generateAIRecommendations(
+    public DeferredResult<ApiResponse<AIRecommendationResponse>> generateAIRecommendations(
             @Valid @RequestBody AIRecommendationRequest request) {
 
         Long userId = getCurrentUserId();
+        log.info("🎯 컨트롤러 진입! AI 업종 추천 요청: userId={}", userId);
 
-        log.info("AI 업종 추천 요청: userId={}", userId);
+        // DeferredResult 생성 (30초 타임아웃)
+        DeferredResult<ApiResponse<AIRecommendationResponse>> deferredResult =
+                new DeferredResult<>(30000L);
 
         // 사용자 존재 확인
         if (!userRepository.existsById(userId)) {
-            return Mono.just(ApiResponse.of(AIRecommendationResponse.builder()
+            deferredResult.setResult(ApiResponse.of(AIRecommendationResponse.builder()
                     .success(false)
                     .errorMessage("사용자를 찾을 수 없습니다.")
+                    .recommendations(new ArrayList<>())
                     .build()));
+            return deferredResult;
         }
 
+        // 비동기 처리
+        aiRecommendationService.generateRecommendations(request, userId)
+                .thenAccept(response -> {
+                    System.out.println("🎯 응답 매핑 시작");
+                    // 디버깅 로그들...
 
-        return aiRecommendationService.generateRecommendations(request, userId)
-                .map(response -> {
-                    if (response.isSuccess()) {
-                        log.info("AI 추천 성공: userId={}, 추천 업종 수={}",
-                                userId,
-                                response.getRecommendations() != null ? response.getRecommendations().size() : 0);
-                    } else {
-                        log.warn("AI 추천 실패: userId={}, error={}", userId, response.getErrorMessage());
-                    }
-                    return ApiResponse.of(response);
+                    ApiResponse<AIRecommendationResponse> apiResponse = ApiResponse.of(response);
+                    System.out.println("🎯 DeferredResult 설정 완료");
+                    deferredResult.setResult(apiResponse);  // ✅ DeferredResult로 결과 설정
+                })
+                .exceptionally(throwable -> {
+                    System.out.println("🚨 예외: " + throwable.getMessage());
+                    deferredResult.setResult(ApiResponse.of(AIRecommendationResponse.builder()
+                            .success(false)
+                            .errorMessage("AI 서비스 일시적 오류입니다.")
+                            .recommendations(new ArrayList<>())
+                            .build()));
+                    return null;
                 });
+
+        return deferredResult;  // ✅ DeferredResult 반환
     }
+
+
+
+
+
+
+
 
     /**
      * JWT 토큰에서 현재 사용자 ID 추출
@@ -204,7 +252,6 @@ public class UserIndustryController {
             throw new BusinessException(ErrorCode.AUTH_INVALID_SIGNATURE);
         }
     }
-
 
     /**
      * 기본적인 업종 형식만 검증 (프론트를 신뢰하는 접근)

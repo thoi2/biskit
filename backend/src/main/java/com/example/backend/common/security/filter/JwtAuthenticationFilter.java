@@ -157,6 +157,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         return authentication;
     }
+    @Override
+    protected boolean shouldNotFilterAsyncDispatch() {
+        return false;  // ASYNC 디스패치에서도 JWT 필터 실행
+    }
+
+    @Override
+    protected boolean shouldNotFilterErrorDispatch() {
+        return false;  // ERROR 디스패치에서도 JWT 필터 실행
+    }
+
 
     /**
      * HTTP 요청의 쿠키에서 JWT 토큰을 추출
