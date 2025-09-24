@@ -32,7 +32,7 @@ import static com.example.backend.common.security.config.SecurityPaths.PUBLIC_GE
 import static com.example.backend.common.security.config.SecurityPaths.PUBLIC_PATHS;
 
 /**
- * JWT 기반 인증을 처리하는 필터 클래스
+ * JWT 기반 인증을 처리하는 필터 클래스 (디버깅 로그 강화)
  *
  * HTTP 요청의 쿠키에서 JWT 토큰을 추출하고 검증하여
  * Spring Security의 SecurityContext에 인증 정보를 설정합니다.
@@ -51,102 +51,158 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtAuthenticationExceptionHandler exceptionHandler;
 
     /**
-     * 각 HTTP 요청에 대해 JWT 인증을 처리하는 메인 메서드
+     * 각 HTTP 요청에 대해 JWT 인증을 처리하는 메인 메서드 (디버깅 강화)
      * 쿠키에서 JWT 토큰을 추출하고 검증하여 인증 정보를 설정합니다.
-     *
-     * @param request HTTP 요청 객체
-     * @param response HTTP 응답 객체
-     * @param filterChain 필터 체인
-     * @throws ServletException 서블릿 예외 발생 시
-     * @throws IOException I/O 예외 발생 시
      */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-        throws ServletException, IOException {
+            throws ServletException, IOException {
+
+        String requestURI = request.getRequestURI();
+        String method = request.getMethod();
+
+        System.out.println("🔍 JWT 필터 진입: " + method + " " + requestURI);
+        System.out.println("🔍 요청 헤더 확인:");
+        System.out.println("  - User-Agent: " + request.getHeader("User-Agent"));
+        System.out.println("  - Content-Type: " + request.getHeader("Content-Type"));
+
+        // 쿠키 정보 출력
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            System.out.println("🍪 쿠키 정보:");
+            for (Cookie cookie : cookies) {
+                if ("accessToken".equals(cookie.getName())) {
+                    System.out.println("  - " + cookie.getName() + ": " +
+                            (cookie.getValue().length() > 20 ?
+                                    cookie.getValue().substring(0, 20) + "... (길이: " + cookie.getValue().length() + ")" :
+                                    cookie.getValue()));
+                } else {
+                    System.out.println("  - " + cookie.getName() + ": " + cookie.getValue());
+                }
+            }
+        } else {
+            System.out.println("🍪 쿠키 없음");
+        }
 
         try {
             String token = extractTokenFromCookie(request);
+            System.out.println("🔐 쿠키에서 토큰 추출: " + (token != null ? "있음 (길이: " + token.length() + ")" : "없음"));
 
             if (!StringUtils.hasText(token)) {
+                System.out.println("🚨 토큰 없음 - 401 에러 응답 준비");
+                System.out.println("🚨 응답 상태: " + response.getStatus());
                 exceptionHandler.handleAccessTokenMissing(response, request.getRequestURI());
+                System.out.println("🚨 401 에러 응답 완료 - 필터 체인 중단");
                 return;
             }
 
+            System.out.println("✅ 토큰 검증 시작");
             Claims tokenClaims = jwtUtil.extractClaims(token);
+            System.out.println("✅ 토큰 클레임 추출 성공");
+            System.out.println("  - subject: " + tokenClaims.getSubject());
+            System.out.println("  - user_id: " + tokenClaims.get("user_id"));
+            System.out.println("  - token_type: " + tokenClaims.get("token_type"));
 
             if (!validateAccessToken(tokenClaims, response)) {
+                System.out.println("❌ ACCESS 토큰 검증 실패");
                 return;
             }
 
             // RTR 보안: 리프레시 토큰을 액세스 토큰으로 잘못 사용하는 경우 감지
             if (isRefreshTokenMisused(tokenClaims, response)) {
+                System.out.println("❌ 리프레시 토큰 오남용 감지");
                 return;
             }
 
+            System.out.println("✅ 토큰 검증 완료 - 사용자 정보 생성");
             JwtUserInfo userInfo = jwtUtil.createJwtUserInfo(tokenClaims);
 
             UsernamePasswordAuthenticationToken authentication = createAuthentication(userInfo);
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
+            System.out.println("✅ 인증 성공 - SecurityContext 설정 완료");
+            System.out.println("  - Principal: " + authentication.getPrincipal());
+            System.out.println("  - Name: " + authentication.getName());
+
         } catch (MissingClaimException e) {
+            System.out.println("🚨 JWT 클레임 누락: " + e.getClaimName());
             exceptionHandler.handleAccessTokenMissingRequiredClaim(response, e.getClaimName());
             return;
         } catch (ExpiredJwtException e) {
+            System.out.println("🚨 JWT 만료: " + e.getMessage());
             exceptionHandler.handleAccessTokenExpired(response, e.getMessage());
             return;
         } catch (SignatureException e) {
+            System.out.println("🚨 JWT 서명 오류: " + e.getMessage());
             exceptionHandler.handleAccessTokenInvalidSignature(response, e.getMessage());
             return;
         } catch (MalformedJwtException e) {
+            System.out.println("🚨 JWT 형식 오류: " + e.getMessage());
             exceptionHandler.handleAccessTokenMalformed(response, e.getMessage());
             return;
         } catch (JwtException e) {
+            System.out.println("🚨 JWT 일반 오류: " + e.getMessage());
             exceptionHandler.handleAccessTokenInvalid(response, e.getMessage());
             return;
         } catch (Exception e) {
+            System.out.println("🚨 예상치 못한 오류: " + e.getMessage());
+            e.printStackTrace();
             exceptionHandler.handleUnexpectedError(response, e);
             return;
         }
 
+        System.out.println("✅ JWT 필터 완료 - 다음 필터로 진행");
         filterChain.doFilter(request, response);
     }
 
     /**
-     * JWT 인증 필터를 건너뛸 요청 경로 판단
+     * JWT 인증 필터를 건너뛸 요청 경로 판단 (디버깅 강화)
      * 특정 공개 API 엔드포인트에 대해서는 JWT 인증을 수행하지 않습니다.
-     *
-     * @param request HTTP 요청 객체
-     * @return 필터를 건너뛸 경우 true, JWT 인증이 필요한 경우 false
      */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
         String method = request.getMethod();
 
+        System.out.println("🤔 필터 건너뛰기 검사: " + method + " " + path);
+
         if ("OPTIONS".equals(method)) {
+            System.out.println("✅ OPTIONS 요청 - 필터 건너뛰기");
             return true;
         }
 
         boolean isPublicPath = Arrays.stream(PUBLIC_PATHS)
-            .anyMatch(pattern -> pathMatcher.match(pattern, path));
-        boolean isPublicGetPath = "GET".equals(method) && Arrays.stream(PUBLIC_GET_PATHS)
-            .anyMatch(pattern -> pathMatcher.match(pattern, path));
+                .anyMatch(pattern -> {
+                    boolean matches = pathMatcher.match(pattern, path);
+                    if (matches) {
+                        System.out.println("✅ PUBLIC_PATHS 매치: " + pattern + " -> " + path);
+                    }
+                    return matches;
+                });
 
-        return isPublicPath || isPublicGetPath;
+        boolean isPublicGetPath = "GET".equals(method) && Arrays.stream(PUBLIC_GET_PATHS)
+                .anyMatch(pattern -> {
+                    boolean matches = pathMatcher.match(pattern, path);
+                    if (matches) {
+                        System.out.println("✅ PUBLIC_GET_PATHS 매치: " + pattern + " -> " + path);
+                    }
+                    return matches;
+                });
+
+        boolean shouldSkip = isPublicPath || isPublicGetPath;
+        System.out.println("🎯 필터 건너뛰기 결정: " + (shouldSkip ? "YES" : "NO"));
+
+        return shouldSkip;
     }
 
     /**
      * JWT 사용자 정보를 기반으로 Spring Security Authentication 객체 생성
-     * 사용자 정보와 권한을 포함한 인증 토큰을 생성하고, OAuth2 관련 상세 정보를 설정합니다.
-     *
-     * @param userInfo JWT에서 추출된 사용자 정보
-     * @return Spring Security에서 사용할 Authentication 객체
      */
     private UsernamePasswordAuthenticationToken createAuthentication(JwtUserInfo userInfo) {
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-            userInfo,
-            null,
-            Collections.emptyList()
+                userInfo,
+                null,
+                Collections.emptyList()
         );
 
         Map<String, Object> details = new HashMap<>();
@@ -170,10 +226,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     /**
      * HTTP 요청의 쿠키에서 JWT 토큰을 추출
-     * accessToken 이름의 쿠키에서 JWT 토큰 값을 가져옵니다.
-     *
-     * @param request HTTP 요청 객체
-     * @return 추출된 JWT 토큰, 없으면 null
      */
     private String extractTokenFromCookie(HttpServletRequest request) {
         if (request.getCookies() == null) {
@@ -181,20 +233,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         return Arrays.stream(request.getCookies())
-            .filter(cookie -> JWT_COOKIE_NAME.equals(cookie.getName()))
-            .findFirst()
-            .map(Cookie::getValue)
-            .orElse(null);
+                .filter(cookie -> JWT_COOKIE_NAME.equals(cookie.getName()))
+                .findFirst()
+                .map(Cookie::getValue)
+                .orElse(null);
     }
 
     /**
      * JWT 토큰의 타입이 ACCESS 토큰인지 검증
-     * REFRESH 토큰이나 다른 타입의 토큰은 거부합니다.
-     *
-     * @param tokenClaims JWT 토큰에서 추출한 클레임
-     * @param response HTTP 응답 객체
-     * @return 검증 통과 시 true, 실패 시 false
-     * @throws IOException 응답 작성 중 I/O 오류 발생 시
      */
     private boolean validateAccessToken(Claims tokenClaims, HttpServletResponse response) throws IOException {
         String tokenType = tokenClaims.get("token_type", String.class);
@@ -209,12 +255,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     /**
      * RTR 보안: 리프레시 토큰의 잘못된 사용 감지
-     * 리프레시 토큰이 액세스 토큰으로 잘못 사용되는 경우를 감지하고 보안 조치를 취합니다.
-     *
-     * @param tokenClaims JWT 토큰에서 추출한 클레임
-     * @param response HTTP 응답 객체
-     * @return 리프레시 토큰이 잘못 사용된 경우 true, 정상인 경우 false
-     * @throws IOException 응답 작성 중 I/O 오류 발생 시
      */
     private boolean isRefreshTokenMisused(Claims tokenClaims, HttpServletResponse response) throws IOException {
         String tokenType = tokenClaims.get("token_type", String.class);
@@ -222,10 +262,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 리프레시 토큰이 액세스 토큰으로 사용되는 경우
         if ("REFRESH".equals(tokenType)) {
             String userId = tokenClaims.get("user_id", String.class);
-            
+
             // 보안 로그 기록
             log.error("RTR 보안 위반: 리프레시 토큰이 액세스 토큰으로 잘못 사용됨. userId: {}", userId);
-            
+
             // 해당 사용자의 모든 리프레시 토큰 무효화 (보안 조치)
             if (userId != null) {
                 try {
