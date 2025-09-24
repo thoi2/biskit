@@ -38,8 +38,8 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
-# 80번 포트를 내부적으로 사용한다고 명시합니다.
-EXPOSE 80
+# 3000번 포트를 내부적으로 사용한다고 명시합니다.
+EXPOSE 3000
 
 # Next.js Standalone 서버를 실행합니다.
 # server.js는 standalone 빌드 시 자동으로 생성됩니다.
