@@ -19,5 +19,5 @@ public class SingleIndustryRequest {
 
     @NotNull
     @Positive
-    private Integer categoryId;
+    private String categoryName;
 }

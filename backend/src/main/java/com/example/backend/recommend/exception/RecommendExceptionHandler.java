@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  *   (공통 시스템 코드를 쓰고 싶다면 rec.getSystemCode()로 교체)
  */
 @RestControllerAdvice(basePackages = "com.example.backend.recommend")
+@org.springframework.core.annotation.Order(org.springframework.core.Ordered.HIGHEST_PRECEDENCE)
 public class RecommendExceptionHandler {
 
     @ExceptionHandler(RecommendException.class)
