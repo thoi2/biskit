@@ -17,10 +17,11 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
-
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
 /**
  * JWT 쿠키 기반 Security 설정 (CSRF 토큰 없음)
  * SameSite 쿠키와 Origin 검증으로 CSRF 보호
+ * Reactive(Mono/Flux) 응답 지원 추가
  */
 @Configuration
 @EnableWebSecurity
@@ -37,51 +38,47 @@ public class SecurityConfig {
     private long corsMaxAgeSeconds;
 
     /**
-     * Spring Security 필터 체인 설정
+     * Spring Security 필터 체인 설정 (Reactive 지원 강화)
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                // CSRF 비활성화 (SameSite 쿠키로 대체)
                 .csrf(AbstractHttpConfigurer::disable)
-
-                // CORS 설정
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
-                // 세션을 Stateless로 설정
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-            // 요청 인가 설정
-            .authorizeHttpRequests(auth -> auth
-                // 인증 없이 접근 가능한 경로
-                .requestMatchers(SecurityPaths.PUBLIC_PATHS).permitAll()
+                // ⬇️ 여기 추가 (STATLESS + 비동기 친화 저장소)
+                .securityContext(sc -> sc
+                        .securityContextRepository(
+                                new RequestAttributeSecurityContextRepository()
+                        )
+                )
 
-                        // OPTIONS 요청 허용 (CORS preflight)
+                .requestCache(cache -> cache.disable())
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(SecurityPaths.PUBLIC_PATHS).permitAll()
+                        .requestMatchers("/error", "/favicon.ico").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
-                        // 나머지 모든 요청은 인증 필요
                         .anyRequest().authenticated())
-
-                // JWT 인증 필터 추가
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-
-                // 보안 헤더 설정
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint((req, res, ex) -> {
+                            res.setStatus(401);
+                            res.setContentType("application/json;charset=UTF-8");
+                            res.getWriter().write("{\"status\":401,\"error\":\"Unauthorized\",\"message\":\"인증이 필요합니다\"}");
+                        })
+                        .accessDeniedHandler((req, res, ex) -> {
+                            res.setStatus(403);
+                            res.setContentType("application/json;charset=UTF-8");
+                            res.getWriter().write("{\"status\":403,\"error\":\"Forbidden\",\"message\":\"접근 권한이 없습니다\"}");
+                        })
+                )
                 .headers(headers -> headers
-                        .frameOptions(frameOptions -> frameOptions.sameOrigin())
-                        .contentTypeOptions(contentTypeOptions -> {
-                        })
-                        .httpStrictTransportSecurity(hstsConfig -> hstsConfig
-                                .maxAgeInSeconds(31536000)
-                                .includeSubDomains(true))
-                        // XSS 보호 강화
-                        .xssProtection(xss -> {
-                        })
-                        // Content Security Policy (선택사항)
-                        .contentSecurityPolicy(csp -> csp
-                                .policyDirectives("default-src 'self'; script-src 'self' 'unsafe-inline'")))
-
+                        .frameOptions(f -> f.sameOrigin())
+                        .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'; script-src 'self' 'unsafe-inline'")))
                 .build();
     }
+
 
     /**
      * CORS 설정 (쿠키 전송을 위해 credentials 허용)
