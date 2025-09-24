@@ -8,7 +8,7 @@ async def analyze_all_categories_and_rank(ctx, settings, lat: float, lon: float)
         cat_counts = sorted(ctx.id2name.keys())
 
     knobs = dict(
-        k_region=settings.K_REGION,
+        k_region=5,  # 기존 20에서 5로 줄여 지역 민감도 높임
         env_gain=settings.ENV_GAIN,
         env_gamma=settings.ENV_GAMMA,
         neighbor_expand=settings.NEIGHBOR_EXPAND,

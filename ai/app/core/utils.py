@@ -26,3 +26,18 @@ def now_iso_kst():
     # +09:00 표기
     from datetime import datetime, timezone, timedelta
     return datetime.now(tz=timezone(timedelta(hours=9))).isoformat()
+
+def haversine_distance(lat1, lon1, lat2, lon2):
+    """ 두 위경도 지점 간의 거리를 미터 단위로 계산 """
+    R = 6371e3  # 지구 반지름 (미터)
+    phi1 = np.radians(lat1)
+    phi2 = np.radians(lat2)
+    delta_phi = np.radians(lat2 - lat1)
+    delta_lambda = np.radians(lon2 - lon1)
+
+    a = np.sin(delta_phi / 2) * np.sin(delta_phi / 2) + \
+        np.cos(phi1) * np.cos(phi2) * \
+        np.sin(delta_lambda / 2) * np.sin(delta_lambda / 2)
+    c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
+
+    return R * c

@@ -1,8 +1,9 @@
 from pydantic import BaseModel, Field
 
-class SingleRequest(BaseModel):
-    lat: float = Field(..., description="위도")
-    lng: float = Field(..., description="경도")
+class SingleRequest(BaseModel):                
+
+    lat: float = Field(...,description="위도")                              
+    lng: float = Field(...,description="경도") 
 
 class LocationNumRequest(BaseModel):
     building_id: int = Field(..., description="빌딩 ID")

@@ -2,7 +2,7 @@ import os, time, textwrap
 from typing import Dict, Any, List, Tuple
 
 import torch
-from openai import OpenAI
+from openai import AsyncOpenAI
 
 from .utils import log
 from .settings import settings
@@ -42,7 +42,7 @@ def _pretty_env(pairs: List[Tuple[str, float]], top: int = 5) -> str:
 # ──────────────────────────────────────────────────────────────────────────────
 # 경량 설명자: 서브그래프 가상노드 특성 기반(Explainer 없이 동작)
 # ──────────────────────────────────────────────────────────────────────────────
-def explain_at_location(
+async def explain_at_location(
     ctx: Ctx,
     lat: float,
     lon: float,
@@ -50,6 +50,7 @@ def explain_at_location(
     target_year: int | None = None,
     subgraph_builder=None,
     knobs: dict | None = None,
+    hazard: list | None = None,  # New parameter
 ) -> Dict[str, Any]:
     """
     주어진 위치(lat, lon)와 업종 cid에 대해:
@@ -91,9 +92,9 @@ def explain_at_location(
     else:
         cat_pairs = []
 
-    # 모델 추론해서 hazard 가져오기 (있으면)
-    haz = None
-    if ctx.model is not None:
+    # 모델 추론해서 hazard 가져오기 (pre-computed hazard가 없으면)
+    haz = hazard  # Use the provided hazard if available
+    if haz is None and ctx.model is not None:
         target_dim = int(ctx.META["feature_dim"])
         # 차원 보정(pad/trim)
         if sub.x.size(1) < target_dim:
@@ -156,7 +157,7 @@ async def llm_explain(settings, lat, lon, cid, cat_name, pred, exp) -> str:
         )
 
     try:
-        client = OpenAI(
+        client = AsyncOpenAI(
             api_key=settings.GMS_KEY,
             base_url=settings.GMS_BASE_URL.rstrip("/")
         )

@@ -25,20 +25,28 @@ async def get_llm_explanation_for_category(ctx, settings, lat: float, lon: float
     start_time = time.time()
     log(f"[GMS] Starting explanation for {category_name} at ({lat}, {lon})")
 
-    # We need both pred and exp for llm_explain
+    # 1. Predict hazards (the "location" way)
     pred_start = time.time()
-    pred = predict_hazards_at_location(ctx, lat, lon, int(cid), knobs)
+    pred_result = await predict_hazards_at_location(ctx, lat, lon, int(cid), knobs)
     pred_end = time.time()
     log(f"[GMS] predict_hazards_at_location took {pred_end - pred_start:.4f} seconds")
 
+    # 2. Get explanation data, re-using the prediction
     exp_start = time.time()
-    exp = explain_at_location(ctx, lat, lon, cid, subgraph_builder=build_augmented_subgraph_for_category, knobs=knobs)
+    hazard_list = pred_result.get("hazard", [])
+    exp = await explain_at_location(
+        ctx, lat, lon, cid,
+        subgraph_builder=build_augmented_subgraph_for_category,
+        knobs=knobs,
+        hazard=hazard_list  # Pass the pre-computed hazard
+    )
     exp_end = time.time()
-    log(f"[GMS] explain_at_location took {exp_end - exp_start:.4f} seconds")
+    log(f"[GMS] explain_at_location (re-using pred) took {exp_end - exp_start:.4f} seconds")
     
-    # Get the LLM explanation
+    # 3. Get the LLM explanation
     llm_explain_start = time.time()
-    explanation_text = await llm_explain(settings, lat, lon, cid, category_name, pred, exp)
+    # The llm_explain function expects the hazard list as its 'pred' argument
+    explanation_text = await llm_explain(settings, lat, lon, cid, category_name, hazard_list, exp)
     llm_explain_end = time.time()
     log(f"[GMS] llm_explain took {llm_explain_end - llm_explain_start:.4f} seconds")
 

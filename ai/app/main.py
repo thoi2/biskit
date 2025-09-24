@@ -6,7 +6,6 @@ from .schemas.single import SingleRequest, LocationNumRequest, JobRequest
 from .core.utils import now_iso_kst, log
 from .core.data_io import init_context
 from .core.model import load_model
-from .core.recommend import recommend_topk_with_explanations
 from .core.location import analyze_all_categories_and_rank
 from .core.job import analyze_single_category
 from .core.gms import get_llm_explanation_for_category
@@ -44,7 +43,7 @@ async def location_num(req: LocationNumRequest):
     lat, lon = float(req.lat), float(req.lng)
 
     try:
-        result = analyze_all_categories_and_rank(ctx, settings, lat, lon)
+        result = await analyze_all_categories_and_rank(ctx, settings, lat, lon)
     except Exception as e:
         return {
             "success": False,
@@ -76,7 +75,7 @@ async def job(req: JobRequest):
     lat, lon = float(req.lat), float(req.lng)
 
     try:
-        result = analyze_single_category(ctx, settings, lat, lon, req.category)
+        result = await analyze_single_category(ctx, settings, lat, lon, req.category)
     except Exception as e:
         return {
             "success": False,
