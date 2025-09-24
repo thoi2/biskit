@@ -20,7 +20,7 @@ app.add_middleware(
 )
 
 @app.on_event("startup")
-def _startup():
+async def _startup():
     log(f"startup: DATA_DIR={settings.DATA_DIR}")
     ctx = init_context(settings.DATA_DIR)
     
@@ -37,40 +37,8 @@ def _startup():
     app.state.ctx = ctx
     log("startup done")
 
-@app.post("/api/v1/ai/single")
-def single(req: SingleRequest):
-    settings = app.state.settings
-    ctx = app.state.ctx
-    lat, lon = float(req.lat), float(req.lng)
-
-    # building_id = 가장 가까운 region_code (요구 포맷에 맞춰 사용)
-    try:
-        d, idx = ctx.node_tree.query([lat, lon], k=1)
-        building_id = int(ctx.node_codes[idx])
-    except Exception:
-        building_id = -1
-
-    try:
-        result = recommend_topk_with_explanations(ctx, settings, lat, lon, top_k=10)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"recommend failed: {e}")
-
-    return {
-        "building": {
-            "building_id": building_id,
-            "lat": lat,
-            "lng": lon
-        },
-        "result": result,  # [{category, 1..5, explain} x 10]
-        "meta": {
-            "source": "AI",
-            "version": settings.APP_VERSION,
-            "last_at": now_iso_kst()
-        }
-    }
-
 @app.post("/api/v1/ai/location")
-def location_num(req: LocationNumRequest):
+async def location_num(req: LocationNumRequest):
     settings = app.state.settings
     ctx = app.state.ctx
     lat, lon = float(req.lat), float(req.lng)
@@ -102,7 +70,7 @@ def location_num(req: LocationNumRequest):
     }
 
 @app.post("/api/v1/ai/job")
-def job(req: JobRequest):
+async def job(req: JobRequest):
     settings = app.state.settings
     ctx = app.state.ctx
     lat, lon = float(req.lat), float(req.lng)
@@ -134,13 +102,13 @@ def job(req: JobRequest):
     }
 
 @app.post("/api/v1/ai/gms")
-def gms(req: JobRequest):
+async def gms(req: JobRequest):
     settings = app.state.settings
     ctx = app.state.ctx
     lat, lon = float(req.lat), float(req.lng)
 
     try:
-        result = get_llm_explanation_for_category(ctx, settings, lat, lon, req.category)
+        result = await get_llm_explanation_for_category(ctx, settings, lat, lon, req.category)
     except Exception as e:
         return {
             "success": False,

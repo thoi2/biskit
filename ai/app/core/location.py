@@ -1,7 +1,7 @@
 from .subgraph import predict_hazards_at_location
 from .utils import log
 
-def analyze_all_categories_and_rank(ctx, settings, lat: float, lon: float):
+async def analyze_all_categories_and_rank(ctx, settings, lat: float, lon: float):
     try:
         cat_counts = ctx.store_df["category_id"].value_counts().index.tolist()
     except Exception:
@@ -23,7 +23,7 @@ def analyze_all_categories_and_rank(ctx, settings, lat: float, lon: float):
     reasons = {}
     for cid in cat_counts:
         try:
-            pred = predict_hazards_at_location(ctx, lat, lon, int(cid), knobs)
+            pred = await predict_hazards_at_location(ctx, lat, lon, int(cid), knobs)
             preds.append({"cid": int(cid), "name": ctx.id2name.get(int(cid), str(cid)), "pred": pred})
         except Exception as e:
             skipped += 1

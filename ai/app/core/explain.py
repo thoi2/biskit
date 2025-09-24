@@ -63,7 +63,7 @@ def explain_at_location(
         subgraph_builder = build_augmented_subgraph_for_category
 
     knobs = knobs or {}
-    sub, v_idx = subgraph_builder(ctx, lat, lon, int(cid), knobs)
+    sub, v_idx = await subgraph_builder(ctx, lat, lon, int(cid), knobs)
 
     # feature 분해
     v = sub.x[int(v_idx)].detach().cpu().numpy()
@@ -123,7 +123,7 @@ def explain_at_location(
 # ──────────────────────────────────────────────────────────────────────────────
 # 외부 LLM 설명 + 폴백
 # ──────────────────────────────────────────────────────────────────────────────
-def llm_explain(settings, lat, lon, cid, cat_name, pred, exp) -> str:
+async def llm_explain(settings, lat, lon, cid, cat_name, pred, exp) -> str:
     # LLM 비활성 시 내부 설명 생성
     if not settings.LLM_ENABLE:
         env_summary = _pretty_env(exp.get('env_top', []), top=5)
@@ -181,7 +181,7 @@ def llm_explain(settings, lat, lon, cid, cat_name, pred, exp) -> str:
         log(f"[LLM] PROMPT: {user_prompt}")
 
         start_time = time.time()
-        resp = client.chat.completions.create(
+        resp = await client.chat.completions.create(
             model=settings.LLM_MODEL,
             messages=[
                 {"role": "system", "content": sys_prompt},

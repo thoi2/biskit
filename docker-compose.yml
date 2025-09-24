@@ -9,6 +9,16 @@ services:
       context: ./ai
       # 사용할 Dockerfile은 override 또는 prod 파일에서 지정합니다.
     container_name: ai
+    environment:
+      - GMS_KEY=${GMS_KEY}
+      - GMS_BASE_URL=${GMS_BASE_URL}
+      - DATA_DIR=${DATA_DIR}
+      - MODEL_PATH=${MODEL_PATH}
+      - META_PATH=${META_PATH}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - LLM_ENABLE=${LLM_ENABLE}
+      - LLM_MODEL=${LLM_MODEL}
+      - LLM_TIMEOUT=${LLM_TIMEOUT}
 
     networks:
       - my-network

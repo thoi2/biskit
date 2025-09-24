@@ -3,7 +3,7 @@ from .subgraph import predict_hazards_at_location, build_augmented_subgraph_for_
 from .explain import explain_at_location, llm_explain
 from .utils import log
 
-def get_llm_explanation_for_category(ctx, settings, lat: float, lon: float, category_name: str):
+async def get_llm_explanation_for_category(ctx, settings, lat: float, lon: float, category_name: str):
     # Create name -> id mapping on the fly
     name2id = {v: k for k, v in ctx.id2name.items()}
     cid = name2id.get(category_name)
@@ -38,7 +38,7 @@ def get_llm_explanation_for_category(ctx, settings, lat: float, lon: float, cate
     
     # Get the LLM explanation
     llm_explain_start = time.time()
-    explanation_text = llm_explain(settings, lat, lon, cid, category_name, pred, exp)
+    explanation_text = await llm_explain(settings, lat, lon, cid, category_name, pred, exp)
     llm_explain_end = time.time()
     log(f"[GMS] llm_explain took {llm_explain_end - llm_explain_start:.4f} seconds")
 

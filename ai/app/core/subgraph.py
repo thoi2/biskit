@@ -15,10 +15,17 @@ def _hazard_to_survival_and_failure(hazards: np.ndarray):
     F = 1.0 - S
     return S, F
 
-def _blended_regions(ctx: Ctx, lat: float, lon: float, k: int):
+def _blended_regions(ctx: Ctx, lat: float, lon: float, k: int, k_max_ratio: float = 2.0):
     d, idxs = ctx.node_tree.query([lat, lon], k=k)
     if np.isscalar(d):
         d, idxs = np.array([d]), np.array([idxs])
+    
+    # k_max_ratio 로직 추가: 너무 먼 지역은 제외
+    max_dist = d.min() * k_max_ratio
+    valid_indices = np.where(d <= max_dist)[0]
+    d = d[valid_indices]
+    idxs = idxs[valid_indices]
+
     w = 1.0 / (d + 1e-6)
     w /= w.sum()
     codes = [int(ctx.node_codes[j]) for j in np.atleast_1d(idxs)]
@@ -53,11 +60,12 @@ def build_augmented_subgraph_for_category(ctx: Ctx, lat: float, lon: float, cid:
     - 가상(virtual) 노드 1개
     로 서브그래프를 만든다.
     """
-    k_region = int(knobs.get("k_region", 5))
+    k_region = int(knobs.get("k_region", 20))
+    k_max_ratio = float(knobs.get("k_max_ratio", 2.0))
     edge_gain = float(knobs.get("edge_gain", 3.0))
 
     # 1) 인근 지역 k개
-    codes, w = _blended_regions(ctx, lat, lon, k_region)
+    codes, w = _blended_regions(ctx, lat, lon, k_region, k_max_ratio)
     region_globals = []
     for rc in codes:
         if rc in ctx.region_index_map:
@@ -107,7 +115,7 @@ def build_augmented_subgraph_for_category(ctx: Ctx, lat: float, lon: float, cid:
     virtual_idx = N - 1
     add_src, add_dst = [], []
     for i, wj in enumerate(w):
-        reps = max(1, int(round(wj * edge_gain * 10)))
+        reps = max(1, int(round(wj * wj * edge_gain * 10)))
         add_src.extend([virtual_idx] * reps); add_dst.extend([i] * reps)
         add_src.extend([i] * reps); add_dst.extend([virtual_idx] * reps)
     edge_index = torch.tensor([add_src, add_dst], dtype=torch.long)
@@ -116,12 +124,12 @@ def build_augmented_subgraph_for_category(ctx: Ctx, lat: float, lon: float, cid:
     return sub, virtual_idx
 
 @torch.no_grad()
-def predict_hazards_at_location(ctx: Ctx, lat: float, lon: float, cid: int, knobs: dict):
+async def predict_hazards_at_location(ctx: Ctx, lat: float, lon: float, cid: int, knobs: dict):
     """서브그래프 구성 → 모델 추론 → hazard/survival/failure"""
     if ctx.model is None or ctx.META is None:
         raise RuntimeError("model or META not loaded")
 
-    sub, _ = build_augmented_subgraph_for_category(ctx, lat, lon, int(cid), knobs)
+    sub, _ = await build_augmented_subgraph_for_category(ctx, lat, lon, int(cid), knobs)
     # 모델 입력 차원 보정
     target_dim = int(ctx.META["feature_dim"])
     sub.x = _ensure_feature_dim(sub.x, target_dim)

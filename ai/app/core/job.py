@@ -1,7 +1,7 @@
 from .subgraph import predict_hazards_at_location
 from .utils import log
 
-def analyze_single_category(ctx, settings, lat: float, lon: float, category_name: str):
+async def analyze_single_category(ctx, settings, lat: float, lon: float, category_name: str):
     # Create name -> id mapping on the fly
     name2id = {v: k for k, v in ctx.id2name.items()}
     cid = name2id.get(category_name)
@@ -21,7 +21,7 @@ def analyze_single_category(ctx, settings, lat: float, lon: float, category_name
     )
 
     try:
-        pred = predict_hazards_at_location(ctx, lat, lon, int(cid), knobs)
+        pred = await predict_hazards_at_location(ctx, lat, lon, int(cid), knobs)
         f = pred["failure"]
         result = {
             "rank": 1,
