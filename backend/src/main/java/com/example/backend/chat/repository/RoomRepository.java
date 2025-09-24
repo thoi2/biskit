@@ -1,6 +1,7 @@
 package com.example.backend.chat.repository;
 
 import com.example.backend.chat.entity.Room;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,25 +17,10 @@ import java.util.Optional;
 public interface RoomRepository extends JpaRepository<Room, Long> {
 
     /**
-     * roomUuid로 방 조회
-     */
-    Optional<Room> findByRoomUuid(String roomUuid);
-
-    /**
      * roomUuid로 활성화된 방 조회
      */
     Optional<Room> findByRoomUuidAndIsActiveTrue(String roomUuid);
 
-    /**
-     * 생성자ID로 방 목록 조회 (활성화된 방만)
-     */
-    List<Room> findByCreatorIdAndIsActiveTrueOrderByCreatedAtDesc(String creatorId);
-
-    /**
-     * 방 이름으로 검색 (활성화된 방만, LIKE 검색)
-     */
-    @Query("SELECT r FROM Room r WHERE r.isActive = true AND r.roomName LIKE %:roomName% ORDER BY r.createdAt DESC")
-    List<Room> findByRoomNameContainingAndIsActiveTrue(@Param("roomName") String roomName);
 
     /**
      * 사용자가 참여중인 방 목록 조회
@@ -45,19 +31,59 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
            "ORDER BY r.updatedAt DESC")
     List<Room> findUserActiveRooms(@Param("userId") String userId);
 
-    /**
-     * 활성화된 모든 방 조회 (최신순)
-     */
-    List<Room> findByIsActiveTrueOrderByCreatedAtDesc();
-
-    /**
-     * 참여자 수가 적은 순으로 활성화된 방 조회
-     */
-    @Query("SELECT r FROM Room r WHERE r.isActive = true AND r.currentParticipants < r.maxParticipants ORDER BY r.currentParticipants ASC")
-    List<Room> findAvailableRoomsOrderByParticipants();
 
     /**
      * roomUuid 존재 여부 확인
      */
     boolean existsByRoomUuid(String roomUuid);
+
+    /**
+     * 카테고리별 활성화된 방 조회 (참여 인원 많은 순)
+     */
+    @Query("SELECT r FROM Room r WHERE r.isActive = true AND r.bigCategory = :bigCategory ORDER BY r.currentParticipants DESC, r.createdAt DESC")
+    List<Room> findByBigCategoryAndIsActiveTrueOrderByParticipantsDesc(@Param("bigCategory") String bigCategory);
+
+    /**
+     * 모든 활성화된 방 조회 (참여 인원 많은 순)
+     */
+    @Query("SELECT r FROM Room r WHERE r.isActive = true ORDER BY r.currentParticipants DESC, r.createdAt DESC")
+    List<Room> findByIsActiveTrueOrderByParticipantsDesc();
+
+    /**
+     * 모든 활성화된 방 조회 (페이징 - 첫 페이지, 생성시간 기준)
+     */
+    @Query("SELECT r FROM Room r WHERE r.isActive = true ORDER BY r.createdAt DESC, r.id ASC")
+    List<Room> findByIsActiveTrueOrderByCreatedAtDescRoomIdAsc(Pageable pageable);
+
+    /**
+     * 모든 활성화된 방 조회 (페이징 - 커서 기반, 생성시간 기준)
+     */
+    @Query("SELECT r FROM Room r WHERE r.isActive = true " +
+           "AND (r.createdAt < :cursorCreatedAt OR (r.createdAt = :cursorCreatedAt AND r.id > :cursorId)) " +
+           "ORDER BY r.createdAt DESC, r.id ASC")
+    List<Room> findByIsActiveTrueAndCursorOrderByCreatedAtDescRoomIdAsc(
+        @Param("cursorCreatedAt") java.time.LocalDateTime cursorCreatedAt,
+        @Param("cursorId") Long cursorId,
+        Pageable pageable);
+
+    /**
+     * 카테고리별 활성화된 방 조회 (페이징 - 첫 페이지, 생성시간 기준)
+     */
+    @Query("SELECT r FROM Room r WHERE r.isActive = true AND r.bigCategory = :bigCategory " +
+           "ORDER BY r.createdAt DESC, r.id ASC")
+    List<Room> findByBigCategoryAndIsActiveTrueOrderByCreatedAtDescRoomIdAsc(
+        @Param("bigCategory") String bigCategory,
+        Pageable pageable);
+
+    /**
+     * 카테고리별 활성화된 방 조회 (페이징 - 커서 기반, 생성시간 기준)
+     */
+    @Query("SELECT r FROM Room r WHERE r.isActive = true AND r.bigCategory = :bigCategory " +
+           "AND (r.createdAt < :cursorCreatedAt OR (r.createdAt = :cursorCreatedAt AND r.id > :cursorId)) " +
+           "ORDER BY r.createdAt DESC, r.id ASC")
+    List<Room> findByBigCategoryAndIsActiveTrueAndCursorOrderByCreatedAtDescRoomIdAsc(
+        @Param("bigCategory") String bigCategory,
+        @Param("cursorCreatedAt") java.time.LocalDateTime cursorCreatedAt,
+        @Param("cursorId") Long cursorId,
+        Pageable pageable);
 }

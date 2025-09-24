@@ -17,12 +17,13 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RoomDto {
+public class Room {
 
     private String roomId; // roomUuid
     private String roomName;
     private String creatorId;
     private String creatorUsername;
+    private String bigCategory; // 상권업종대분류명
     private Boolean isActive;
     private Integer maxParticipants;
     private Integer currentParticipants;

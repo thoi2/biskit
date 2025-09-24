@@ -8,6 +8,7 @@ import com.example.backend.common.security.authentication.jwt.JwtUtil;
 import com.example.backend.common.security.authentication.jwt.service.RefreshTokenService;
 import com.example.backend.common.security.authentication.oauth2.dto.OAuth2TokenRequest;
 import com.example.backend.common.security.authentication.oauth2.dto.OAuth2TokenResponse;
+import com.example.backend.common.security.authentication.oauth2.dto.UserAuthResponse;
 import com.example.backend.common.security.authentication.oauth2.provider.OAuth2ProviderStrategy;
 import com.example.backend.common.security.authentication.oauth2.provider.OAuth2ProviderStrategyFactory;
 import com.example.backend.common.security.authentication.oauth2.userInfo.OAuth2UserInfo;
@@ -15,11 +16,13 @@ import com.example.backend.user.entity.User;
 import com.example.backend.user.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.Cookie;
+import org.springframework.http.ResponseCookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -101,22 +104,34 @@ public class OAuth2TokenService {
 
         MultiValueMap<String, String> params = providerStrategy.buildTokenRequestParams(authorizationCode);
 
-        return Optional.ofNullable(
-                webClient.post()
-                    .uri(providerStrategy.getTokenUrl())
-                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                    .body(BodyInserters.fromFormData(params))
-                    .retrieve()
-                    .bodyToMono(Map.class)
-                    .block()
-            )
-            .filter(response -> response.containsKey("access_token"))
-            .map(response -> (String) response.get("access_token"))
-            .orElseThrow(() -> {
-                log.error("{} 토큰 교환 실패", providerStrategy.getProviderName());
-                return new BusinessException(ErrorCode.AUTH_OAUTH2_AUTHENTICATION_FAILED,
-                    providerStrategy.getProviderName() + " 토큰 교환에 실패했습니다.");
-            });
+        // 요청 파라미터 로그
+        log.info("==== OAuth2 Token Request ====");
+        params.forEach((key, value) -> log.info("{}: {}", key, value));
+        log.info("==============================");
+
+        Map<String, Object> response = Optional.ofNullable(
+            webClient.post()
+                .uri(providerStrategy.getTokenUrl())
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(BodyInserters.fromFormData(params))
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
+                .doOnNext(resp -> log.info("==== OAuth2 Token Response ====\n{}", resp))
+                .block()
+        ).orElseThrow(() -> {
+            log.error("{} 토큰 교환 실패", providerStrategy.getProviderName());
+            return new BusinessException(ErrorCode.AUTH_OAUTH2_AUTHENTICATION_FAILED,
+                providerStrategy.getProviderName() + " 토큰 교환에 실패했습니다.");
+        });
+
+        // access_token 존재 확인 및 반환
+        if (!response.containsKey("access_token")) {
+            log.error("{} 토큰 응답에 access_token 없음: {}", providerStrategy.getProviderName(), response);
+            throw new BusinessException(ErrorCode.AUTH_OAUTH2_AUTHENTICATION_FAILED,
+                providerStrategy.getProviderName() + " 토큰 교환에 실패했습니다.");
+        }
+
+        return (String) response.get("access_token");
     }
 
     /**
@@ -280,7 +295,8 @@ public class OAuth2TokenService {
             userId,
             user.getName(),
             user.getOauth2Provider().name(),
-            user.getOauth2ProviderId()
+            user.getOauth2ProviderId(),
+            user.getProfileImageUrl()
         );
 
         String jwtAccessToken = jwtUtil.generateAccessToken(jwtUserInfo);
@@ -307,21 +323,25 @@ public class OAuth2TokenService {
      * HttpOnly, Secure, SameSite 설정으로 보안 강화
      */
     private void setCookies(HttpServletResponse response, String accessToken, String refreshToken) {
-        // Access Token 쿠키 설정 (세션 쿠키)
-        Cookie accessTokenCookie = new Cookie("accessToken", accessToken);
-        accessTokenCookie.setHttpOnly(true);
-        accessTokenCookie.setSecure(false); // 개발환경에서는 false, 운영에서는 true
-        accessTokenCookie.setPath("/");
-        accessTokenCookie.setMaxAge(-1); // 세션 쿠키 - 브라우저 닫으면 삭제
-        response.addCookie(accessTokenCookie);
+        // ResponseCookie로 SameSite 설정 가능
+        ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", accessToken)
+            .httpOnly(false) // 개발환경에서는 false로 설정
+            .secure(false) // 개발환경에서는 false
+            .path("/")
+            .maxAge(-1) // 세션 쿠키
+            .sameSite("Lax") // SameSite 설정
+            .build();
 
-        // Refresh Token 쿠키 설정 (세션 쿠키)
-        Cookie refreshTokenCookie = new Cookie("refreshToken", refreshToken);
-        refreshTokenCookie.setHttpOnly(true);
-        refreshTokenCookie.setSecure(false); // 개발환경에서는 false, 운영에서는 true
-        refreshTokenCookie.setPath("/");
-        refreshTokenCookie.setMaxAge(-1); // 세션 쿠키 - 브라우저 닫으면 삭제
-        response.addCookie(refreshTokenCookie);
+        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", refreshToken)
+            .httpOnly(false) // 개발환경에서는 false로 설정
+            .secure(false) // 개발환경에서는 false
+            .path("/")
+            .maxAge(-1) // 세션 쿠키
+            .sameSite("Lax") // SameSite 설정
+            .build();
+
+        response.addHeader("Set-Cookie", accessTokenCookie.toString());
+        response.addHeader("Set-Cookie", refreshTokenCookie.toString());
     }
 
     /**
@@ -403,6 +423,15 @@ public class OAuth2TokenService {
             .findFirst()
             .map(Cookie::getValue)
             .orElse(null);
+    }
+
+    /**
+     * JwtUserInfo를 UserAuthResponse로 감싸는 메서드
+     */
+    public UserAuthResponse buildUserAuthResponse(JwtUserInfo userInfo) {
+        return UserAuthResponse.builder()
+            .user(userInfo)
+            .build();
     }
 
 }

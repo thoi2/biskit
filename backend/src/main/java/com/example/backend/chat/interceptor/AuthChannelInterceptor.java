@@ -47,15 +47,12 @@ public class AuthChannelInterceptor implements ChannelInterceptor {
 
             if (StompCommand.CONNECT.equals(accessor.getCommand())) {
                 log.info("AuthChannelInterceptor - CONNECT 처리");
-                // 연결시 토큰 검증
                 handleConnect(accessor);
             } else if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
                 log.info("AuthChannelInterceptor - SUBSCRIBE 처리");
-                // 구독시 권한 체크
                 handleSubscribe(accessor);
             } else if (StompCommand.SEND.equals(accessor.getCommand())) {
                 log.info("AuthChannelInterceptor - SEND 처리");
-                // 메시지 전송시 권한 체크
                 handleSend(accessor);
             }
         } else {
@@ -67,11 +64,16 @@ public class AuthChannelInterceptor implements ChannelInterceptor {
 
     private void handleConnect(StompHeaderAccessor accessor) {
         try {
-            // 쿠키에서 JWT 토큰 추출
+            // 쿠키에서 JWT 토큰 추출 시도
             String token = extractTokenFromCookies(accessor);
 
+            // 쿠키에서 토큰을 찾을 수 없으면 Authorization 헤더에서 추출 시도
             if (!StringUtils.hasText(token)) {
-                log.warn("WebSocket 연결 시도: JWT 토큰이 없음");
+                token = extractTokenFromAuthHeader(accessor);
+            }
+
+            if (!StringUtils.hasText(token)) {
+                log.warn("WebSocket 연결 시도: JWT 토큰이 없음 (쿠키와 Authorization 헤더 모두 확인)");
                 throw new BusinessException(ErrorCode.AUTH_TOKEN_MISSING);
             }
 
@@ -157,19 +159,74 @@ public class AuthChannelInterceptor implements ChannelInterceptor {
      * WebSocket 헤더에서 쿠키를 추출하여 JWT 토큰을 가져옴
      */
     private String extractTokenFromCookies(StompHeaderAccessor accessor) {
+        // 주요 헤더들 확인
+        log.info("=== 헤더 확인 ===");
+        log.info("Session ID: {}", accessor.getSessionId());
+        log.info("User: {}", accessor.getUser());
+        log.info("Message Type: {}", accessor.getMessageType());
+
+        // 다양한 쿠키 헤더명 시도
+        String[] cookieHeaderNames = {"cookie", "Cookie", "cookies", "Cookies"};
+        for (String headerName : cookieHeaderNames) {
+            String headerValue = accessor.getFirstNativeHeader(headerName);
+            if (headerValue != null) {
+                log.info("Found header {}: {}", headerName, headerValue);
+            }
+        }
+
         // STOMP 연결시 쿠키는 'cookie' 헤더에 전달됨
         String cookieHeader = accessor.getFirstNativeHeader("cookie");
+
+        log.info("=== 쿠키 헤더 확인 ===");
+        log.info("Cookie Header: {}", cookieHeader);
+
         if (!StringUtils.hasText(cookieHeader)) {
+            log.warn("Cookie 헤더가 비어있음");
             return null;
         }
 
         // 쿠키 파싱하여 accessToken 찾기
-        return Arrays.stream(cookieHeader.split(";"))
+        String token = Arrays.stream(cookieHeader.split(";"))
             .map(String::trim)
+            .peek(cookie -> log.info("Cookie: {}", cookie))
             .filter(cookie -> cookie.startsWith(JWT_COOKIE_NAME + "="))
             .findFirst()
-            .map(cookie -> cookie.substring(JWT_COOKIE_NAME.length() + 1))
+            .map(cookie -> {
+                String tokenValue = cookie.substring(JWT_COOKIE_NAME.length() + 1);
+                log.info("추출된 토큰: {}", tokenValue.substring(0, Math.min(50, tokenValue.length())) + "...");
+                return tokenValue;
+            })
             .orElse(null);
+
+        if (token == null) {
+            log.warn("accessToken 쿠키를 찾을 수 없음");
+        }
+
+        return token;
+    }
+
+    /**
+     * STOMP 헤더에서 Authorization 헤더를 추출하여 JWT 토큰을 가져옴
+     */
+    private String extractTokenFromAuthHeader(StompHeaderAccessor accessor) {
+        String authHeader = accessor.getFirstNativeHeader("Authorization");
+
+        log.info("=== Authorization 헤더 확인 ===");
+        log.info("Authorization Header: {}", authHeader);
+
+        if (!StringUtils.hasText(authHeader)) {
+            log.warn("Authorization 헤더가 비어있음");
+            return null;
+        }
+
+        if (authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            log.info("추출된 토큰: {}", token.substring(0, Math.min(50, token.length())) + "...");
+            return token;
+        } else {
+            log.warn("Authorization 헤더가 Bearer 형식이 아님: {}", authHeader);
+            return null;
+        }
     }
 
 }

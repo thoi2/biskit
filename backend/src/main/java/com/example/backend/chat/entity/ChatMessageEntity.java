@@ -26,8 +26,14 @@ public class ChatMessageEntity {
     @Column(name = "room_id", nullable = false)
     private String roomId;
 
-    @Column(name = "sender", nullable = false)
-    private String sender;
+    @Column(name = "sender_id", nullable = false)
+    private String senderId;
+
+    @Column(name = "sender_name", nullable = false)
+    private String senderName;
+
+    @Column(name = "profile_image_url")
+    private String profileImageUrl;
 
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
