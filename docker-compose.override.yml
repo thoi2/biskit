@@ -36,6 +36,8 @@ services:
     # 개발용 환경 변수 파일을 추가합니다.
     env_file:
       - .env
+    args:
+      - NEXT_PUBLIC_WS_URL=http://localhost:8080/ws
     environment:
       - NEXT_PUBLIC_WS_URL=http://localhost:8080/ws
 
