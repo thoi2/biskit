@@ -37,7 +37,7 @@ export const chatApi = {
   // 방 참여하기 (REST API가 없으면 공개방 목록에서 정보 찾기)
   findRoomInPublicList: (roomId: string): Promise<Room | null | undefined> =>
     chatApi.getPublicRooms().then(response => {
-      const room = response.rooms.find(r => r.roomId === roomId);
+      const room = response.data.rooms.find(r => r.roomId === roomId);
       return room || null;
     }),
 
