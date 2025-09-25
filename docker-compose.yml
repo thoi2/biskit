@@ -10,32 +10,23 @@ services:
       # 사용할 Dockerfile은 override 또는 prod 파일에서 지정합니다.
     container_name: ai
     environment:
+      - GMS_BASE_URL=https://gms.ssafy.io/gmsapi/api.openai.com/v1
       - GMS_KEY=${GMS_KEY}
-      - GMS_BASE_URL=${GMS_BASE_URL}
-      - DATA_DIR=${DATA_DIR}
-      - MODEL_PATH=${MODEL_PATH}
-      - META_PATH=${META_PATH}
-      - LOG_LEVEL=${LOG_LEVEL}
-      - LLM_ENABLE=${LLM_ENABLE}
-      - LLM_MODEL=${LLM_MODEL}
-      - LLM_TIMEOUT=${LLM_TIMEOUT}
-
+      - MODEL_PATH=survival_gnn.pt
+      - META_PATH=survival_meta.json
+      - LOG_LEVEL=INFO
+      - LLM_ENABLE=true
+      - LLM_MODEL=gpt-5-nano
+      - LLM_TIMEOUT=60
+      - DATA_DIR=./data
     networks:
       - my-network
-
   # Spring Boot 백엔드 애플리케이션
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile.dev  # 개발용 Dockerfile 명시
+      # 사용할 Dockerfile은 override 또는 prod 파일에서 지정합니다.
     container_name: backend
-
-    # 🎯 핫리로드를 위한 볼륨 마운트
-    volumes:
-      - ./backend/src:/app/src:rw          # 소스 코드 실시간 동기화
-      - ./backend/build:/app/build         # 빌드 결과 공유
-      - gradle-cache:/home/gradle/.gradle  # Gradle 캐시 보존
-
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
       - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
@@ -46,19 +37,13 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
-      - KT_API_KEY=${KT_API_KEY}
-      - PUBLIC_DATA_API_KEY=${PUBLIC_DATA_API_KEY}
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
-      - AI_GMS_API_KEY=${AI_GMS_API_KEY}
-      - AI_GMS_BASE_URL=${AI_GMS_BASE_URL}
-      # 🎯 DevTools 환경변수 추가
-      - SPRING_DEVTOOLS_RESTART_ENABLED=true
-      - SPRING_DEVTOOLS_LIVERELOAD_ENABLED=true
-
-    ports:
-      - "8080:8080"
-      - "35729:35729"  # LiveReload 포트
-
+      - SPRING_DATA_REDIS_TIMEOUT=2000
+      - LOGGING_LEVEL_ROOT=INFO
+      - LOGGING_LEVEL_APP=DEBUG
+      - GEOCODER_TOKEN=${GEOCODER_TOKEN}
+      - AI_GMS_BASE_URL=https://gms.ssafy.io/gmsapi
+      - AI_GMS_API_KEY=${GMS_KEY}
     depends_on:
       mysql:
         condition: service_healthy
@@ -142,7 +127,6 @@ services:
 volumes:
   mysql_data:
   redis_data:
-  gradle-cache:  # 🎯 Gradle 캐시 볼륨 추가
 
 networks:
   my-network:
