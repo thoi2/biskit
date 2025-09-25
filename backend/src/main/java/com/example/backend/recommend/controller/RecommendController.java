@@ -12,8 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 @RestController
 @RequiredArgsConstructor
 @Validated
@@ -21,7 +20,6 @@ import org.slf4j.LoggerFactory;
 public class RecommendController {
 //String userId
     private final RecommendService recommendService;
-    private static final Logger log = LoggerFactory.getLogger(RecommendService.class);
     @PostMapping("/single")
     public ApiResponse<RecommendResponse> getSingle(
             @Valid @RequestBody SingleRequest req,
@@ -29,13 +27,11 @@ public class RecommendController {
     ) {
         Long uid;
         try {
-            log.info("info :"+userInfo);
             String userId = userInfo.userId();
             uid = Long.valueOf(userId);
         } catch (Exception e) {
             uid = null;
         }
-        log.info("uid :"+uid);
         RecommendResponse res = recommendService.generateSingle(req, uid);
         return ApiResponse.of(res);
     }

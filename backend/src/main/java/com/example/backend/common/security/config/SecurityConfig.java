@@ -59,6 +59,7 @@ public class SecurityConfig {
                         // OPTIONS 요청 허용 (CORS preflight)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                        .requestMatchers(HttpMethod.POST, "/api/v1/ai/single").permitAll()
                         // 나머지 모든 요청은 인증 필요
                         .anyRequest().authenticated())
 
