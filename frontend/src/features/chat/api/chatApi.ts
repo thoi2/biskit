@@ -12,10 +12,12 @@ export const chatApi = {
     limit = 20,
     cursor?: string,
   ): Promise<{
-    rooms: Room[];
-    nextCursor?: string;
-    hasMore: boolean;
-    totalCount: number;
+    data: {
+      rooms: Room[];
+      nextCursor?: string;
+      hasMore: boolean;
+      totalCount: number;
+    };
   }> =>
     apiClient.get('/chat/rooms/public', {
       params: {
@@ -26,7 +28,7 @@ export const chatApi = {
     }),
 
   // 내가 참여한 채팅방 목록 조회
-  getUserRooms: (): Promise<Room[]> => apiClient.get('/chat/rooms'),
+  getUserRooms: (): Promise<{ data: Room[] }> => apiClient.get('/chat/rooms'),
 
   // 채팅방 정보 조회
   getRoomInfo: (roomId: string): Promise<Room> =>
