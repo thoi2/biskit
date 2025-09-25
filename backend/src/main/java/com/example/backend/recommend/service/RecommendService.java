@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.Set;
 import java.util.LinkedHashSet;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 @Service
 @RequiredArgsConstructor
 public class RecommendService {
@@ -36,6 +38,7 @@ public class RecommendService {
     private final SearchCategoryPort searchCategoryPort;
     private final LoginSearchPort loginSearchPort;
 
+    private static final Logger log = LoggerFactory.getLogger(RecommendService.class);
     /**
      * 일반(single): 좌표만 받아 모든 카테고리 데이터 반환
      * - 카테고리별로 행 단위 저장하는 현재 스키마에서는
@@ -53,10 +56,11 @@ public class RecommendService {
         // 2) AI 서버 호출(모든 카테고리)
         JsonNode aiRaw = aiServerClient.requestAll(bld.lat(), bld.lng());
         Map<String, Double> byCat = aiResponseParser.toCategoryDoubleMap(aiRaw);
+//        Map<String, List<Double>> aijson = aiResponseParser.toCategoryMetricListV2(aiRaw);
         // category table에 없는건 skip
         Map<String, Integer> nameToId = categoryPort.getIdsByNames(byCat.keySet());
 
-
+        log.info("e"+nameToId);
         List<RecommendResponse.CategoryResult> resultList = new ArrayList<>();
         Set<Integer> cidSet = new LinkedHashSet<>();
         byCat.forEach((name, value) -> {
@@ -64,7 +68,6 @@ public class RecommendService {
             if (catId == null) {
                 return;
             }
-
             inOutPort.upsert(bld.id(), catId, value);
 
             cidSet.add(catId);

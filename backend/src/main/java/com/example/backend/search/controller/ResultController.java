@@ -1,6 +1,7 @@
 package com.example.backend.search.controller;
 
 import com.example.backend.common.response.ApiResponse;
+import com.example.backend.common.security.authentication.jwt.JwtUserInfo;
 import com.example.backend.search.dto.ResultDeleteResponse;
 import com.example.backend.search.dto.ResultDeleteCategoriesResponse;
 import com.example.backend.search.dto.ResultDeleteCategoriesRequest;
@@ -8,6 +9,7 @@ import com.example.backend.search.dto.ResultGetResponse;
 import com.example.backend.search.service.ResultService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,9 +26,16 @@ public class ResultController {
      */
     @GetMapping
     public ApiResponse<ResultGetResponse> getResults(
-            @RequestHeader(name = "X-User-Id") Long userId
+            @AuthenticationPrincipal JwtUserInfo userInfo
     ) {
-        ResultGetResponse res = resultService.getMyResults(userId);
+        Long uid;
+        try {
+            String userId = userInfo.userId();
+            uid = Long.valueOf(userId);
+        } catch (Exception e) {
+            uid = null;
+        }
+        ResultGetResponse res = resultService.getMyResults(uid);
         return ApiResponse.of(res);
     }
 
@@ -35,10 +44,18 @@ public class ResultController {
      */
     @DeleteMapping("/{buildingId}")
     public ApiResponse<ResultDeleteResponse> deleteBuilding(
-            @RequestHeader(name = "X-User-Id") Long userId,
+            @AuthenticationPrincipal JwtUserInfo userInfo,
             @PathVariable int buildingId
     ) {
-        ResultDeleteResponse res = resultService.deleteBuilding(userId, buildingId);
+        Long uid;
+        try {
+            String userId = userInfo.userId();
+            uid = Long.valueOf(userId);
+        } catch (Exception e) {
+            uid = null;
+        }
+
+        ResultDeleteResponse res = resultService.deleteBuilding(uid, buildingId);
         return ApiResponse.of(res);
     }
 
@@ -47,11 +64,18 @@ public class ResultController {
      */
     @DeleteMapping("/{buildingId}/categories")
     public ApiResponse<ResultDeleteCategoriesResponse> deleteCategories(
-            @RequestHeader(name = "X-User-Id") Long userId,
+            @AuthenticationPrincipal JwtUserInfo userInfo,
             @PathVariable int buildingId,
             @Valid @RequestBody ResultDeleteCategoriesRequest req
     ) {
-        ResultDeleteCategoriesResponse res = resultService.deleteCategories(userId, buildingId, req);
+        Long uid;
+        try {
+            String userId = userInfo.userId();
+            uid = Long.valueOf(userId);
+        } catch (Exception e) {
+            uid = null;
+        }
+        ResultDeleteCategoriesResponse res = resultService.deleteCategories(uid, buildingId, req);
         return ApiResponse.of(res);
     }
 }
