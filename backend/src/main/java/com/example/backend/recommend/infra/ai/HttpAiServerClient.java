@@ -19,15 +19,12 @@ import java.net.SocketTimeoutException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 @Component
 @RequiredArgsConstructor
 public class HttpAiServerClient implements AiServerClient {
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
-    private static final Logger log = LoggerFactory.getLogger(HttpAiServerClient.class);
 
     @Value("${ai.server.base-url}")
     private String baseUrl;
@@ -128,7 +125,6 @@ public class HttpAiServerClient implements AiServerClient {
             );
 
         } catch (ResourceAccessException e) {
-            log.info("net "+e.getMessage());
             // 네트워크 계열
             if (e.getCause() instanceof SocketTimeoutException) {
                 throw new BusinessException(
@@ -142,7 +138,6 @@ public class HttpAiServerClient implements AiServerClient {
             );
 
         } catch (Exception e) {
-            log.info("ex "+e.getMessage());
             throw new BusinessException(
                     RecommendErrorCode.AI_UPSTREAM_UNAVAILABLE.getCommonCode(),
                     RecommendErrorCode.AI_UPSTREAM_UNAVAILABLE.getMessage()

@@ -15,11 +15,13 @@ import java.util.stream.Collectors;
 import java.util.LinkedHashMap;
 import java.util.Collection;
 import java.util.Collections;
+
 @Component
 @RequiredArgsConstructor
 public class CategoryAdapter implements CategoryPort {
 
     private final CategoryRepository categoryRepository;
+
     @Override
     @Transactional(readOnly = true)
     public Integer getIdByName(String name) {
@@ -35,7 +37,9 @@ public class CategoryAdapter implements CategoryPort {
     @Transactional(readOnly = true)
     public Map<String, Integer> getIdsByNames(Collection<String> names) {
         if (names == null || names.isEmpty()) return Collections.emptyMap();
-        return categoryRepository.findAllByNameIn(names).stream()
+
+        List<CategoryProjection> rows = categoryRepository.findAllByNameIn(names);
+        return rows.stream()
                 .collect(Collectors.toMap(
                         CategoryProjection::getName,
                         CategoryProjection::getCategoryId,

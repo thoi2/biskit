@@ -23,7 +23,6 @@ import java.util.Optional;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.LinkedHashSet;
-
 @Service
 @RequiredArgsConstructor
 public class RecommendService {
@@ -53,9 +52,9 @@ public class RecommendService {
         // 2) AI 서버 호출(모든 카테고리)
         JsonNode aiRaw = aiServerClient.requestAll(bld.lat(), bld.lng());
         Map<String, Double> byCat = aiResponseParser.toCategoryDoubleMap(aiRaw);
+//        Map<String, List<Double>> aijson = aiResponseParser.toCategoryMetricListV2(aiRaw);
         // category table에 없는건 skip
         Map<String, Integer> nameToId = categoryPort.getIdsByNames(byCat.keySet());
-
 
         List<RecommendResponse.CategoryResult> resultList = new ArrayList<>();
         Set<Integer> cidSet = new LinkedHashSet<>();

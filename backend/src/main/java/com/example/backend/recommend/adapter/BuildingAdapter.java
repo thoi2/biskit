@@ -31,6 +31,10 @@ public class BuildingAdapter implements BuildingPort {
     @Override
     @Transactional
     public int insert(String adrMngNo, BigDecimal lat, BigDecimal lng) {
+        Integer existingId = buildingRepository.findByAdrMngNo(adrMngNo)
+                .map(BuildingEntity::getId)
+                .orElse(null);
+        if (existingId != null) return existingId;
         BuildingEntity ne = new BuildingEntity();
         ne.setAdrMngNo(adrMngNo);
         ne.setLat(normalize(lat));

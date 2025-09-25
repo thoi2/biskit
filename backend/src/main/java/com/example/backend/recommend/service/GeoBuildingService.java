@@ -10,9 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 @Service
 @RequiredArgsConstructor
 public class GeoBuildingService {
@@ -20,8 +17,6 @@ public class GeoBuildingService {
     private final BuildingPort buildingPort;       // ADR 기준 upsert/get
     private final GeocoderPort geocoderPort;       // 역지오코더 포트
     private final TransactionTemplate transactionTemplate; // DB 블록만 트랜잭션
-
-    private static final Logger log = LoggerFactory.getLogger(GeoBuildingService.class);
 
     public ResolvedBuilding resolve(@NonNull BigDecimal lat, @NonNull BigDecimal lng) {
         // 1) 트랜잭션 밖에서 역지오코딩
@@ -62,17 +57,14 @@ public class GeoBuildingService {
         final GeocoderPort.GeoPoint stdPoint;
         try {
             stdPoint = geocoderPort.getPointByAdr(address); // address → (lat,lng)
-            log.info("after geo");
         } catch (BusinessException be) {
             throw be;
         } catch (Exception e) {
-            log.info("error geo");
             throw new BusinessException(
                     RecommendErrorCode.GEO_UPSTREAM_BAD_RESPONSE.getCommonCode(),
                     RecommendErrorCode.GEO_UPSTREAM_BAD_RESPONSE.getMessage()
             );
         }
-        log.info("before db");
 
         final String keyForDb = useAdr ? adr : stdPoint.bldMgtNo();
         if (keyForDb == null || keyForDb.isBlank()) {
@@ -94,7 +86,6 @@ public class GeoBuildingService {
                 throw dup;
             }
         });
-        log.info("after db");
         // 5) 신규 레코드의 표준 좌표 반환
         return new ResolvedBuilding(buildingId, stdPoint.lat(), stdPoint.lng());
     }
