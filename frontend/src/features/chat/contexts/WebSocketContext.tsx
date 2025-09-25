@@ -76,7 +76,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
     console.log('Global WebSocket 연결 시도 URL:', url);
     const socket = new SockJS(url, null, {
-      withCredentials: true
+      // withCredentials: true
     });
 
     // 연결 시마다 쿠키에서 액세스 토큰을 새로 읽기
