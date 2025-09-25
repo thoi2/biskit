@@ -9,7 +9,16 @@ services:
       context: ./ai
       # 사용할 Dockerfile은 override 또는 prod 파일에서 지정합니다.
     container_name: ai
-
+    environment:
+      - GMS_BASE_URL=https://gms.ssafy.io/gmsapi/api.openai.com/v1
+      - GMS_KEY=${GMS_KEY}
+      - MODEL_PATH=survival_gnn.pt
+      - META_PATH=survival_meta.json
+      - LOG_LEVEL=INFO
+      - LLM_ENABLE=true
+      - LLM_MODEL=gpt-5-nano
+      - LLM_TIMEOUT=60
+      - DATA_DIR=./data
     networks:
       - my-network
   # Spring Boot 백엔드 애플리케이션
@@ -28,9 +37,13 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
-      - KT_API_KEY=${KT_API_KEY}
-      - PUBLIC_DATA_API_KEY=${PUBLIC_DATA_API_KEY}
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+      - SPRING_DATA_REDIS_TIMEOUT=2000
+      - LOGGING_LEVEL_ROOT=INFO
+      - LOGGING_LEVEL_APP=DEBUG
+      - GEOCODER_TOKEN=${GEOCODER_TOKEN}
+      - AI_GMS_BASE_URL=https://gms.ssafy.io/gmsapi
+      - AI_GMS_API_KEY=${GMS_KEY}
     depends_on:
       mysql:
         condition: service_healthy
