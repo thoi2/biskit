@@ -17,6 +17,8 @@ dist/
 .out/
 /backend/out
 /ai/data
+./original
+./out
 /ai/app/__pycache__
 /ai/app/*/__pycache__
 # npm 또는 Yarn 로그 파일
