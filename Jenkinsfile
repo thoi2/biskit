@@ -42,14 +42,8 @@ pipeline {
         stage('Debug - Verify Files') {
             steps {
                 sh '''
-                    echo "--- [DEBUG] 현재 작업 폴더 위치 ---"
-                    pwd
-                    echo "--- [DEBUG] 전체 파일 목록 및 권한 확인 (재귀적으로) ---"
-                    ls -laR
                     echo "--- [DEBUG] Jenkins가 사용하는 docker-compose.yml 내용 ---"
                     cat docker-compose.yml
-                    echo "--- [DEBUG] Jenkins가 사용하는 custom.cnf 내용 ---"
-                    cat ./mysql/conf/custom.cnf
                     echo "--- [DEBUG] Jenkins가 사용하는 init.sql 내용 ---"
                     cat ./mysql/init.sql
                     cat docker-compose.prod.yml
