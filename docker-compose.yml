@@ -27,14 +27,14 @@ services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile.dev  # 개발용 Dockerfile 명시
+      dockerfile: Dockerfile.dev # 개발용 Dockerfile 명시
     container_name: backend
 
     # 🎯 핫리로드를 위한 볼륨 마운트
     volumes:
-      - ./backend/src:/app/src:rw          # 소스 코드 실시간 동기화
-      - ./backend/build:/app/build         # 빌드 결과 공유
-      - gradle-cache:/home/gradle/.gradle  # Gradle 캐시 보존
+      - ./backend/src:/app/src:rw # 소스 코드 실시간 동기화
+      - ./backend/build:/app/build # 빌드 결과 공유
+      - gradle-cache:/home/gradle/.gradle # Gradle 캐시 보존
 
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
@@ -58,7 +58,7 @@ services:
 
     ports:
       - "8080:8080"
-      - "35729:35729"  # LiveReload 포트
+      - "35729:35729" # LiveReload 포트
 
     depends_on:
       mysql:
@@ -79,6 +79,10 @@ services:
         - NEXT_PUBLIC_KAKAO_MAP_KEY=${KAKAO_MAP_KEY}
       # 사용할 Dockerfile은 override 또는 prod 파일에서 지정합니다.
     container_name: frontend
+    environment:
+      - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - NEXT_PUBLIC_GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
+      - NEXT_PUBLIC_KAKAO_MAP_KEY=${KAKAO_MAP_KEY}
     depends_on:
       - backend
       - ai
@@ -137,7 +141,7 @@ services:
 volumes:
   mysql_data:
   redis_data:
-  gradle-cache:  # 🎯 Gradle 캐시 볼륨 추가
+  gradle-cache: # 🎯 Gradle 캐시 볼륨 추가
 
 networks:
   my-network:
