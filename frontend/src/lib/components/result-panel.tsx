@@ -1,7 +1,5 @@
 'use client';
 
-import { useStoreStore } from '@/features/stores/store/storesStore';
-import { useRecommendationStore } from '@/features/ai/store';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { FavoritesSection } from './FavoritesSection';
 import { StoreListSection } from '../../features/stores/components/StoreListSection';
@@ -9,8 +7,6 @@ import { RecommendationListSection } from '../../features/ai/components/Recommen
 
 export function ResultPanel() {
     // 🔥 Zustand에서 직접 상태 가져오기
-    const { stores } = useStoreStore();
-    const { recommendations } = useRecommendationStore();
     const { user } = useAuth();
 
     return (

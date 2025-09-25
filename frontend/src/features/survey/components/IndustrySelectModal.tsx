@@ -271,7 +271,7 @@ export default function IndustrySelectModal({
                                                     )}
                                                 </div>
                                                 <div className="text-right ml-3">
-                                                    {aiRec && (
+                                                    {aiRec && aiRec.score > 0 && ( // 🎯 스코어가 0보다 클 때만 표시
                                                         <div className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">
                                                             {aiRec.score > 100 ? Math.round(aiRec.score / 100) : Math.round(aiRec.score)}점
                                                         </div>
