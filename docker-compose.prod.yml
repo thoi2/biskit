@@ -16,9 +16,9 @@ services:
   frontend:
     build:
       dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_WS_URL=https://backend:8080/ws
     restart: always
-    args:
-      - NEXT_PUBLIC_WS_URL=https://backend:8080/ws
     environment:
       - NEXT_PUBLIC_WS_URL=https://backend:8080/ws
 
