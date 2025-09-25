@@ -240,9 +240,7 @@ public class ChatService {
      * 메시지 정보 완성 (private 메서드)
      */
     private void enrichMessage(ChatMessage message, String roomId, String username) {
-        if (message.getId() == null) {
-            message.setId(UUID.randomUUID().toString());
-        }
+        // ID는 DB 저장 시 auto increment로 생성되므로 설정하지 않음
 
         if (message.getTimestamp() == null) {
             message.setTimestamp(LocalDateTime.now(ZoneId.of("Asia/Seoul")));
@@ -343,7 +341,8 @@ public class ChatService {
      */
     private ChatMessage convertEntityToDto(ChatMessageEntity entity) {
         return ChatMessage.builder()
-            .id(entity.getMessageId())
+            .id(entity.getId()) // Long ID 사용
+            .messageId(entity.getMessageId())
             .type(entity.getMessageType())
             .roomId(entity.getRoomId())
             .senderId(entity.getSenderId())

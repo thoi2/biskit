@@ -85,8 +85,8 @@ public class AsyncBatchChatService {
     public void saveMessageAsync(ChatMessage message) {
         try {
             // 메시지 ID가 없으면 생성
-            if (message.getId() == null) {
-                message.setId(UUID.randomUUID().toString());
+            if (message.getMessageId() == null) {
+                message.setMessageId(UUID.randomUUID().toString());
             }
 
             // 타임스탬프가 없으면 현재 시간으로 설정
@@ -300,8 +300,8 @@ public class AsyncBatchChatService {
      */
     private ChatMessageEntity convertToEntity(ChatMessage message) {
         return ChatMessageEntity.builder()
-            .messageId(message.getId())
             .roomId(message.getRoomId())
+            .messageId(message.getMessageId())
             .senderId(message.getSenderId())
             .senderName(message.getSenderName())
             .profileImageUrl(message.getProfileImageUrl())

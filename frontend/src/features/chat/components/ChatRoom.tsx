@@ -14,15 +14,17 @@ interface ChatRoomProps {
   roomId: string;
   onLeaveRoom?: () => void;
   onBackClick?: () => void;
+  preloadedRoomInfo?: Room | null;
 }
 
 export function ChatRoom({
   roomId,
   onLeaveRoom,
-  onBackClick
+  onBackClick,
+  preloadedRoomInfo
 }: ChatRoomProps) {
-  const [roomInfo, setRoomInfo] = useState<Room | null>(null);
-  const [isLoadingRoom, setIsLoadingRoom] = useState(true);
+  const [roomInfo, setRoomInfo] = useState<Room | null>(preloadedRoomInfo);
+  const [isLoadingRoom, setIsLoadingRoom] = useState(!preloadedRoomInfo);
   const { user } = useAuth();
 
   // useAuth에서 사용자 정보 가져오기
@@ -48,24 +50,46 @@ export function ChatRoom({
     currentUsername
   });
 
-  // 방 정보 로드
+  console.log('🏠 ChatRoom - 상태:', {
+    messagesCount: messages?.length || 0,
+    roomId,
+    isConnected,
+    isConnecting,
+    roomInfo: roomInfo,
+    isLoadingRoom
+  });
+
+  // 방 정보 로드 (preloaded가 없을 때만)
   useEffect(() => {
     const loadRoomInfo = async () => {
       try {
         setIsLoadingRoom(true);
-        const room = await chatApi.getRoomInfo(roomId);
+        console.log('🏠 방 정보 로드:', roomId);
+        const response = await chatApi.getRoomInfo(roomId);
+        const room = response?.data || response; // Axios 응답에서 data 추출
+        console.log('🏠 방 정보:', room);
         setRoomInfo(room);
       } catch (error) {
         console.error('방 정보 로드 실패:', error);
+        setRoomInfo({
+          roomId,
+          roomName: `방 ${roomId.slice(-8)}`,
+          creatorId: '',
+          creatorUsername: '',
+          maxParticipants: 0,
+          currentParticipants: 0,
+          createdAt: new Date().toISOString()
+        });
       } finally {
         setIsLoadingRoom(false);
       }
     };
 
-    if (roomId) {
+    // preloadedRoomInfo가 없을 때만 API 호출
+    if (roomId && !preloadedRoomInfo) {
       loadRoomInfo();
     }
-  }, [roomId]);
+  }, [roomId, preloadedRoomInfo]);
 
   const handleLeaveRoom = async () => {
     try {
@@ -100,8 +124,8 @@ export function ChatRoom({
   return (
     <div className="h-full flex flex-col bg-white">
       {/* 헤더 */}
-      <div className="flex items-center justify-between p-4 border-b bg-gray-50">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between px-3 py-2 border-b bg-gray-50">
+        <div className="flex items-center gap-2">
           {onBackClick && (
             <Button
               onClick={onBackClick}
@@ -113,29 +137,36 @@ export function ChatRoom({
             </Button>
           )}
           <div>
-            <h2 className="font-semibold text-lg">{roomInfo.roomName}</h2>
-            <div className="flex items-center gap-2 text-sm text-gray-600">
+            <h2 className="font-medium text-sm">
+              {roomInfo?.roomName || `방 ${roomId.slice(-8)}`}
+            </h2>
+            <div className="flex items-center gap-2 text-xs text-gray-600">
+              {roomInfo?.bigCategory && (
+                <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-xs">
+                  {roomInfo.bigCategory}
+                </span>
+              )}
               <Users className="w-3 h-3" />
-              <span>{roomInfo.currentParticipants}/{roomInfo.maxParticipants}</span>
+              <span>
+                {roomInfo ? `${roomInfo.currentParticipants}/${roomInfo.maxParticipants}` : '-'}
+              </span>
               {!isConnected && (
-                <span className="text-red-500">
-                  {isConnecting ? '연결 중...' : '연결 끊김'}
+                <span className="text-red-500 text-xs">
+                  {isConnecting ? '연결중' : '끊김'}
                 </span>
               )}
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={handleLeaveRoom}
-            variant="ghost"
-            size="sm"
-            className="text-red-500 hover:text-red-700"
-          >
-            나가기
-          </Button>
-        </div>
+        <Button
+          onClick={handleLeaveRoom}
+          variant="ghost"
+          size="sm"
+          className="text-red-500 hover:text-red-700 text-xs px-2"
+        >
+          나가기
+        </Button>
       </div>
 
       {/* 메시지 영역 */}

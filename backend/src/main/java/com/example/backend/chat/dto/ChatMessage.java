@@ -14,7 +14,8 @@ import java.time.LocalDateTime;
 @Builder
 public class ChatMessage {
 
-    private String id;
+    private Long id;
+    private String messageId;
     private String type; // "JOIN", "CHAT", "LEAVE", "TYPING", "HISTORY", "ERROR"
     private String roomId;
     private String senderId;        // 사용자 ID (구분용)

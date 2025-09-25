@@ -7,6 +7,8 @@ import { RoomList } from './RoomList';
 import { ChatRoom } from './ChatRoom';
 import { CreateRoomForm } from './CreateRoomForm';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import { chatApi } from '../api/chatApi';
+import { Room } from '../types/chat';
 
 interface ChatMainModalProps {
   isOpen: boolean;
@@ -21,6 +23,8 @@ export function ChatMainModal({
 }: ChatMainModalProps) {
   const [currentView, setCurrentView] = useState<ModalView>('roomList');
   const [selectedRoomId, setSelectedRoomId] = useState<string>('');
+  const [roomInfo, setRoomInfo] = useState<Room | null>(null);
+  const [isLoadingRoom, setIsLoadingRoom] = useState(false);
   const { user } = useAuth();
 
   // useAuth에서 사용자 정보 가져오기
@@ -32,9 +36,39 @@ export function ChatMainModal({
   console.log('currentUserId:', currentUserId);
   console.log('currentUsername:', currentUsername);
 
-  const handleJoinRoom = (roomId: string) => {
-    setSelectedRoomId(roomId);
-    setCurrentView('chatRoom');
+  const handleJoinRoom = async (roomId: string) => {
+    try {
+      setIsLoadingRoom(true);
+      console.log('🏠 방 정보 미리 로드:', roomId);
+
+      // 먼저 방 정보 API 호출
+      const response = await chatApi.getRoomInfo(roomId);
+      const room = response?.data || response; // Axios 응답에서 data 추출
+      console.log('🏠 방 정보 로드 완료:', room);
+      console.log('🏠 room.roomName:', room?.roomName);
+      console.log('🏠 room.bigCategory:', room?.bigCategory);
+
+      setRoomInfo(room);
+      setSelectedRoomId(roomId);
+      setCurrentView('chatRoom');
+    } catch (error) {
+      console.error('방 정보 로드 실패:', error);
+
+      // 방 정보 로드 실패해도 일단 입장은 허용
+      setRoomInfo({
+        roomId,
+        roomName: `방 ${roomId.slice(-8)}`,
+        creatorId: '',
+        creatorUsername: '',
+        maxParticipants: 0,
+        currentParticipants: 0,
+        createdAt: new Date().toISOString()
+      });
+      setSelectedRoomId(roomId);
+      setCurrentView('chatRoom');
+    } finally {
+      setIsLoadingRoom(false);
+    }
   };
 
   const handleCreateRoom = () => {
@@ -49,11 +83,13 @@ export function ChatMainModal({
   const handleBackToList = () => {
     setCurrentView('roomList');
     setSelectedRoomId('');
+    setRoomInfo(null);
   };
 
   const handleLeaveRoom = () => {
     setCurrentView('roomList');
     setSelectedRoomId('');
+    setRoomInfo(null);
   };
 
   if (!isOpen) return null;
@@ -105,7 +141,16 @@ export function ChatMainModal({
 
         {/* 콘텐츠 */}
         <div className="flex-1 overflow-hidden">
-          {currentView === 'roomList' && (
+          {isLoadingRoom && (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                <p className="text-sm text-gray-600">방 정보 로드 중...</p>
+              </div>
+            </div>
+          )}
+
+          {!isLoadingRoom && currentView === 'roomList' && (
             <div className="h-full overflow-y-auto p-2">
               <RoomList
                 onJoinRoom={handleJoinRoom}
@@ -114,12 +159,16 @@ export function ChatMainModal({
             </div>
           )}
 
-          {currentView === 'chatRoom' && selectedRoomId && (
-            <ChatRoom
-              roomId={selectedRoomId}
-              onLeaveRoom={handleLeaveRoom}
-              onBackClick={handleBackToList}
-            />
+          {!isLoadingRoom && currentView === 'chatRoom' && selectedRoomId && (
+            <>
+              {console.log('ChatRoom으로 전달할 roomInfo:', roomInfo)}
+              <ChatRoom
+                roomId={selectedRoomId}
+                onLeaveRoom={handleLeaveRoom}
+                onBackClick={handleBackToList}
+                preloadedRoomInfo={roomInfo}
+              />
+            </>
           )}
 
           {currentView === 'createRoom' && (

@@ -25,6 +25,8 @@ export function MessageList({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const prevMessagesLengthRef = useRef(messages.length);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 스크롤을 맨 아래로
   const scrollToBottom = () => {
@@ -41,22 +43,42 @@ export function MessageList({
     setShouldAutoScroll(isNearBottom);
     setShowScrollToBottom(!isNearBottom && messages.length > 0);
 
-    // 맨 위에서 더 많은 메시지 로드
-    if (scrollTop === 0 && hasMoreMessages && !isLoadingMessages && onLoadMore) {
-      onLoadMore();
+    // 디바운싱을 사용한 무한 스크롤
+    if (scrollTop < 100 && hasMoreMessages && !isLoadingMessages && onLoadMore) {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      scrollTimeoutRef.current = setTimeout(() => {
+        console.log('🔄 무한 스크롤 트리거:', { scrollTop, hasMoreMessages, isLoadingMessages });
+        onLoadMore();
+      }, 200);
     }
   };
 
-  // 새 메시지가 추가될 때 자동 스크롤
+  // 새 메시지가 추가될 때 자동 스크롤 (신규 메시지만)
   useEffect(() => {
-    if (shouldAutoScroll && messages.length > 0) {
-      scrollToBottom();
+    const isNewMessage = messages.length > prevMessagesLengthRef.current;
+    prevMessagesLengthRef.current = messages.length;
+
+    if (shouldAutoScroll && messages.length > 0 && isNewMessage) {
+      setTimeout(scrollToBottom, 50);
     }
   }, [messages, shouldAutoScroll]);
 
-  // 초기 스크롤
+  // 초기 로드 시 스크롤
   useEffect(() => {
-    scrollToBottom();
+    if (messages.length > 0 && !isLoadingMessages) {
+      setTimeout(scrollToBottom, 100);
+    }
+  }, [messages.length > 0, isLoadingMessages]);
+
+  // cleanup
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
   }, []);
 
   if (messages.length === 0 && !isLoadingMessages) {
@@ -71,11 +93,11 @@ export function MessageList({
   }
 
   return (
-    <div className="flex-1 relative">
+    <div className="flex-1 relative overflow-hidden">
       <div
         ref={messagesContainerRef}
         onScroll={handleScroll}
-        className="h-full overflow-y-auto p-4 space-y-2"
+        className="absolute inset-0 overflow-y-auto p-4 space-y-2"
       >
         {/* 로딩 인디케이터 (상단) */}
         {isLoadingMessages && (
