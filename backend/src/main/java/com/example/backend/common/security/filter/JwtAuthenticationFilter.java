@@ -131,9 +131,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
             // JWT 토큰이 없어도 다음 필터로 진행할 수 있지만, shouldNotFilter에서 이미 필터링됨
 
-            System.out.println("✅ 인증 성공 - SecurityContext 설정 완료");
-            System.out.println("  - Principal: " + authentication.getPrincipal());
-            System.out.println("  - Name: " + authentication.getName());
+            // System.out.println("✅ 인증 성공 - SecurityContext 설정 완료");
+            // System.out.println("  - Principal: " + authentication.getPrincipal());
+            // System.out.println("  - Name: " + authentication.getName());
 
         } catch (MissingClaimException e) {
             System.out.println("🚨 JWT 클레임 누락: " + e.getClaimName());
