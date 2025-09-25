@@ -41,9 +41,9 @@ public class User {
     private String profileImageUrl;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "oauth2_provider", nullable = false) // ⬅️ name 속성 추가
+    @Column(name = "oauth2_provider",nullable = false)
     private OAuth2Provider oauth2Provider;
 
-    @Column(name = "oauth2_provider_id", nullable = false) // ⬅️ name 속성 추가
+    @Column(name = "oauth2_provider_id",nullable = false)
     private String oauth2ProviderId;
 }
