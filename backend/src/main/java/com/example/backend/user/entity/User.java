@@ -41,10 +41,10 @@ public class User {
     private String profileImageUrl;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "oauth2_provider", nullable = false)
+    @Column(name = "oauth2_provider",nullable = false)
     private OAuth2Provider oauth2Provider;
 
-    @Column(name = "oauth2_provider_id", nullable = false)
+    @Column(name = "oauth2_provider_id",nullable = false)
     private String oauth2ProviderId;
 
     // 설문조사 및 업종 추천 관련 컬럼

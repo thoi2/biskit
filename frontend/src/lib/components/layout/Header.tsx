@@ -5,10 +5,13 @@ import Button from '@/lib/components/ui/Button/Button';
 import Image from 'next/image';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { logoutAPI } from '@/features/auth/api/authApi';
-import { User, LogOut, Zap } from 'lucide-react'; // Zap 아이콘 추가
+import { User, LogOut, MessageCircle, Zap } from 'lucide-react';
+import { useState } from 'react';
+import { ChatMainModal } from '@/features/chat/components/ChatMainModal';
 
 export default function Header() {
   const { user, logout } = useAuth();
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const handleLogin = () => {
     const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -163,9 +166,17 @@ export default function Header() {
                     href="/my-page"
                     className="text-lg font-semibold text-white hover:text-orange-200 transition-colors"
                   >
-                    {user.name}님
+                    {user.username}님
                   </Link>
                 </div>
+
+                {/* 채팅 아이콘 */}
+                <Button
+                  onClick={() => setIsChatOpen(true)}
+                  className="bg-[#8B4513] hover:bg-amber-800 text-white p-3 rounded-lg transition-all duration-200 shadow-md border border-amber-700"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                </Button>
 
                 {/* 프로필 이미지 */}
                 <Link href="/my-page" className="group">
@@ -202,6 +213,14 @@ export default function Header() {
           </div>
         </div>
       </div>
+
+      {/* 채팅 모달 */}
+      {user && (
+        <ChatMainModal
+          isOpen={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+        />
+      )}
     </header>
   );
 }

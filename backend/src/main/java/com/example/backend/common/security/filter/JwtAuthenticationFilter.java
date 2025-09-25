@@ -3,6 +3,7 @@ package com.example.backend.common.security.filter;
 import com.example.backend.common.security.authentication.jwt.JwtUserInfo;
 import com.example.backend.common.security.authentication.jwt.JwtUtil;
 import com.example.backend.common.security.authentication.jwt.service.RefreshTokenService;
+import com.example.backend.common.security.config.SecurityPaths;
 import com.example.backend.common.security.exception.JwtAuthenticationExceptionHandler;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -28,8 +29,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import static com.example.backend.common.security.config.SecurityPaths.PUBLIC_GET_PATHS;
-import static com.example.backend.common.security.config.SecurityPaths.PUBLIC_PATHS;
 
 /**
  * JWT 기반 인증을 처리하는 필터 클래스 (디버깅 로그 강화)
@@ -51,7 +50,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtAuthenticationExceptionHandler exceptionHandler;
 
     /**
-     * 각 HTTP 요청에 대해 JWT 인증을 처리하는 메인 메서드 (디버깅 강화)
+     * 요청이 이 필터에서 처리되지 않아야 하는지 결정
+     * PUBLIC_PATHS와 PUBLIC_GET_PATHS에 포함된 경로나 OPTIONS 메서드는 필터링하지 않음
+     *
+     * @param request HTTP 요청 객체
+     * @return 필터링하지 않아야 하면 true, 필터링해야 하면 false
+     * @throws ServletException 서블릿 예외 발생 시
+     */
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        String method = request.getMethod();
+
+        if ("OPTIONS".equals(method)) {
+            return true;
+        }
+
+        boolean isPublicPath = Arrays.stream(SecurityPaths.PUBLIC_PATHS)
+            .anyMatch(pattern -> pathMatcher.match(pattern, path));
+        boolean isPublicGetPath = "GET".equals(method) && Arrays.stream(SecurityPaths.PUBLIC_GET_PATHS)
+            .anyMatch(pattern -> pathMatcher.match(pattern, path));
+
+        return isPublicPath || isPublicGetPath;
+    }
+
+    /**
+     * 각 HTTP 요청에 대해 JWT 인증을 처리하는 메인 메서드
      * 쿠키에서 JWT 토큰을 추출하고 검증하여 인증 정보를 설정합니다.
      */
     @Override
@@ -88,37 +112,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = extractTokenFromCookie(request);
             System.out.println("🔐 쿠키에서 토큰 추출: " + (token != null ? "있음 (길이: " + token.length() + ")" : "없음"));
 
-            if (!StringUtils.hasText(token)) {
-                System.out.println("🚨 토큰 없음 - 401 에러 응답 준비");
-                System.out.println("🚨 응답 상태: " + response.getStatus());
-                exceptionHandler.handleAccessTokenMissing(response, request.getRequestURI());
-                System.out.println("🚨 401 에러 응답 완료 - 필터 체인 중단");
-                return;
+            // JWT 토큰이 있는 경우에만 인증 처리
+            if (StringUtils.hasText(token)) {
+                Claims tokenClaims = jwtUtil.extractClaims(token);
+
+                if (!validateAccessToken(tokenClaims, response)) {
+                    return;
+                }
+
+                // RTR 보안: 리프레시 토큰을 액세스 토큰으로 잘못 사용하는 경우 감지
+                if (isRefreshTokenMisused(tokenClaims, response)) {
+                    return;
+                }
+
+                JwtUserInfo userInfo = jwtUtil.createJwtUserInfo(tokenClaims);
+                UsernamePasswordAuthenticationToken authentication = createAuthentication(userInfo);
+                SecurityContextHolder.getContext().setAuthentication(authentication);
             }
-
-            System.out.println("✅ 토큰 검증 시작");
-            Claims tokenClaims = jwtUtil.extractClaims(token);
-            System.out.println("✅ 토큰 클레임 추출 성공");
-            System.out.println("  - subject: " + tokenClaims.getSubject());
-            System.out.println("  - user_id: " + tokenClaims.get("user_id"));
-            System.out.println("  - token_type: " + tokenClaims.get("token_type"));
-
-            if (!validateAccessToken(tokenClaims, response)) {
-                System.out.println("❌ ACCESS 토큰 검증 실패");
-                return;
-            }
-
-            // RTR 보안: 리프레시 토큰을 액세스 토큰으로 잘못 사용하는 경우 감지
-            if (isRefreshTokenMisused(tokenClaims, response)) {
-                System.out.println("❌ 리프레시 토큰 오남용 감지");
-                return;
-            }
-
-            System.out.println("✅ 토큰 검증 완료 - 사용자 정보 생성");
-            JwtUserInfo userInfo = jwtUtil.createJwtUserInfo(tokenClaims);
-
-            UsernamePasswordAuthenticationToken authentication = createAuthentication(userInfo);
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            // JWT 토큰이 없어도 다음 필터로 진행할 수 있지만, shouldNotFilter에서 이미 필터링됨
 
             System.out.println("✅ 인증 성공 - SecurityContext 설정 완료");
             System.out.println("  - Principal: " + authentication.getPrincipal());
@@ -155,45 +166,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    /**
-     * JWT 인증 필터를 건너뛸 요청 경로 판단 (디버깅 강화)
-     * 특정 공개 API 엔드포인트에 대해서는 JWT 인증을 수행하지 않습니다.
-     */
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getRequestURI();
-        String method = request.getMethod();
-
-        System.out.println("🤔 필터 건너뛰기 검사: " + method + " " + path);
-
-        if ("OPTIONS".equals(method)) {
-            System.out.println("✅ OPTIONS 요청 - 필터 건너뛰기");
-            return true;
-        }
-
-        boolean isPublicPath = Arrays.stream(PUBLIC_PATHS)
-                .anyMatch(pattern -> {
-                    boolean matches = pathMatcher.match(pattern, path);
-                    if (matches) {
-                        System.out.println("✅ PUBLIC_PATHS 매치: " + pattern + " -> " + path);
-                    }
-                    return matches;
-                });
-
-        boolean isPublicGetPath = "GET".equals(method) && Arrays.stream(PUBLIC_GET_PATHS)
-                .anyMatch(pattern -> {
-                    boolean matches = pathMatcher.match(pattern, path);
-                    if (matches) {
-                        System.out.println("✅ PUBLIC_GET_PATHS 매치: " + pattern + " -> " + path);
-                    }
-                    return matches;
-                });
-
-        boolean shouldSkip = isPublicPath || isPublicGetPath;
-        System.out.println("🎯 필터 건너뛰기 결정: " + (shouldSkip ? "YES" : "NO"));
-
-        return shouldSkip;
-    }
 
     /**
      * JWT 사용자 정보를 기반으로 Spring Security Authentication 객체 생성

@@ -4,6 +4,7 @@ import com.example.backend.common.response.ApiResponse;
 import com.example.backend.common.security.authentication.oauth2.dto.OAuth2TokenRequest;
 import com.example.backend.common.security.authentication.oauth2.service.OAuth2TokenService;
 import com.example.backend.common.security.authentication.oauth2.dto.OAuth2TokenResponse;
+import com.example.backend.common.security.authentication.oauth2.dto.UserAuthResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -16,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import com.example.backend.common.security.authentication.oauth2.userInfo.JwtUserInfo;
+import com.example.backend.common.security.authentication.jwt.JwtUserInfo;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -60,9 +61,10 @@ public class TokenController {
     }
 
     @GetMapping("/check")
-    public ResponseEntity<ApiResponse<JwtUserInfo>> check(
+    public ResponseEntity<ApiResponse<UserAuthResponse>> check(
             @AuthenticationPrincipal JwtUserInfo userInfo) {
         // @AuthenticationPrincipal 어노테이션이 userInfo 객체를 자동으로 주입해줍니다.
-        return ResponseEntity.ok(ApiResponse.of(userInfo));
+        UserAuthResponse response = oauth2TokenService.buildUserAuthResponse(userInfo);
+        return ResponseEntity.ok(ApiResponse.of(response));
     }
 }

@@ -81,6 +81,7 @@ public class JwtUtil {
             .claim("token_type", tokenType)
             .claim("oauth2_provider", userInfo.oauth2Provider())
             .claim("oauth2_provider_id", userInfo.oauth2ProviderId())
+            .claim("profile_image_url", userInfo.profileImageUrl())
             .issuedAt(Date.from(now))
             .expiration(Date.from(now.plusSeconds(expiration)))
             .signWith(secretKey)
@@ -114,6 +115,7 @@ public class JwtUtil {
         String username = claims.getSubject();
         String oauth2Provider = claims.get("oauth2_provider", String.class);
         String oauth2ProviderId = claims.get("oauth2_provider_id", String.class);
+        String profileImageUrl = claims.get("profile_image_url", String.class);
 
         if (userId == null || username == null || oauth2Provider == null || oauth2ProviderId == null) {
             throw new JwtException("필수 클레임이 누락되었습니다");
@@ -123,7 +125,8 @@ public class JwtUtil {
             userId,
             username,
             oauth2Provider,
-            oauth2ProviderId
+            oauth2ProviderId,
+            profileImageUrl
         );
     }
 
@@ -136,13 +139,13 @@ public class JwtUtil {
      */
     public JwtUserInfo validateRefreshToken(String refreshToken) {
         Claims claims = extractClaims(refreshToken);
-        
+
         // 토큰 타입 검증
         String tokenType = claims.get("token_type", String.class);
         if (!"REFRESH".equals(tokenType)) {
             throw new JwtException("REFRESH 토큰이 아닙니다: " + tokenType);
         }
-        
+
         return createJwtUserInfo(claims);
     }
 }
