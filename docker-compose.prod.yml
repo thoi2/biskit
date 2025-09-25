@@ -18,7 +18,7 @@ services:
       dockerfile: Dockerfile
     restart: always
     environment:
-      - NEXT_PUBLIC_WS_URL=ws://backend:8080/ws
+      - NEXT_PUBLIC_WS_URL=https://backend:8080/ws
 
   mysql:
     # 보안을 위해 운영 환경에서는 DB 포트를 외부에 노출하지 않습니다.
