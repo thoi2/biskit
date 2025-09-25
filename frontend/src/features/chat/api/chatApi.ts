@@ -29,6 +29,13 @@ export const chatApi = {
   getRoomInfo: (roomId: string): Promise<Room> =>
     apiClient.get(`/chat/rooms/${roomId}`),
 
+  // 방 참여하기 (REST API가 없으면 공개방 목록에서 정보 찾기)
+  findRoomInPublicList: (roomId: string): Promise<Room | null> =>
+    chatApi.getPublicRooms().then(response => {
+      const room = response.rooms.find(r => r.roomId === roomId);
+      return room || null;
+    }),
+
   // 채팅방 나가기
   leaveRoom: (roomId: string): Promise<string> =>
     apiClient.delete(`/chat/rooms/${roomId}/leave`),

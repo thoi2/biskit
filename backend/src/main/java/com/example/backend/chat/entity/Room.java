@@ -53,7 +53,7 @@ public class Room {
 
     @Column(name = "max_participants")
     @Builder.Default
-    private Integer maxParticipants = 1000; // 최대 참여자 수
+    private Integer maxParticipants = 500; // 최대 참여자 수
 
     @Column(name = "current_participants")
     @Builder.Default

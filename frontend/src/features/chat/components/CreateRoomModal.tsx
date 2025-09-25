@@ -26,7 +26,7 @@ export function CreateRoomModal({
   const [formData, setFormData] = useState<RoomCreateRequest>({
     roomName: '',
     bigCategory: defaultCategory || '',
-    maxParticipants: 1000
+    maxParticipants: 500
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,8 +39,8 @@ export function CreateRoomModal({
       return;
     }
 
-    if (formData.maxParticipants! < 2 || formData.maxParticipants! > 1000) {
-      setError('참여자 수는 2명 이상 1000명 이하여야 합니다.');
+    if (formData.maxParticipants! < 2 || formData.maxParticipants! > 500) {
+      setError('참여자 수는 2명 이상 500명 이하여야 합니다.');
       return;
     }
 
@@ -56,7 +56,7 @@ export function CreateRoomModal({
       setFormData({
         roomName: '',
         bigCategory: defaultCategory || '',
-        maxParticipants: 1000
+        maxParticipants: 500
       });
     } catch (err: any) {
       console.error('방 생성 실패:', err);
@@ -143,11 +143,11 @@ export function CreateRoomModal({
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  maxParticipants: parseInt(e.target.value) || 1000
+                  maxParticipants: parseInt(e.target.value) || 500
                 })
               }
               min={2}
-              max={1000}
+              max={500}
               disabled={isLoading}
               required
             />

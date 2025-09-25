@@ -20,16 +20,16 @@ public record RoomCreateRequest(
     String bigCategory,
 
     @Min(value = 2, message = "최소 참여자는 2명 이상이어야 합니다")
-    @Max(value = 1000, message = "최대 참여자는 1000명 이내여야 합니다")
+    @Max(value = 500, message = "최대 참여자는 500명 이내여야 합니다")
     Integer maxParticipants
 ) {
     /**
      * 기본값 설정을 위한 생성자
      */
     public RoomCreateRequest {
-        // maxParticipants가 null이면 기본값 1000 설정
+        // maxParticipants가 null이면 기본값 500 설정
         if (maxParticipants == null) {
-            maxParticipants = 1000;
+            maxParticipants = 500;
         }
     }
 
