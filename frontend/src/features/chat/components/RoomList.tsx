@@ -15,7 +15,7 @@ interface RoomListProps {
 
 export function RoomList({ onJoinRoom, onCreateRoom }: RoomListProps) {
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [userRooms, setUserRooms] = useState<Room[]>([]);
+  const [userRooms, setUserRooms] = useState<{ data: Room[] }>({ data: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +61,7 @@ export function RoomList({ onJoinRoom, onCreateRoom }: RoomListProps) {
         nextCursor: null,
         hasMore: false,
       };
-      const myRooms = isLoadMore ? userRooms : myRoomsResponse.data || [];
+      const myRooms = isLoadMore ? userRooms : myRoomsResponse || [];
 
       console.log('publicRoomsData:', publicRoomsData);
       console.log('myRooms:', myRooms);
@@ -129,7 +129,7 @@ export function RoomList({ onJoinRoom, onCreateRoom }: RoomListProps) {
   }, [hasMore, isLoadingMore, activeTab]);
 
   const isUserInRoom = (roomId: string) => {
-    return (userRooms || []).some(room => room.roomId === roomId);
+    return (userRooms.data || []).some(room => room.roomId === roomId);
   };
 
   if (isLoading) {
@@ -254,7 +254,7 @@ export function RoomList({ onJoinRoom, onCreateRoom }: RoomListProps) {
         {/* 내 방 탭 */}
         {activeTab === 'my' && (
           <>
-            {(userRooms || []).length === 0 ? (
+            {(userRooms.data || []).length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <p>참여 중인 채팅방이 없습니다.</p>
                 <p className="text-sm mt-1">채팅방에 참여해보세요!</p>
