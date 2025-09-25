@@ -32,10 +32,13 @@ services:
       - PUBLIC_DATA_API_KEY=${PUBLIC_DATA_API_KEY}
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
     depends_on:
+      ai:
+        condition: service_started
       mysql:
         condition: service_healthy
       redis:
         condition: service_started
+
     networks:
       - my-network
 
@@ -55,9 +58,6 @@ services:
       - NEXT_PUBLIC_GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
       - NEXT_PUBLIC_KAKAO_MAP_KEY=${KAKAO_MAP_KEY}
 
-    depends_on:
-      - backend
-      - ai
     networks:
       - my-network
 
@@ -75,9 +75,6 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       TZ: Asia/Seoul
     volumes:
-      # 1. 설정 파일 마운트
-      - ./mysql/conf/custom.cnf:/etc/mysql/conf.d/custom.cnf:ro
-      # 2. 데이터 영속성을 위한 볼륨 (가장 중요)
       - mysql_data:/var/lib/mysql
     healthcheck:
       test:
