@@ -66,6 +66,22 @@ export const useStoreSelectors = () => {
     const { stores } = useStoreStore();
     const { selectedCategories } = useMapStore();
 
+    // 🎯 중복 제거한 모든 상가 (좌표 기준)
+    const uniqueStores = stores.reduce((acc, store) => {
+        const lat = store.lat;
+        const lng = store.lng;
+
+        // 좌표가 없으면 제외
+        if (!lat || !lng) return acc;
+
+        // 좌표 기준 중복 체크 (소수점 5자리까지)
+        const key = `${lat.toFixed(5)}_${lng.toFixed(5)}`;
+        if (!acc.find(s => `${s.lat?.toFixed(5)}_${s.lng?.toFixed(5)}` === key)) {
+            acc.push(store);
+        }
+        return acc;
+    }, [] as Store[]);
+
     return {
         // 필터링된 상가들 (숨김 제외)
         visibleStores: stores.filter(store => !store.hidden),
@@ -79,9 +95,25 @@ export const useStoreSelectors = () => {
             );
         }),
 
+        // 🎯 중복 제거된 모든 상가 (좌표 기준)
+        uniqueStores: uniqueStores,
+
+        // 🎯 중복 제거된 상가 좌표만 (API 전송용)
+        uniqueStoreCoords: uniqueStores.map(store => ({
+            id: store.id,
+            name: store.displayName ||
+                `${store.storeName} ${store.branchName || ''}`.trim() ||
+                '상가명 미상',
+            address: store.roadAddress || '주소 미상',
+            lat: store.lat,
+            lng: store.lng,
+            categoryName: store.categoryName || store.bizCategoryCode || '업종 미상'
+        })),
+
         // 통계 정보
         storeStats: {
             totalStores: stores.length,
+            uniqueStores: uniqueStores.length,
             hiddenStores: stores.filter(s => s.hidden).length,
             visibleStores: stores.filter(s => !s.hidden).length,
         }

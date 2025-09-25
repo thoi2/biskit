@@ -1,71 +1,128 @@
-// features/ai/hooks/useRecommendationForm.ts
-
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useMapStore } from '@/features/map/store/mapStore';
-import { useRequestRecommendation } from '@/features/ai/hooks/useRecommendation';
+import { useRecommendationStore } from '@/features/ai/store';
+import { getSingleRecommendation, getSingleIndustryRecommendation } from '@/features/ai/api';
+
+// 타입 정의
+interface CategoryResult {
+  category: string;
+  survivalRate: number;
+}
+
+interface RecommendationResult {
+  building: {
+    building_id: number;
+    lat: number;
+    lng: number;
+  };
+  result: CategoryResult[];
+  meta: {
+    source: string;
+    version: string;
+    last_at: string;
+  };
+}
 
 export function useRecommendationForm() {
-  // 1. 폼 입력 상태 관리
-  const { coordinates, setCoordinates } = useMapStore();
-  // const [coordinates, setCoordinates] = useState({ lat: '', lng: '' });
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState<string>('');
+  const { coordinates } = useMapStore(); // 🎯 지도는 좌표만
 
-  // 2. 외부 훅 연동
-  const { setActiveTab } = useMapStore();
-  const { singleRecommendation, singleIndustryRecommendation } =
-    useRequestRecommendation();
+  const {
+    isLoading,
+    startRequest,
+    setRequestSuccess,
+    setRequestError,
+    setRecommendationMarkers // 🎯 추천 스토어에서 마커 관리
+  } = useRecommendationStore();
 
-  // 3. 로딩 상태 통합 (두 뮤테이션 중 하나라도 진행 중이면 true)
-  const isLoading =
-    singleRecommendation.isPending || singleIndustryRecommendation.isPending;
-
-  // 4. 에러 상태 통합
-  const error =
-    singleRecommendation.error || singleIndustryRecommendation.error;
-
-  // 5. 폼 제출 핸들러 (모든 로직을 포함)
-  const handleSubmit = () => {
-    const lat =
-      coordinates.lat !== null
-        ? Math.trunc(coordinates.lat * 1e12) / 1e12
-        : null;
-
-    const lng =
-      coordinates.lng !== null
-        ? Math.trunc(coordinates.lng * 1e12) / 1e12
-        : null;
-
-    // 1. null 값인지 먼저 확인합니다.
-    if (lat === null || lng === null) {
-      alert('정확한 위도와 경도를 입력해주세요.');
+  const handleSubmit = useCallback(async () => {
+    if (!coordinates.lat || !coordinates.lng) {
+      alert('분석할 위치를 선택해주세요.');
       return;
     }
 
-    const mutationOptions = {
-      onSuccess: () => {
-        // 성공 시 결과 탭으로 이동
-        setActiveTab('result');
-      },
-    };
+    // 🎯 스토어에서 로딩 시작 (기존 마커도 초기화)
+    startRequest();
 
-    if (category) {
-      singleIndustryRecommendation.mutate(
-        { lat, lng, category },
-        mutationOptions,
-      );
-    } else {
-      singleRecommendation.mutate({ lat, lng }, mutationOptions);
+    try {
+      let result: RecommendationResult;
+
+      if (category) {
+        // 🎯 단일+업종 분석
+        console.log('🚀 단일+업종 분석 요청:', {
+          lat: coordinates.lat,
+          lng: coordinates.lng,
+          categoryName: category
+        });
+
+        result = await getSingleIndustryRecommendation({
+          lat: coordinates.lat,
+          lng: coordinates.lng,
+          categoryName: category
+        });
+
+        console.log('✅ 단일+업종 분석 결과:', result);
+      } else {
+        // 🎯 단일 분석
+        console.log('🚀 단일 분석 요청:', {
+          lat: coordinates.lat,
+          lng: coordinates.lng
+        });
+
+        result = await getSingleRecommendation({
+          lat: coordinates.lat,
+          lng: coordinates.lng
+        });
+
+        console.log('✅ 단일 분석 결과:', result);
+      }
+
+      // 🎯 추천 결과 저장
+      setRequestSuccess(result);
+
+      // 🎯 추천 마커 생성 및 저장
+      const marker = {
+        id: `ai-${result.building.building_id}`,
+        lat: result.building.lat,
+        lng: result.building.lng,
+        type: 'recommendation' as const,
+        title: `AI 추천 #${result.building.building_id}`,
+        category: result.result[0]?.category || '분석 결과',
+        survivalRate: result.result[0]?.survivalRate || 0,
+        buildingId: result.building.building_id
+      };
+
+      setRecommendationMarkers([marker]);
+
+      console.log('🗺️ 추천 마커 생성:', marker);
+
+      // 🎯 성공 메시지
+      const resultText = result.result.map((r: CategoryResult) =>
+          `${r.category}: ${(r.survivalRate * 100).toFixed(1)}%`
+      ).join('\n');
+
+      const analysisType = category ? '단일+업종' : '단일';
+      alert(`✅ ${analysisType} 분석 완료!\n\n` +
+          `📍 위치: ${coordinates.lat.toFixed(6)}, ${coordinates.lng.toFixed(6)}\n` +
+          `${category ? `🎯 업종: ${category}\n` : ''}` +
+          `🏢 건물 ID: ${result.building.building_id}\n` +
+          `🔄 Source: ${result.meta.source}\n\n` +
+          `📊 생존율 분석:\n${resultText}\n\n` +
+          `🗺️ 지도에 마커가 표시되었습니다!\n` +
+          `👉 자세한 결과는 결과 탭에서 확인하세요!`);
+
+      return result;
+    } catch (error: any) {
+      console.error('분석 오류:', error);
+      setRequestError(error.response?.data?.message || error.message);
+      alert(`❌ 분석 실패\n\n${error.response?.data?.message || error.message}`);
     }
-  };
+  }, [coordinates, category, startRequest, setRequestSuccess, setRequestError, setRecommendationMarkers]);
 
-  // 6. 컴포넌트에서 사용할 모든 것을 반환
   return {
-    coordinates,
-    setCoordinates,
     category,
     setCategory,
     isLoading,
-    error,
-    handleSubmit,
+    handleSubmit
   };
 }

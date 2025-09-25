@@ -22,7 +22,11 @@ declare global {
 export function KakaoMap() {
   // 🎯 store에서 데이터 가져오기
   const { stores } = useStoreStore();
-  const { recommendationResult } = useRecommendationStore();
+  const {
+    recommendationResult,
+    recommendationMarkers // 🎯 새로 추가한 마커 배열
+  } = useRecommendationStore();
+
   const {
     isSearching,
     selectedCategories,
@@ -32,10 +36,10 @@ export function KakaoMap() {
     setHighlightedRecommendation,
     setCoordinates,
     setMap,
-    activeTab,         // 🎯 추가
-    isDrawingMode,     // 🎯 추가
-    recommendPin,      // 🎯 추가
-    setRecommendPin,   // 🎯 추가
+    activeTab,
+    isDrawingMode,
+    recommendPin,
+    setRecommendPin,
   } = useMapStore();
 
   // Store 액션들
@@ -51,16 +55,19 @@ export function KakaoMap() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [currentLevel, setCurrentLevel] = useState<number>(3);
 
+  // 🎯 추천 마커 관리용 ref 추가
+  const recommendationMarkersRef = useRef<any[]>([]);
+
   const MAX_SEARCH_LEVEL = 2;
   const isSearchAvailable = currentLevel <= MAX_SEARCH_LEVEL;
 
-  // recommendationResult를 배열로 변환
+  // recommendationResult를 배열로 변환 (기존 방식 - 호환성 유지)
   const recommendations = useMemo(() => {
     if (!recommendationResult) return [];
     return Array.isArray(recommendationResult) ? recommendationResult : [recommendationResult];
   }, [recommendationResult]);
 
-  // 필터링된 상가만 계산
+  // 필터링된 상가만 계산 (기존 방식 유지)
   const mapItems: MapMarkerItem[] = useMemo(() => {
     if (!selectedCategories || selectedCategories.length === 0) {
       return [];
@@ -114,6 +121,93 @@ export function KakaoMap() {
 
     return [...filteredStores, ...filteredRecommendations];
   }, [stores, selectedCategories, recommendations]);
+
+  // 🎯 추천 마커들을 지도에 표시하는 useEffect 추가
+  useEffect(() => {
+    if (!map || !recommendationMarkers) return;
+
+    // 기존 추천 마커들 제거
+    recommendationMarkersRef.current.forEach(marker => {
+      marker.setMap(null);
+    });
+    recommendationMarkersRef.current = [];
+
+    // 새로운 추천 마커들 생성
+    recommendationMarkers.forEach(markerData => {
+      const position = new window.kakao.maps.LatLng(markerData.lat, markerData.lng);
+
+      // 🎯 추천 마커 아이콘 (AI 아이콘)
+      const markerImage = new window.kakao.maps.MarkerImage(
+          'data:image/svg+xml;base64,' + btoa(`
+          <svg width="36" height="36" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="18" cy="18" r="16" 
+                    fill="${markerData.isAreaResult ? '#f97316' : '#ea580c'}" 
+                    stroke="white" 
+                    stroke-width="3"/>
+            <text x="18" y="12" text-anchor="middle" 
+                  fill="white" 
+                  font-size="10" 
+                  font-weight="bold">AI</text>
+            <text x="18" y="24" text-anchor="middle" 
+                  fill="white" 
+                  font-size="8">${(markerData.survivalRate * 100).toFixed(0)}%</text>
+          </svg>
+        `),
+          new window.kakao.maps.Size(36, 36),
+          { offset: new window.kakao.maps.Point(18, 18) }
+      );
+
+      const marker = new window.kakao.maps.Marker({
+        position: position,
+        map: map,
+        image: markerImage,
+        title: markerData.title,
+        zIndex: markerData.isAreaResult ? 1000 : 1001,
+      });
+
+      // 🎯 마커 클릭 이벤트
+      window.kakao.maps.event.addListener(marker, 'click', () => {
+        setHighlightedRecommendation(String(markerData.buildingId));
+        setHighlightedStore(null);
+        setActiveTab('result');
+
+        // 3초 후 하이라이트 해제
+        setTimeout(() => setHighlightedRecommendation(null), 3000);
+
+        // 인포윈도우 표시
+        const infoWindow = new window.kakao.maps.InfoWindow({
+          content: `
+            <div style="padding: 12px; max-width: 200px; font-family: sans-serif;">
+              <h4 style="margin: 0 0 8px 0; color: #ea580c; font-size: 14px;">${markerData.title}</h4>
+              <p style="margin: 4px 0; font-size: 12px; color: #666;">
+                <strong>업종:</strong> ${markerData.category}
+              </p>
+              <p style="margin: 4px 0; font-size: 12px; color: #666;">
+                <strong>생존율:</strong> <span style="color: #16a34a; font-weight: bold;">${(markerData.survivalRate * 100).toFixed(1)}%</span>
+              </p>
+              <p style="margin: 8px 0 0 0; font-size: 11px; color: #999;">
+                ${markerData.isAreaResult ? '🔍 범위 분석 결과' : '🎯 단일 분석 결과'}
+              </p>
+            </div>
+          `,
+          removable: true
+        });
+        infoWindow.open(map, marker);
+      });
+
+      recommendationMarkersRef.current.push(marker);
+    });
+
+    console.log(`🗺️ 추천 마커 ${recommendationMarkers.length}개 표시 완료`);
+
+    // 클린업 함수
+    return () => {
+      recommendationMarkersRef.current.forEach(marker => {
+        marker.setMap(null);
+      });
+      recommendationMarkersRef.current = [];
+    };
+  }, [map, recommendationMarkers, setHighlightedRecommendation, setHighlightedStore, setActiveTab]);
 
   // 🎯 추천 핀 생성 함수
   const createRecommendPin = useCallback((lat: number, lng: number) => {

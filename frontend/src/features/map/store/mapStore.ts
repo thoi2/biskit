@@ -7,6 +7,19 @@ interface Coordinates {
   lng: number | null;
 }
 
+// 🎯 추천 마커 타입 정의
+interface RecommendationMarker {
+  id: string;
+  lat: number;
+  lng: number;
+  type: 'recommendation';
+  title: string;
+  category: string;
+  survivalRate: number;
+  buildingId: number;
+  isAreaResult?: boolean;
+}
+
 // Map 상태
 interface MapState {
   mapBounds: MapBounds | null;
@@ -18,12 +31,15 @@ interface MapState {
   coordinates: Coordinates;
   map: any | null;
 
-  // 드로잉 상태
+  // 🎯 드로잉 상태 (다각형 추가)
   isDrawingMode: boolean;
-  drawingType: 'rectangle' | 'circle';
+  drawingType: 'rectangle' | 'circle' | 'polygon';
 
-  // 🎯 추천 탭 핀 상태 추가
-  recommendPin: any | null; // 추천 탭에서 찍은 핀 마커
+  // 추천 탭 핀 상태
+  recommendPin: any | null;
+
+  // 🎯 추천 마커들 (AI 분석 결과)
+  recommendationMarkers: RecommendationMarker[];
 }
 
 // Map 액션
@@ -40,10 +56,16 @@ interface MapActions {
 
   // 드로잉 액션
   setIsDrawingMode: (isDrawing: boolean) => void;
-  setDrawingType: (type: 'rectangle' | 'circle') => void;
+  setDrawingType: (type: 'rectangle' | 'circle' | 'polygon') => void;
 
-  // 🎯 추천 핀 액션 추가
+  // 추천 핀 액션
   setRecommendPin: (pin: any | null) => void;
+
+  // 🎯 추천 마커 액션들
+  setRecommendationMarkers: (markers: RecommendationMarker[]) => void;
+  addRecommendationMarker: (marker: RecommendationMarker) => void;
+  removeRecommendationMarker: (markerId: string) => void;
+  clearRecommendationMarkers: () => void;
 }
 
 // Map Store
@@ -62,15 +84,18 @@ export const useMapStore = create<MapState & MapActions>(set => ({
   isDrawingMode: false,
   drawingType: 'rectangle',
 
-  // 🎯 추천 핀 초기 상태
+  // 추천 핀 초기 상태
   recommendPin: null,
+
+  // 🎯 추천 마커 초기 상태
+  recommendationMarkers: [],
 
   // 액션들
   setMapBounds: bounds => set({ mapBounds: bounds }),
   setIsSearching: isSearching => set({ isSearching }),
   setActiveTab: tab => set(state => ({
     activeTab: tab,
-    // 🎯 탭 변경시 추천 핀 제거
+    // 탭 변경시 추천 핀 제거
     ...(tab !== 'recommend' && state.recommendPin && {
       recommendPin: (() => {
         state.recommendPin.setMap(null);
@@ -88,18 +113,29 @@ export const useMapStore = create<MapState & MapActions>(set => ({
   setIsDrawingMode: isDrawing => set({ isDrawingMode: isDrawing }),
   setDrawingType: type => set({ drawingType: type }),
 
-  // 🎯 추천 핀 액션
+  // 추천 핀 액션
   setRecommendPin: pin => set(state => {
-    // 기존 핀이 있으면 제거
     if (state.recommendPin) {
       state.recommendPin.setMap(null);
     }
     return { recommendPin: pin };
   }),
 
+  // 🎯 추천 마커 액션들
+  setRecommendationMarkers: markers => set({ recommendationMarkers: markers }),
+
+  addRecommendationMarker: marker => set(state => ({
+    recommendationMarkers: [...state.recommendationMarkers, marker]
+  })),
+
+  removeRecommendationMarker: markerId => set(state => ({
+    recommendationMarkers: state.recommendationMarkers.filter(marker => marker.id !== markerId)
+  })),
+
+  clearRecommendationMarkers: () => set({ recommendationMarkers: [] }),
+
   clearMapState: () =>
       set(state => {
-        // 핀 정리
         if (state.recommendPin) {
           state.recommendPin.setMap(null);
         }
@@ -114,6 +150,10 @@ export const useMapStore = create<MapState & MapActions>(set => ({
           isDrawingMode: false,
           drawingType: 'rectangle',
           recommendPin: null,
+          recommendationMarkers: [], // 🎯 추천 마커도 초기화
         };
       }),
 }));
+
+// 🎯 타입 export (다른 파일에서 사용)
+export type { RecommendationMarker };

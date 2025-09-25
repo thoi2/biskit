@@ -4,11 +4,9 @@ import { SingleRecommendationPanel } from './SingleRecommendationPanel';
 import { AreaRecommendationPanel } from './AreaRecommendationPanel';
 import { Card, CardContent } from '@/lib/components/ui/card';
 import { useMapStore } from '@/features/map/store/mapStore';
-import { useRecommendationForm } from '../hooks/useRecommendationForm';
 
 export function RecommendationPanel() {
     const { activeTab } = useMapStore();
-    const { error } = useRecommendationForm();
 
     return (
         <div className="space-y-4">
@@ -29,7 +27,7 @@ export function RecommendationPanel() {
             {/* 범위 추천 분석 */}
             <AreaRecommendationPanel />
 
-            {/* 안내 및 에러 메시지 */}
+            {/* 안내 메시지 */}
             <Card className="border-orange-200">
                 <CardContent className="p-4 bg-orange-50">
                     <p className="text-sm text-orange-700 text-center">
@@ -37,16 +35,6 @@ export function RecommendationPanel() {
                     </p>
                 </CardContent>
             </Card>
-
-            {error && (
-                <Card className="border-red-200">
-                    <CardContent className="p-4 bg-red-50">
-                        <p className="text-sm text-red-700 text-center">
-                            오류: {error.message}
-                        </p>
-                    </CardContent>
-                </Card>
-            )}
         </div>
     );
 }

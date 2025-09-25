@@ -32,14 +32,24 @@ export const useRecommendMutations = () => {
     onSuccess: invalidateRecommendList,
   });
 
+  // 🎯 수정: categories 프로퍼티 사용
   const deleteCategoriesMutation = useMutation({
     mutationFn: ({
-      buildingId,
-      data,
-    }: {
+                   buildingId,
+                   data,
+                 }: {
       buildingId: number;
       data: DeleteCategoriesRequest;
-    }) => deleteResultCategoriesAPI(buildingId, data),
+    }) => {
+      // 🎯 data에서 categories 추출 (categoryIds 아님)
+      const categoryIds = data.categories || [];
+      return deleteResultCategoriesAPI(categoryIds);
+    },
+    onSuccess: invalidateRecommendList,
+  });
+
+  const deleteCategoriesMutationSimple = useMutation({
+    mutationFn: (categoryIds: string[]) => deleteResultCategoriesAPI(categoryIds),
     onSuccess: invalidateRecommendList,
   });
 
@@ -48,5 +58,6 @@ export const useRecommendMutations = () => {
     addLikeMutation,
     deleteLikeMutation,
     deleteCategoriesMutation,
+    deleteCategoriesMutationSimple,
   };
 };

@@ -3,29 +3,28 @@ import {
   getSingleRecommendationAPI,
   getSingleIndustryRecommendationAPI,
   getRangeRecommendationAPI,
+  deleteResultAPI,
+  deleteResultCategoriesAPI,
+  addLikeAPI,
+  deleteLikeAPI,
 } from '@/features/ai/api';
 import { useRecommendationStore } from '@/features/ai/store';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import type { SingleBuildingRecommendationResponse } from '@/features/ai/types';
 import type { ApiResponse } from '@/lib/types/api';
-/**
- * AI 추천을 요청하고, 결과를 Zustand 스토어에 저장하는 Mutation Hook
- */
+
 export const useRequestRecommendation = () => {
   const queryClient = useQueryClient();
   const { startRequest, setRequestSuccess, setRequestError } =
-    useRecommendationStore();
+      useRecommendationStore();
   const { isLoggedIn } = useAuthStore();
 
-  // ⭐ onSuccess 콜백을 위한 공통 로직
   const handleSuccess = (
-    // API 함수의 반환 타입과 일치시킵니다.
-    response: ApiResponse<
-      | SingleBuildingRecommendationResponse
-      | SingleBuildingRecommendationResponse[]
-    >,
+      response: ApiResponse<
+          | SingleBuildingRecommendationResponse
+          | SingleBuildingRecommendationResponse[]
+      >,
   ) => {
-    // 이제 response 객체 안의 data 속성을 사용합니다.
     setRequestSuccess(response.body);
 
     if (isLoggedIn) {
@@ -37,7 +36,6 @@ export const useRequestRecommendation = () => {
     onMutate: () => {
       startRequest();
     },
-    // ✅ 수정된 onSuccess 콜백을 사용합니다.
     onSuccess: handleSuccess,
     onError: (error: Error) => {
       setRequestError(error.message);
@@ -45,7 +43,7 @@ export const useRequestRecommendation = () => {
   };
 
   const singleRecommendation = useMutation({
-    mutationFn: getSingleRecommendationAPI, // API 함수를 직접 전달
+    mutationFn: getSingleRecommendationAPI,
     ...commonOptions,
   });
 
@@ -59,9 +57,42 @@ export const useRequestRecommendation = () => {
     ...commonOptions,
   });
 
+  // 🎯 추가 API들
+  const deleteResult = useMutation({
+    mutationFn: deleteResultAPI,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recommendList'] });
+    },
+  });
+
+  const deleteResultCategories = useMutation({
+    mutationFn: deleteResultCategoriesAPI,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recommendList'] });
+    },
+  });
+
+  const addLike = useMutation({
+    mutationFn: addLikeAPI,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recommendList'] });
+    },
+  });
+
+  const deleteLike = useMutation({
+    mutationFn: deleteLikeAPI,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recommendList'] });
+    },
+  });
+
   return {
     singleRecommendation,
     singleIndustryRecommendation,
     rangeRecommendation,
+    deleteResult,
+    deleteResultCategories,
+    addLike,
+    deleteLike,
   };
 };

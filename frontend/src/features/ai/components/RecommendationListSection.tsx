@@ -59,15 +59,18 @@ export function RecommendationListSection() {
             return;
         }
         if (isFavorite) {
-            deleteLikeMutation.mutate(buildingId);
+            // 🎯 number를 string으로 변환
+            deleteLikeMutation.mutate(String(buildingId));
         } else {
-            addLikeMutation.mutate(buildingId);
+            // 🎯 number를 string으로 변환
+            addLikeMutation.mutate(String(buildingId));
         }
     };
 
     const handleDelete = (buildingId: number) => {
         if (window.confirm('이 추천 기록을 정말 삭제하시겠습니까?')) {
-            deleteResultMutation.mutate(buildingId);
+            // 🎯 number를 string으로 변환
+            deleteResultMutation.mutate(String(buildingId));
         }
     };
 
