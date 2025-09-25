@@ -227,10 +227,6 @@ export function KakaoMap() {
   // 카카오맵 스크립트 로딩
   useEffect(() => {
     let isMounted = true;
-    console.log(
-      'DEBUG: NEXT_PUBLIC_KAKAO_MAP_KEY:',
-      process.env.NEXT_PUBLIC_KAKAO_MAP_KEY,
-    );
     const loadKakaoMap = async () => {
       try {
         if (
