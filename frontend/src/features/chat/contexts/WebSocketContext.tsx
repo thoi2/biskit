@@ -1,6 +1,12 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { useAuthStore } from '@/features/auth/store/authStore';
@@ -36,13 +42,13 @@ interface WebSocketProviderProps {
 
 export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   children,
-  url = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:8080/ws'
+  url = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:8080/ws',
 }) => {
   const { isLoggedIn } = useAuthStore();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
     isConnected: false,
     isConnecting: false,
-    reconnectAttempts: 0
+    reconnectAttempts: 0,
   });
 
   const clientRef = useRef<Client | null>(null);
@@ -54,13 +60,14 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     const chatError: ChatError = {
       code: error.code || 'WEBSOCKET_ERROR',
       message: error.message || '웹소켓 연결 오류가 발생했습니다.',
-      details: error
+      details: error,
     };
 
     setConnectionStatus(prev => ({
       ...prev,
-      lastError: chatError
+      lastError: chatError,
     }));
+    console.log(url);
 
     console.error('WebSocket Error:', chatError);
   };
@@ -71,7 +78,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     setConnectionStatus(prev => ({
       ...prev,
       isConnecting: true,
-      lastError: undefined
+      lastError: undefined,
     }));
 
     console.log('Global WebSocket 연결 시도 URL:', url);
@@ -84,7 +91,10 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     const connectHeaders: Record<string, string> = {};
 
     console.log('=== Global 토큰 확인 ===');
-    console.log('accessToken:', accessToken ? `${accessToken.substring(0, 20)}...` : 'null');
+    console.log(
+      'accessToken:',
+      accessToken ? `${accessToken.substring(0, 20)}...` : 'null',
+    );
 
     if (accessToken) {
       connectHeaders['Authorization'] = `Bearer ${accessToken}`;
@@ -95,7 +105,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
     const client = new Client({
       webSocketFactory: () => socket,
-      debug: (str) => console.log('Global STOMP Debug:', str),
+      debug: str => console.log('Global STOMP Debug:', str),
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
@@ -107,7 +117,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
           isConnected: true,
           isConnecting: false,
           reconnectAttempts: 0,
-          lastError: undefined
+          lastError: undefined,
         }));
       },
       onDisconnect: () => {
@@ -115,23 +125,30 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         setConnectionStatus(prev => ({
           ...prev,
           isConnected: false,
-          isConnecting: false
+          isConnecting: false,
         }));
 
         // 로그인 상태에서만 자동 재연결 시도
         if (isLoggedIn) {
           setConnectionStatus(prev => {
             if (prev.reconnectAttempts < maxReconnectAttempts) {
-              const delay = Math.min(1000 * Math.pow(2, prev.reconnectAttempts), 30000);
+              const delay = Math.min(
+                1000 * Math.pow(2, prev.reconnectAttempts),
+                30000,
+              );
 
               reconnectTimeoutRef.current = setTimeout(() => {
-                console.log(`Global 재연결 시도 ${prev.reconnectAttempts + 1}/${maxReconnectAttempts}`);
+                console.log(
+                  `Global 재연결 시도 ${
+                    prev.reconnectAttempts + 1
+                  }/${maxReconnectAttempts}`,
+                );
                 connect();
               }, delay);
 
               return {
                 ...prev,
-                reconnectAttempts: prev.reconnectAttempts + 1
+                reconnectAttempts: prev.reconnectAttempts + 1,
               };
             } else {
               console.warn('Global 최대 재연결 시도 횟수 도달');
@@ -140,14 +157,14 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
           });
         }
       },
-      onStompError: (frame) => {
+      onStompError: frame => {
         console.error('Global STOMP 에러:', frame);
         setConnectionStatus(prev => ({
           ...prev,
-          isConnecting: false
+          isConnecting: false,
         }));
         handleError(frame);
-      }
+      },
     });
 
     clientRef.current = client;
@@ -166,7 +183,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     if (clientRef.current) {
       try {
         // 모든 구독 해제
-        subscriptionsRef.current.forEach((subscription) => {
+        subscriptionsRef.current.forEach(subscription => {
           subscription.unsubscribe();
         });
         subscriptionsRef.current.clear();
@@ -184,7 +201,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     setConnectionStatus({
       isConnected: false,
       isConnecting: false,
-      reconnectAttempts: 0
+      reconnectAttempts: 0,
     });
 
     console.log('Global WebSocket 연결 해제 완료');
@@ -194,13 +211,13 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     if (!clientRef.current?.connected) {
       handleError({
         code: 'NOT_CONNECTED',
-        message: '웹소켓이 연결되지 않았습니다.'
+        message: '웹소켓이 연결되지 않았습니다.',
       });
       return;
     }
 
     try {
-      const subscription = clientRef.current.subscribe(destination, (message) => {
+      const subscription = clientRef.current.subscribe(destination, message => {
         try {
           const data = JSON.parse(message.body);
           callback(data);
@@ -209,7 +226,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
           handleError({
             code: 'MESSAGE_PARSE_ERROR',
             message: '메시지 파싱 중 오류가 발생했습니다.',
-            details: error
+            details: error,
           });
         }
       });
@@ -220,7 +237,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       handleError({
         code: 'SUBSCRIPTION_ERROR',
         message: '구독 설정 중 오류가 발생했습니다.',
-        details: error
+        details: error,
       });
     }
   };
@@ -237,7 +254,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     if (!clientRef.current?.connected) {
       handleError({
         code: 'NOT_CONNECTED',
-        message: '웹소켓이 연결되지 않았습니다.'
+        message: '웹소켓이 연결되지 않았습니다.',
       });
       return false;
     }
@@ -245,14 +262,14 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     try {
       clientRef.current.publish({
         destination,
-        body: body ? JSON.stringify(body) : ''
+        body: body ? JSON.stringify(body) : '',
       });
       return true;
     } catch (error) {
       handleError({
         code: 'PUBLISH_ERROR',
         message: '메시지 전송 중 오류가 발생했습니다.',
-        details: error
+        details: error,
       });
       return false;
     }
@@ -290,7 +307,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     publish,
     sendMessage,
     joinRoom,
-    leaveRoom
+    leaveRoom,
   };
 
   return (
