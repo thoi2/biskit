@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useMapStore } from '../store/mapStore';
-import { useStoreStore } from '../../stores/store/storesStore'; // 🔥 추가
-import { useRecommendationStore } from '../../ai/store'; // 🔥 추가
+import { useStoreStore } from '../../stores/store/storesStore';
+import { useRecommendationStore } from '../../ai/store';
 import { useBiskitData } from '../../stores/hooks/useBiskitData';
 import { useMapMarkers } from '../hooks/useMapMarkers';
 import { MapBounds, MapMarkerItem } from '../types';
@@ -20,9 +20,13 @@ declare global {
 }
 
 export function KakaoMap() {
-  // 🔥 분리된 store들에서 데이터 가져오기
+  // 🎯 store에서 데이터 가져오기
   const { stores } = useStoreStore();
-  const { recommendations } = useRecommendationStore();
+  const {
+    recommendationResult,
+    recommendationMarkers, // 🎯 새로 추가한 마커 배열
+  } = useRecommendationStore();
+
   const {
     isSearching,
     selectedCategories,
@@ -30,11 +34,16 @@ export function KakaoMap() {
     setActiveTab,
     setHighlightedStore,
     setHighlightedRecommendation,
+    setCoordinates,
+    setMap,
+    activeTab,
+    isDrawingMode,
+    recommendPin,
+    setRecommendPin,
   } = useMapStore();
 
   // Store 액션들
   const { selectStore } = useStoreStore();
-  const { selectRecommendation } = useRecommendationStore();
 
   const { handlers } = useBiskitData(null);
 
@@ -43,21 +52,31 @@ export function KakaoMap() {
   const [selectedCluster, setSelectedCluster] = useState<
     MapMarkerItem[] | null
   >(null);
-  const [map, setMap] = useState<any>(null);
+  const [map, setMapInstance] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [currentLevel, setCurrentLevel] = useState<number>(3);
 
+  // 🎯 추천 마커 관리용 ref 추가
+  const recommendationMarkersRef = useRef<any[]>([]);
+
   const MAX_SEARCH_LEVEL = 2;
   const isSearchAvailable = currentLevel <= MAX_SEARCH_LEVEL;
 
-  // 필터링된 상가만 계산 - 🔥 안전한 기본값 적용
+  // recommendationResult를 배열로 변환 (기존 방식 - 호환성 유지)
+  const recommendations = useMemo(() => {
+    if (!recommendationResult) return [];
+    return Array.isArray(recommendationResult)
+      ? recommendationResult
+      : [recommendationResult];
+  }, [recommendationResult]);
+
+  // 필터링된 상가만 계산 (기존 방식 유지)
   const mapItems: MapMarkerItem[] = useMemo(() => {
     if (!selectedCategories || selectedCategories.length === 0) {
       return [];
     }
 
-    // 🔥 안전한 기본값으로 undefined 체크
     const safeStores = stores || [];
     const safeRecommendations = recommendations || [];
 
@@ -82,20 +101,172 @@ export function KakaoMap() {
       }));
 
     const filteredRecommendations = safeRecommendations
-      .filter(rec => !rec.hidden)
-      .map(rec => ({
-        id: `recommendation-${rec.id}`,
-        name: rec.businessName,
-        category: rec.businessType,
-        address: rec.address,
-        coordinates: rec.coordinates,
-        type: 'recommendation' as const,
-        closureProbability: rec.closureProbability.year1,
-        riskLevel: rec.riskLevel,
-      }));
+      .map((rec: any, index: number) => {
+        const getRiskLevel = (
+          level: any,
+        ): 'low' | 'medium' | 'high' | undefined => {
+          if (level === 'low' || level === 'medium' || level === 'high') {
+            return level;
+          }
+          return 'medium';
+        };
+
+        return {
+          id: `recommendation-${rec.building?.building_id || index}`,
+          name: String(rec.building?.building_name || '추천 건물'),
+          category: String(rec.category || '추천'),
+          address: String(rec.building?.road_address || ''),
+          coordinates: {
+            lat: Number(rec.building?.latitude) || 0,
+            lng: Number(rec.building?.longitude) || 0,
+          },
+          type: 'recommendation' as const,
+          closureProbability: rec.score ? Number(rec.score) : undefined,
+          riskLevel: getRiskLevel(rec.riskLevel),
+        };
+      })
+      .filter(rec => rec.coordinates.lat && rec.coordinates.lng);
 
     return [...filteredStores, ...filteredRecommendations];
   }, [stores, selectedCategories, recommendations]);
+
+  // 🎯 추천 마커들을 지도에 표시하는 useEffect 추가
+  useEffect(() => {
+    if (!map || !recommendationMarkers) return;
+
+    // 기존 추천 마커들 제거
+    recommendationMarkersRef.current.forEach(marker => {
+      marker.setMap(null);
+    });
+    recommendationMarkersRef.current = [];
+
+    // 새로운 추천 마커들 생성
+    recommendationMarkers.forEach(markerData => {
+      const position = new window.kakao.maps.LatLng(
+        markerData.lat,
+        markerData.lng,
+      );
+
+      // 🎯 추천 마커 아이콘 (AI 아이콘)
+      const markerImage = new window.kakao.maps.MarkerImage(
+        'data:image/svg+xml;base64,' +
+          btoa(`
+          <svg width="36" height="36" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="18" cy="18" r="16" 
+                    fill="${markerData.isAreaResult ? '#f97316' : '#ea580c'}" 
+                    stroke="white" 
+                    stroke-width="3"/>
+            <text x="18" y="12" text-anchor="middle" 
+                  fill="white" 
+                  font-size="10" 
+                  font-weight="bold">AI</text>
+            <text x="18" y="24" text-anchor="middle" 
+                  fill="white" 
+                  font-size="8">${(markerData.survivalRate * 100).toFixed(
+                    0,
+                  )}%</text>
+          </svg>
+        `),
+        new window.kakao.maps.Size(36, 36),
+        { offset: new window.kakao.maps.Point(18, 18) },
+      );
+
+      const marker = new window.kakao.maps.Marker({
+        position: position,
+        map: map,
+        image: markerImage,
+        title: markerData.title,
+        zIndex: markerData.isAreaResult ? 1000 : 1001,
+      });
+
+      // 🎯 마커 클릭 이벤트
+      window.kakao.maps.event.addListener(marker, 'click', () => {
+        setHighlightedRecommendation(String(markerData.buildingId));
+        setHighlightedStore(null);
+        setActiveTab('result');
+
+        // 3초 후 하이라이트 해제
+        setTimeout(() => setHighlightedRecommendation(null), 3000);
+
+        // 인포윈도우 표시
+        const infoWindow = new window.kakao.maps.InfoWindow({
+          content: `
+            <div style="padding: 12px; max-width: 200px; font-family: sans-serif;">
+              <h4 style="margin: 0 0 8px 0; color: #ea580c; font-size: 14px;">${
+                markerData.title
+              }</h4>
+              <p style="margin: 4px 0; font-size: 12px; color: #666;">
+                <strong>업종:</strong> ${markerData.category}
+              </p>
+              <p style="margin: 4px 0; font-size: 12px; color: #666;">
+                <strong>생존율:</strong> <span style="color: #16a34a; font-weight: bold;">${(
+                  markerData.survivalRate * 100
+                ).toFixed(1)}%</span>
+              </p>
+              <p style="margin: 8px 0 0 0; font-size: 11px; color: #999;">
+                ${
+                  markerData.isAreaResult
+                    ? '🔍 범위 분석 결과'
+                    : '🎯 단일 분석 결과'
+                }
+              </p>
+            </div>
+          `,
+          removable: true,
+        });
+        infoWindow.open(map, marker);
+      });
+
+      recommendationMarkersRef.current.push(marker);
+    });
+
+    console.log(`🗺️ 추천 마커 ${recommendationMarkers.length}개 표시 완료`);
+
+    // 클린업 함수
+    return () => {
+      recommendationMarkersRef.current.forEach(marker => {
+        marker.setMap(null);
+      });
+      recommendationMarkersRef.current = [];
+    };
+  }, [
+    map,
+    recommendationMarkers,
+    setHighlightedRecommendation,
+    setHighlightedStore,
+    setActiveTab,
+  ]);
+
+  // 🎯 추천 핀 생성 함수
+  const createRecommendPin = useCallback(
+    (lat: number, lng: number) => {
+      if (!map) return null;
+
+      const position = new window.kakao.maps.LatLng(lat, lng);
+
+      // 핀 마커 생성
+      const marker = new window.kakao.maps.Marker({
+        position: position,
+        map: map,
+        image: new window.kakao.maps.MarkerImage(
+          'data:image/svg+xml;base64,' +
+            btoa(`
+          <svg width="32" height="40" viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 0C7.163 0 0 7.163 0 16c0 8.8 16 24 16 24s16-15.2 16-24C32 7.163 24.837 0 16 0z" 
+                  fill="#3b82f6" stroke="#1e40af" stroke-width="2"/>
+            <circle cx="16" cy="16" r="8" fill="white"/>
+            <circle cx="16" cy="16" r="4" fill="#1e40af"/>
+          </svg>
+        `),
+          new window.kakao.maps.Size(32, 40),
+          { offset: new window.kakao.maps.Point(16, 40) },
+        ),
+      });
+
+      return marker;
+    },
+    [map],
+  );
 
   // 마커 클릭 핸들러
   const handleMarkerClick = useCallback(
@@ -113,22 +284,15 @@ export function KakaoMap() {
           setTimeout(() => setHighlightedStore(null), 3000);
         }
       } else if (item.type === 'recommendation') {
-        const recommendation = (recommendations || []).find(
-          r => `recommendation-${r.id}` === item.id,
-        );
-        if (recommendation) {
-          selectRecommendation(recommendation);
-          setHighlightedRecommendation(recommendation.id);
-          setHighlightedStore(null);
-          setTimeout(() => setHighlightedRecommendation(null), 3000);
-        }
+        const recId = item.id.replace('recommendation-', '');
+        setHighlightedRecommendation(recId);
+        setHighlightedStore(null);
+        setTimeout(() => setHighlightedRecommendation(null), 3000);
       }
     },
     [
       stores,
-      recommendations,
       selectStore,
-      selectRecommendation,
       setActiveTab,
       setHighlightedStore,
       setHighlightedRecommendation,
@@ -164,7 +328,7 @@ export function KakaoMap() {
         coordinates.lng,
       );
       map.setCenter(moveLatLon);
-      map.setLevel(4); // 적당한 확대 레벨로 설정
+      map.setLevel(4);
     },
     [map],
   );
@@ -173,8 +337,8 @@ export function KakaoMap() {
   const { markers } = useMapMarkers({
     map,
     mapItems,
-    stores: stores || [], // 🔥 안전한 기본값
-    recommendations: recommendations || [], // 🔥 안전한 기본값
+    stores: stores || [],
+    recommendations: recommendations || [],
     onMarkerClick: handleMarkerClick,
     onClusterClick: handleClusterClick,
   });
@@ -241,7 +405,7 @@ export function KakaoMap() {
 
         const script = document.createElement('script');
         script.async = true;
-        script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&autoload=false`;
+        script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&autoload=false&libraries=services,clusterer,drawing`;
 
         script.onload = () => {
           if (isMounted) {
@@ -302,6 +466,7 @@ export function KakaoMap() {
         };
 
         const kakaoMap = new window.kakao.maps.Map(container, options);
+        setMapInstance(kakaoMap);
         setMap(kakaoMap);
 
         setTimeout(() => {
@@ -311,7 +476,19 @@ export function KakaoMap() {
     };
 
     initializeMap();
-  }, [isLoading, loadError]);
+  }, [isLoading, loadError, setMap]);
+
+  // 🎯 지도 커서 변경 효과
+  useEffect(() => {
+    if (!map) return;
+
+    const mapContainer = map.getNode();
+    if (isDrawingMode) {
+      mapContainer.style.cursor = 'crosshair';
+    } else {
+      mapContainer.style.cursor = 'grab';
+    }
+  }, [map, isDrawingMode]);
 
   // 이벤트 리스너 등록
   useEffect(() => {
@@ -324,7 +501,20 @@ export function KakaoMap() {
 
     const handleMapClick = (mouseEvent: any) => {
       const latlng = mouseEvent.latLng;
-      handlers.handleMapClick(latlng.getLat(), latlng.getLng());
+      const lat = latlng.getLat();
+      const lng = latlng.getLng();
+
+      // 🎯 추천 탭에서만 핀 찍기
+      if (activeTab === 'recommend') {
+        // 좌표 저장
+        setCoordinates({ lat, lng });
+
+        // 기존 핀 제거하고 새 핀 생성
+        const newPin = createRecommendPin(lat, lng);
+        setRecommendPin(newPin);
+      }
+
+      handlers.handleMapClick(lat, lng);
       setSelectedItem(null);
       setSelectedCluster(null);
     };
@@ -344,13 +534,20 @@ export function KakaoMap() {
           );
           window.kakao.maps.event.removeListener(map, 'click', handleMapClick);
         } catch {
-          console.warn('이벤트 리스너 제거 중 오류:');
+          console.warn('이벤트 리스너 제거 중 오류');
         }
       }
     };
-  }, [map, handlers.handleMapClick]);
+  }, [
+    map,
+    handlers.handleMapClick,
+    setCoordinates,
+    activeTab,
+    createRecommendPin,
+    setRecommendPin,
+  ]);
 
-  // 지도 컨테이너 크기 변화 감지 (사이드바 접기/펼치기 포함)
+  // 지도 컨테이너 크기 변화 감지
   useEffect(() => {
     if (!map || !mapRef.current) return;
 
@@ -386,6 +583,13 @@ export function KakaoMap() {
 
       {/* 지도 컨테이너 */}
       <div ref={mapRef} className="w-full h-full rounded-lg overflow-hidden" />
+
+      {/* 🎯 추천 탭일 때 안내 메시지 */}
+      {activeTab === 'recommend' && (
+        <div className="absolute top-4 left-4 bg-blue-500 text-white px-3 py-2 rounded-lg shadow-lg text-sm font-medium">
+          📍 지도를 클릭하여 분석 위치를 선택하세요
+        </div>
+      )}
 
       {/* 지도 컨트롤들 */}
       <MapControls

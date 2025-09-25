@@ -61,10 +61,13 @@ services:
       - "35729:35729" # LiveReload 포트
 
     depends_on:
+      ai:
+        condition: service_started
       mysql:
         condition: service_healthy
       redis:
         condition: service_started
+
     networks:
       - my-network
 

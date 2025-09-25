@@ -30,5 +30,5 @@ export const googleLoginAPI = async (code: string) => {
 // 구글 로그인 API: 백엔드로 인증 코드를 전송합니다.
 export const userDeleteAPI = async (userId: number) => {
   // 백엔드의 구글 로그인 처리 엔드포인트는 /auth/google 이라고 가정
-  await apiClient.delete(`user/delete/${userId}`);
+  await apiClient.delete(`/user/delete/${userId}`);
 };
