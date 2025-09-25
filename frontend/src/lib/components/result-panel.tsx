@@ -26,9 +26,8 @@ export function ResultPanel() {
             <StoreListSection />
 
             {/* AI 추천 목록 */}
-            {recommendations.length > 0 && (
-                <RecommendationListSection />
-            )}
+            <RecommendationListSection />
+
 
             {/* 비로그인 안내 */}
             {!user && (

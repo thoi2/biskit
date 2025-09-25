@@ -63,7 +63,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
         throws ServletException, IOException {
+        String requestURI = request.getRequestURI();
+        String method = request.getMethod();
 
+        // ✅ 이거 추가!
+        System.out.println("🔍 JWT 필터 진입: " + method + " " + requestURI);
+        System.out.println("🔍 DispatcherType: " + request.getDispatcherType()); // REQUEST or ASYNC
+        System.out.println("🔍 Thread: " + Thread.currentThread().getName());
         try {
             String token = extractTokenFromCookie(request);
 

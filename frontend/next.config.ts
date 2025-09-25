@@ -3,7 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   output: 'standalone',
-
+  experimental: {
+    proxyTimeout: 120000, // 먼저 120초로 검증 후 필요시 상향
+  },
   async rewrites() {
     return [
       {

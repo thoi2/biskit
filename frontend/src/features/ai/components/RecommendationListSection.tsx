@@ -5,9 +5,9 @@ import { useMapStore } from '@/features/map/store/mapStore';
 import { useRecommendationStore } from '@/features/ai/store';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { RecommendationItem } from './RecommendationItem';
+import { RecommendationEmptyState } from './RecommendationEmptyState';
 
 export function RecommendationListSection() {
-    // 🔥 Zustand에서 직접 상태 가져오기
     const {
         recommendations,
         toggleRecommendationFavorite,
@@ -22,7 +22,6 @@ export function RecommendationListSection() {
         activeTab,
     } = useMapStore();
 
-    // 🔥 직접 useAuth 사용
     const { user } = useAuth();
 
     const [isExpanded, setIsExpanded] = useState(true);
@@ -83,23 +82,29 @@ export function RecommendationListSection() {
             >
                 {isExpanded && (
                     <div className="px-3 pb-3 border-t">
-                        <div
-                            ref={scrollRef}
-                            className="space-y-2 mt-3 max-h-[350px] overflow-y-auto"
-                        >
-                            {recommendations.map(rec => (
-                                <RecommendationItem
-                                    key={`rec-${rec.id}`}
-                                    recommendation={rec}
-                                    isHighlighted={highlightedRecommendationId === rec.id}
-                                    user={user}
-                                    onToggleFavorite={toggleRecommendationFavorite} // 🔥 직접 Zustand 액션
-                                    onToggleHide={toggleRecommendationHide} // 🔥 직접 Zustand 액션
-                                    onDelete={deleteRecommendation} // 🔥 직접 Zustand 액션
-                                    onClick={handleRecommendationClick}
-                                />
-                            ))}
-                        </div>
+                        {/* 🎯 추천이 있을 때 */}
+                        {recommendations.length > 0 ? (
+                            <div
+                                ref={scrollRef}
+                                className="space-y-2 mt-3 max-h-[350px] overflow-y-auto"
+                            >
+                                {recommendations.map(rec => (
+                                    <RecommendationItem
+                                        key={`rec-${rec.id}`}
+                                        recommendation={rec}
+                                        isHighlighted={highlightedRecommendationId === rec.id}
+                                        user={user}
+                                        onToggleFavorite={toggleRecommendationFavorite}
+                                        onToggleHide={toggleRecommendationHide}
+                                        onDelete={deleteRecommendation}
+                                        onClick={handleRecommendationClick}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            /* 🎯 단순한 EmptyState */
+                            <RecommendationEmptyState />
+                        )}
                     </div>
                 )}
             </div>
