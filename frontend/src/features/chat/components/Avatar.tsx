@@ -9,17 +9,22 @@ interface AvatarProps {
   className?: string;
 }
 
-export function Avatar({ src, name, size = 'md', className = '' }: AvatarProps) {
+export function Avatar({
+  src,
+  name,
+  size = 'md',
+  className = '',
+}: AvatarProps) {
   const sizeClasses = {
     sm: 'w-6 h-6 text-xs',
     md: 'w-8 h-8 text-sm',
-    lg: 'w-10 h-10 text-base'
+    lg: 'w-10 h-10 text-base',
   };
 
   const iconSizes = {
     sm: 'w-3 h-3',
     md: 'w-4 h-4',
-    lg: 'w-5 h-5'
+    lg: 'w-5 h-5',
   };
 
   // 이름의 첫 글자 추출 (이니셜)
@@ -37,7 +42,7 @@ export function Avatar({ src, name, size = 'md', className = '' }: AvatarProps) 
       'bg-purple-500',
       'bg-pink-500',
       'bg-indigo-500',
-      'bg-gray-500'
+      'bg-gray-500',
     ];
 
     const hash = name.split('').reduce((acc, char) => {
@@ -49,19 +54,23 @@ export function Avatar({ src, name, size = 'md', className = '' }: AvatarProps) 
 
   if (src) {
     return (
-      <div className={`${sizeClasses[size]} rounded-full overflow-hidden ${className}`}>
+      <div
+        className={`${sizeClasses[size]} rounded-full overflow-hidden ${className}`}
+      >
         <img
           src={src}
           alt={`${name}의 프로필`}
           className="w-full h-full object-cover"
-          onError={(e) => {
+          onError={e => {
             // 이미지 로드 실패 시 기본 아바타로 변경
             const target = e.target as HTMLImageElement;
             target.style.display = 'none';
             const parent = target.parentElement;
             if (parent) {
               parent.innerHTML = `
-                <div class="w-full h-full ${getBackgroundColor(name)} flex items-center justify-center text-white font-medium">
+                <div class="w-full h-full ${getBackgroundColor(
+                  name,
+                )} flex items-center justify-center text-white font-medium">
                   ${getInitial(name)}
                 </div>
               `;
@@ -74,7 +83,9 @@ export function Avatar({ src, name, size = 'md', className = '' }: AvatarProps) 
 
   return (
     <div
-      className={`${sizeClasses[size]} rounded-full ${getBackgroundColor(name)} flex items-center justify-center text-white font-medium ${className}`}
+      className={`${sizeClasses[size]} rounded-full ${getBackgroundColor(
+        name,
+      )} flex items-center justify-center text-white font-medium ${className}`}
     >
       {name ? getInitial(name) : <User className={iconSizes[size]} />}
     </div>
