@@ -35,6 +35,7 @@ export default function Header() {
       // ✅ 올바른 백엔드 URL로 수정
       const response = await fetch(
         'http://localhost:8080/api/v1/user/industry/ai-recommend',
+        // 'http://j13a101.p.ssafy.io//api/v1/user/industry/ai-recommend',
         {
           method: 'POST',
           credentials: 'include', // 쿠키 포함
