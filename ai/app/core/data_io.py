@@ -48,6 +48,10 @@ class Ctx:
         # spatial
         self.node_tree: cKDTree | None = None
         self.node_codes: np.ndarray | None = None
+        self.store_coords: np.ndarray | None = None
+        self.store_tree: cKDTree | None = None
+        self.store_coords: np.ndarray | None = None
+        self.store_tree: cKDTree | None = None
 
         # graph data
         self.data: Data | None = None
@@ -227,6 +231,10 @@ def build_region_env_and_tree(ctx: Ctx):
         else:
             log("[C2] STORE: 유효 좌표가 없어 KDTree 매칭을 생략합니다.")
 
+        # [BUGFIX] Filter out stores with invalid coordinates to prevent KDTree error
+        log(f"Filtering {len(store_df) - ok.sum()} stores with invalid coordinates.")
+        store_df = store_df[ok].copy()
+
     # --- POP 최신 스냅샷 집계 ---
     pop_df = ctx.pop_df
     ycol = _choose(pop_df, ["연도", "기준연도"])
@@ -400,43 +408,58 @@ def build_region_env_and_tree(ctx: Ctx):
             vec[j] = float(feats.get(f, 0.0)) / (ctx.region_max.get(f, 1.0) or 1.0)
         region_features[code] = vec
 
-    node_features, edges_src, edges_dst = [], [], []
+    num_region_nodes = len(ctx.region_codes)
+    store_df_reset = store_df.reset_index(drop=True)
 
-    # 1) 지역 노드 push
-    for code in ctx.region_codes:
-        node_features.append(region_features[code])
+    # --- Store KDTree 생성 (메모리 문제 해결용) ---
+    # 거대 그래프/피처 생성 전에 KDTree를 미리 만들어 메모리 공유 문제 방지
+    log("[INFO] Creating store KDTree ahead of large tensors...")
+    ctx.store_coords = store_df_reset[["_lat", "_lon"]].to_numpy(dtype=np.float16)
+    ctx.store_tree = cKDTree(ctx.store_coords)
+    log(f"[INFO] Store KDTree created with {len(ctx.store_coords)} points.")
+    num_store_nodes = len(store_df_reset)
+    total_nodes = num_region_nodes + num_store_nodes
+    
+    node_features = np.zeros((total_nodes, feature_dim), dtype=np.float16)
+    edges_src, edges_dst = [], []
 
-    # 2) 점포 노드 push + region-edge (NA/미매핑 스킵)
+    # 1) 지역 노드 피처 채우기
+    for i, code in enumerate(ctx.region_codes):
+        node_features[i, :] = region_features[code].astype(np.float16)
+
+    # 2) 점포 노드 피처 채우기 + region-edge 생성
     bad_region = 0
     skipped_na_region = 0
+    
+    store_node_offset = num_region_nodes
+    
+    for i, r in store_df_reset.iterrows():
+        current_node_idx = store_node_offset + i
 
-    for _, r in store_df.iterrows():
-        # 점포 노드 특성
-        vec = np.zeros(feature_dim, dtype=np.float32)
+        # 점포 노드 특성 (one-hot)
         cid = int(r["category_id"])
         if cid in ctx.cat_index_map:
-            vec[env_feat_count + ctx.cat_index_map[cid]] = 1.0
-        node_features.append(vec)
+            cat_idx = env_feat_count + ctx.cat_index_map[cid]
+            node_features[current_node_idx, cat_idx] = 1.0
 
-        # region_code 유효성 검사
+        # region_code 유효성 검사 및 엣지 생성
         rcode_val = r.get("region_code")
         if pd.isna(rcode_val):
             skipped_na_region += 1
-            continue  # region 연결 불가 → 스킵
+            continue
 
         rcode = int(rcode_val)
         if rcode in ctx.region_index_map:
-            store_idx = len(node_features) - 1
-            ridx = ctx.region_index_map[rcode]
-            edges_src += [store_idx, ridx]
-            edges_dst += [ridx, store_idx]
+            region_node_idx = ctx.region_index_map[rcode]
+            edges_src.extend([current_node_idx, region_node_idx])
+            edges_dst.extend([region_node_idx, current_node_idx])
         else:
             bad_region += 1
 
     log(f"[C4] store with NA region skipped={skipped_na_region:,} | region not mapped={bad_region:,}")
 
     # 텐서화
-    x_tensor = torch.tensor(np.vstack(node_features), dtype=torch.float32)
+    x_tensor = torch.from_numpy(node_features)
     if len(edges_src) == 0:
         edge_index = torch.empty((2, 0), dtype=torch.long)
     else:
