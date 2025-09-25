@@ -34,10 +34,13 @@ services:
       - AI_GMS_API_KEY=${AI_GMS_API_KEY}
       - AI_GMS_BASE_URL=${AI_GMS_BASE_URL}
     depends_on:
+      ai:
+        condition: service_started
       mysql:
         condition: service_healthy
       redis:
         condition: service_started
+
     networks:
       - my-network
 
@@ -57,9 +60,6 @@ services:
       - NEXT_PUBLIC_GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
       - NEXT_PUBLIC_KAKAO_MAP_KEY=${KAKAO_MAP_KEY}
 
-    depends_on:
-      - backend
-      - ai
     networks:
       - my-network
 

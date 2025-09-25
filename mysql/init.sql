@@ -35,27 +35,74 @@ CREATE TABLE IF NOT EXISTS store (
     lng DECIMAL(15,12) NOT NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 3. in_out 테이블 생성 (존재하지 않으면)
-CREATE TABLE IF NOT EXISTS in_out (
-    building_id BIGINT PRIMARY KEY,
+-- building
+CREATE TABLE IF NOT EXISTS building (
+    building_id MEDIUMINT UNSIGNED AUTO_INCREMENT NOT NULL,
+    adr_mng_no VARCHAR(26) NOT NULL,
     lat DECIMAL(15,12) NOT NULL,
     lng DECIMAL(15,12) NOT NULL,
-    result JSON NOT NULL
+    PRIMARY KEY (building_id),
+    UNIQUE KEY uk_building_adr_mng_no (adr_mng_no),
+    CHECK (lat BETWEEN -90.0 AND 90.0),
+    CHECK (lng BETWEEN -180.0 AND 180.0),
+    CHECK (CHAR_LENGTH(adr_mng_no) IN (25, 26))
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- category
+CREATE TABLE IF NOT EXISTS category (
+    category_id SMALLINT UNSIGNED NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    PRIMARY KEY (category_id),
+    UNIQUE KEY uk_category_name (name)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- in_out (복합 PK: building_id + category_id)
+CREATE TABLE IF NOT EXISTS in_out (
+    building_id MEDIUMINT UNSIGNED NOT NULL,
+    category_id SMALLINT  UNSIGNED NOT NULL,
+    result DOUBLE,
+    frequency INTEGER NOT NULL DEFAULT 0,
+    last_at TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (building_id, category_id),
+    KEY idx_inout_category (category_id),
+    KEY idx_inout_last_at (last_at),
+    CONSTRAINT fk_inout_building
+    FOREIGN KEY (building_id) REFERENCES building(building_id) ON DELETE CASCADE,
+    CONSTRAINT fk_inout_category
+    FOREIGN KEY (category_id) REFERENCES category(category_id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 4. login_search 테이블 생성 (존재하지 않으면)
 CREATE TABLE IF NOT EXISTS login_search (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
     user_id BIGINT NOT NULL,
-    building_id BIGINT NOT NULL,
-    favorite BOOLEAN DEFAULT FALSE,
+    building_id MEDIUMINT UNSIGNED NOT NULL,
+    favorite TINYINT(1) NOT NULL DEFAULT 0,
 
-    UNIQUE KEY unique_user_building (user_id, building_id),
-    FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE,
-    FOREIGN KEY (building_id) REFERENCES in_out(building_id) ON DELETE CASCADE,
+    PRIMARY KEY (user_id, building_id),
+    KEY idx_login_building (building_id),
 
-    INDEX idx_user_favorite (user_id, favorite)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    CONSTRAINT fk_login_user
+        FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE,
+    CONSTRAINT fk_login_building
+        FOREIGN KEY (building_id) REFERENCES building(building_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS search_category (
+   user_id BIGINT NOT NULL,
+   building_id MEDIUMINT UNSIGNED NOT NULL,
+   category_id SMALLINT UNSIGNED NOT NULL,
+
+   PRIMARY KEY (user_id, building_id, category_id),
+   KEY idx_sc_building (building_id),
+   KEY idx_sc_category (category_id),
+
+   CONSTRAINT fk_sc_login
+       FOREIGN KEY (user_id, building_id) REFERENCES login_search(user_id, building_id) ON DELETE CASCADE,
+   CONSTRAINT fk_sc_category
+       FOREIGN KEY (category_id) REFERENCES category(category_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 -- 권한 부여 (startup_dev 사용자에게 zara DB 접근 권한)
 GRANT ALL PRIVILEGES ON zara.* TO 'startup_dev'@'%';
@@ -72,6 +119,14 @@ LINES TERMINATED BY '\n'
 IGNORE 1 LINES
 (store_name, branch_name, biz_category_code, dong_code, road_address, lat, lng);
 
+LOAD DATA INFILE '/var/lib/mysql-files/categories.csv'
+INTO TABLE category
+CHARACTER SET utf8mb4
+FIELDS TERMINATED BY ','
+OPTIONALLY ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 LINES
+(category_id, name);
 
 COMMIT;
 SET autocommit = 1;
