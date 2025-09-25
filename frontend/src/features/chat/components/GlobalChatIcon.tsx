@@ -12,7 +12,7 @@ interface GlobalChatIconProps {
 
 export function GlobalChatIcon({
   currentUserId,
-  currentUsername
+  currentUsername,
 }: GlobalChatIconProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -32,8 +32,6 @@ export function GlobalChatIcon({
       <ChatMainModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        currentUserId={currentUserId}
-        currentUsername={currentUsername}
       />
     </>
   );

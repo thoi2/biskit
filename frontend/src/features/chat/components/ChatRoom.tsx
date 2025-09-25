@@ -23,7 +23,9 @@ export function ChatRoom({
   onBackClick,
   preloadedRoomInfo,
 }: ChatRoomProps) {
-  const [roomInfo, setRoomInfo] = useState<Room | null>(preloadedRoomInfo);
+  const [roomInfo, setRoomInfo] = useState<Room | null>(
+    preloadedRoomInfo || null,
+  );
   const [isLoadingRoom, setIsLoadingRoom] = useState(!preloadedRoomInfo);
   const { user } = useAuth();
 
