@@ -37,7 +37,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // STOMP 엔드포인트 등록
         registry.addEndpoint("/ws")
-            .setAllowedOrigins("http://localhost:3000", "http://127.0.0.1:3000")
+            .setAllowedOrigins("http://localhost:3000", "http://127.0.0.1:3000","https://j13a101.p.ssafy.io:3000")
             .withSockJS(); // SockJS 사용
     }
 
