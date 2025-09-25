@@ -1,5 +1,6 @@
 from .subgraph import predict_hazards_at_location
 from .utils import log
+import asyncio
 
 async def analyze_all_categories_and_rank(ctx, settings, lat: float, lon: float):
     try:

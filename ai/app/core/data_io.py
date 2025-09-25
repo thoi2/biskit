@@ -1,6 +1,7 @@
 import os, re, json
 import numpy as np
 import pandas as pd
+import pandas.api.types
 from scipy.spatial import cKDTree
 from typing import Dict, Any
 
@@ -99,25 +100,76 @@ def _to_wgs84(lat_s, lon_s, src_crs):
     return np.array(lat_w), np.array(lon_w), ok
 
 
-def load_csvs(ctx: Ctx, data_dir: str):
-    CSV = {
-        "STORE": os.path.join(data_dir, "STORE.csv"),
-        "POPULATION": os.path.join(data_dir, "POPULATION.csv"),
-        "CROSSWALK": os.path.join(data_dir, "CROSSWALK.csv"),
-        "INFRA_BUS": os.path.join(data_dir, "INFRA_BUS.csv"),
-        "LIBRARY": os.path.join(data_dir, "LIBRARY.csv"),
-        "NIGHTVIEW": os.path.join(data_dir, "NIGHTVIEW.csv"),
-        "SCHOOL": os.path.join(data_dir, "SCHOOL.csv"),
-        "SUBWAY": os.path.join(data_dir, "SUBWAY.csv"),
+def _read_parquet_any(path, columns=None):
+    try:
+        df = pd.read_parquet(path, columns=columns)
+        log(f"read {os.path.basename(path)} rows={len(df):,} cols={len(df.columns)}")
+        return df
+    except Exception as e:
+        raise RuntimeError(f"Parquet 읽기 실패: {path}, 오류: {e}")
+
+def load_data(ctx: Ctx, data_dir: str):
+    DATA_FILES = {
+        "STORE": os.path.join(data_dir, "STORE.parquet"),
+        "POPULATION": os.path.join(data_dir, "POPULATION.parquet"),
+        "CROSSWALK": os.path.join(data_dir, "CROSSWALK.parquet"),
+        "INFRA_BUS": os.path.join(data_dir, "INFRA_BUS.parquet"),
+        "LIBRARY": os.path.join(data_dir, "LIBRARY.parquet"),
+        "NIGHTVIEW": os.path.join(data_dir, "NIGHTVIEW.parquet"),
+        "SCHOOL": os.path.join(data_dir, "SCHOOL.parquet"),
+        "SUBWAY": os.path.join(data_dir, "SUBWAY.parquet"),
     }
-    ctx.store_df = _read_csv_any(CSV["STORE"])
-    ctx.pop_df = _read_csv_any(CSV["POPULATION"])
-    ctx.cross = _read_csv_any(CSV["CROSSWALK"])
-    ctx.bus_df = _read_csv_any(CSV["INFRA_BUS"])
-    ctx.lib_df = _read_csv_any(CSV["LIBRARY"])
-    ctx.night_df = _read_csv_any(CSV["NIGHTVIEW"])
-    ctx.sch_df = _read_csv_any(CSV["SCHOOL"])
-    ctx.sub_df = _read_csv_any(CSV["SUBWAY"])
+
+    # Columns identified from build_region_env_and_tree analysis
+    STORE_COLS = [
+        "행정동코드",
+        "위도",
+        "경도",
+        "상권업종소분류코드",
+        "상권업종소분류명",
+        "상권업종대분류명",
+        "상권업종중분류명",
+    ]
+    POPULATION_COLS = [
+        "연도",
+        "분기",
+        "행정동_코드",
+        "총_상주인구_수",
+        "총_직장_인구_수_work",
+        "남성_직장_인구_수_work",
+        "여성_직장_인구_수_work",
+        "연령대_10_직장_인구_수_work",
+        "연령대_20_직장_인구_수_work",
+        "연령대_30_직장_인구_수_work",
+        "연령대_40_직장_인구_수_work",
+        "연령대_50_직장_인구_수_work",
+        "연령대_60_이상_직장_인구_수_work",
+    ]
+    CROSSWALK_COLS = [
+        "start_lat",
+        "start_lon",
+        "end_lat",
+        "end_lon",
+        "읍면동코드",
+    ]
+    INFRA_COLS = [
+        "위도",
+        "경도",
+    ]
+    SUBWAY_COLS = [
+        "역위도",
+        "역경도",
+        "지하철유동인구",
+    ]
+
+    ctx.store_df = _read_parquet_any(DATA_FILES["STORE"], columns=STORE_COLS)
+    ctx.pop_df = _read_parquet_any(DATA_FILES["POPULATION"], columns=POPULATION_COLS)
+    ctx.cross = _read_parquet_any(DATA_FILES["CROSSWALK"], columns=CROSSWALK_COLS)
+    ctx.bus_df = _read_parquet_any(DATA_FILES["INFRA_BUS"], columns=INFRA_COLS)
+    ctx.lib_df = _read_parquet_any(DATA_FILES["LIBRARY"], columns=INFRA_COLS) # Same columns as other infra
+    ctx.night_df = _read_parquet_any(DATA_FILES["NIGHTVIEW"], columns=INFRA_COLS) # Same columns as other infra
+    ctx.sch_df = _read_parquet_any(DATA_FILES["SCHOOL"], columns=INFRA_COLS) # Same columns as other infra
+    ctx.sub_df = _read_parquet_any(DATA_FILES["SUBWAY"], columns=SUBWAY_COLS)
 
 
 def build_region_env_and_tree(ctx: Ctx):
@@ -188,15 +240,35 @@ def build_region_env_and_tree(ctx: Ctx):
             pop_ref = pop_ref[_num(pop_ref[qcol]) == q_max]
 
     pop_code_col = _choose(pop_ref, ["행정동_코드", "행정동코드", "dong_code", "region_code"])
-    agg_rows = []
-    for _, r in pop_ref.iterrows():
-        code = int(_num(r[pop_code_col]))
-        work = float(r.get("총_직장_인구_수_work", np.nan))
-        if not np.isfinite(work):
-            cols = [c for c in pop_ref.columns if str(c).endswith("_work")]
-            work = float(_num(r[cols]).sum()) if cols else 0.0
-        agg_rows.append([code, float(r.get("총_상주인구_수", 0.0)), work])
-    pop_agg = pd.DataFrame(agg_rows, columns=["code", "pop", "work_pop"]).groupby("code")[["pop", "work_pop"]].sum()
+    pop_col = _choose(pop_ref, ["총_상주인구_수"])
+    work_pop_col = _choose(pop_ref, ["총_직장_인구_수_work"])
+
+    if pop_code_col is None:
+        raise ValueError("POPULATION 데이터에 행정동 코드 컬럼이 없습니다.")
+
+    # Ensure numeric types
+    pop_ref["pop_val"] = _num(pop_ref[pop_col]) if pop_col else 0.0
+    if work_pop_col:
+        pop_ref["work_pop_val"] = _num(pop_ref[work_pop_col])
+    else:
+        # Sum all columns ending with '_work' if '총_직장_인구_수_work' is not found
+        work_cols = [c for c in pop_ref.columns if str(c).endswith("_work")]
+        if work_cols:
+            pop_ref["work_pop_val"] = pop_ref[work_cols].apply(_num).sum(axis=1)
+        else:
+            pop_ref["work_pop_val"] = 0.0
+
+    pop_agg = pop_ref.groupby(pop_code_col).agg(
+        pop=("pop_val", "sum"),
+        work_pop=("work_pop_val", "sum")
+    ).reset_index()
+    pop_agg = pop_agg.rename(columns={pop_code_col: "code"})
+
+    # region_env seed
+    ctx.region_env = {
+        int(r["code"]): {"pop": float(r["pop"]), "work_pop": float(r["work_pop"])}
+        for _, r in pop_agg.iterrows()
+    }
 
     # region_env seed
     ctx.region_env = {
@@ -294,7 +366,7 @@ def build_region_env_and_tree(ctx: Ctx):
 
     # FutureWarning 대응: errors="coerce"
     tmp = pd.to_numeric(store_df[cat_code_col], errors="coerce") if cat_code_col else None
-    if (tmp is not None) and np.issubdtype(tmp.dtype, np.number):
+    if (tmp is not None) and pd.api.types.is_numeric_dtype(tmp.dtype):
         need_name = tmp.isna()
         if need_name.any():
             codes, _ = pd.factorize(store_df.loc[need_name, "category_name"].astype(str), sort=True)
@@ -376,6 +448,15 @@ def build_region_env_and_tree(ctx: Ctx):
 
 def init_context(data_dir: str) -> Ctx:
     ctx = Ctx()
-    load_csvs(ctx, data_dir)
+    load_data(ctx, data_dir)
     build_region_env_and_tree(ctx)
+    # Release large DataFrames from memory after graph construction
+    ctx.store_df = None
+    ctx.pop_df = None
+    ctx.cross = None
+    ctx.bus_df = None
+    ctx.lib_df = None
+    ctx.night_df = None
+    ctx.sch_df = None
+    ctx.sub_df = None
     return ctx

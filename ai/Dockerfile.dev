@@ -14,4 +14,4 @@ EXPOSE 8000
 
 # 5. 애플리케이션 실행 (핫 리로딩 활성화)
 # --reload 플래그를 추가하여 코드 변경 시 서버가 자동으로 재시작됩니다.
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
