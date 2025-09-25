@@ -8,7 +8,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-@Configuration
+@Configuration("chatAsyncConfig")
 @EnableAsync
 @Slf4j
 public class AsyncConfig implements AsyncConfigurer {
