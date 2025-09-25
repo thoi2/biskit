@@ -14,7 +14,13 @@ CREATE TABLE IF NOT EXISTS user (
     name VARCHAR(255) NOT NULL,
     profile_image_url VARCHAR(255),
     oauth2_provider VARCHAR(255) NOT NULL,
-    oauth2_provider_id VARCHAR(255) NOT NULL
+    oauth2_provider_id VARCHAR(255) NOT NULL,
+
+    -- 설문조사 및 업종 추천 관련 컬럼
+    survey_completed_at DATETIME COMMENT '설문조사 완료 시간',
+    industry_1st VARCHAR(10) COMMENT '1순위 업종코드',
+    industry_2nd VARCHAR(10) COMMENT '2순위 업종코드',
+    industry_3rd VARCHAR(10) COMMENT '3순위 업종코드'
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 2. store 테이블 생성 (존재하지 않으면)

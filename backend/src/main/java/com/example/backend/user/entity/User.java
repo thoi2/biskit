@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * 사용자 엔티티 (간소화 버전)
+ * 사용자 엔티티 (업종 추천 기능 포함)
  */
 @Entity
 @Table(name = "user")
@@ -41,9 +41,56 @@ public class User {
     private String profileImageUrl;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "oauth2_provider", nullable = false) // ⬅️ name 속성 추가
+    @Column(name = "oauth2_provider", nullable = false)
     private OAuth2Provider oauth2Provider;
 
-    @Column(name = "oauth2_provider_id", nullable = false) // ⬅️ name 속성 추가
+    @Column(name = "oauth2_provider_id", nullable = false)
     private String oauth2ProviderId;
+
+    // 설문조사 및 업종 추천 관련 컬럼
+    @Column(name = "survey_completed_at")
+    private LocalDateTime surveyCompletedAt;
+
+    @Column(name = "industry_1st", length = 10)
+    private String industry1st;
+
+    @Column(name = "industry_2nd", length = 10)
+    private String industry2nd;
+
+    @Column(name = "industry_3rd", length = 10)
+    private String industry3rd;
+
+    /**
+     * 추천 결과가 존재하는지 확인
+     */
+    public boolean hasRecommendation() {
+        return industry1st != null;
+    }
+
+    /**
+     * 설문조사를 완료했는지 확인
+     */
+    public boolean isSurveyCompleted() {
+        return surveyCompletedAt != null;
+    }
+
+    /**
+     * 업종 추천 정보 초기화
+     */
+    public void clearRecommendations() {
+        this.surveyCompletedAt = null;
+        this.industry1st = null;
+        this.industry2nd = null;
+        this.industry3rd = null;
+    }
+
+    /**
+     * 업종 추천 정보 업데이트
+     */
+    public void updateRecommendations(String industry1st, String industry2nd, String industry3rd) {
+        this.surveyCompletedAt = LocalDateTime.now();
+        this.industry1st = industry1st;
+        this.industry2nd = industry2nd;
+        this.industry3rd = industry3rd;
+    }
 }
