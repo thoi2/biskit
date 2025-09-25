@@ -13,10 +13,7 @@ interface RoomListProps {
   onCreateRoom?: () => void;
 }
 
-export function RoomList({
-  onJoinRoom,
-  onCreateRoom
-}: RoomListProps) {
+export function RoomList({ onJoinRoom, onCreateRoom }: RoomListProps) {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [userRooms, setUserRooms] = useState<Room[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -46,8 +43,12 @@ export function RoomList({
       const cursor = isLoadMore ? nextCursor : null;
 
       const [publicRoomsResponse, myRoomsResponse] = await Promise.all([
-        chatApi.getPublicRooms(selectedCategory || undefined, 20, cursor || undefined),
-        isLoadMore ? Promise.resolve(userRooms) : chatApi.getUserRooms() // 더보기일 때는 기존 userRooms 사용
+        chatApi.getPublicRooms(
+          selectedCategory || undefined,
+          20,
+          cursor || undefined,
+        ),
+        isLoadMore ? Promise.resolve(userRooms) : chatApi.getUserRooms(), // 더보기일 때는 기존 userRooms 사용
       ]);
 
       console.log('=== RoomList Debug ===');
@@ -55,8 +56,12 @@ export function RoomList({
       console.log('myRoomsResponse:', myRoomsResponse);
 
       // API 응답 데이터 처리 - 올바른 데이터 구조 처리
-      const publicRoomsData = publicRoomsResponse?.data || publicRoomsResponse || { rooms: [], nextCursor: null, hasMore: false };
-      const myRooms = isLoadMore ? userRooms : (myRoomsResponse?.data || myRoomsResponse || []);
+      const publicRoomsData = publicRoomsResponse || {
+        rooms: [],
+        nextCursor: null,
+        hasMore: false,
+      };
+      const myRooms = isLoadMore ? userRooms : myRoomsResponse || [];
 
       console.log('publicRoomsData:', publicRoomsData);
       console.log('myRooms:', myRooms);
@@ -84,10 +89,10 @@ export function RoomList({
 
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
-    setRooms([]);           // 기존 방 목록 초기화
-    setNextCursor(null);    // 커서 초기화
+    setRooms([]); // 기존 방 목록 초기화
+    setNextCursor(null); // 커서 초기화
     setHasMore(false);
-    loadRooms(false);       // 첫 페이지부터 다시 로드
+    loadRooms(false); // 첫 페이지부터 다시 로드
   };
 
   const loadMoreRooms = () => {
@@ -103,12 +108,17 @@ export function RoomList({
   // 무한스크롤 Intersection Observer
   useEffect(() => {
     const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore && activeTab === 'all') {
+      entries => {
+        if (
+          entries[0].isIntersecting &&
+          hasMore &&
+          !isLoadingMore &&
+          activeTab === 'all'
+        ) {
           loadMoreRooms();
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     if (observerRef.current) {
@@ -144,7 +154,6 @@ export function RoomList({
 
   return (
     <div className="space-y-3">
-
       {/* 탭과 카테고리 필터 */}
       <div className="space-y-3">
         {/* 탭과 액션 버튼 */}
@@ -165,8 +174,7 @@ export function RoomList({
               onClick={() => setActiveTab('my')}
               className="flex-1"
             >
-              <Users className="w-4 h-4 mr-2" />
-              내 방
+              <Users className="w-4 h-4 mr-2" />내 방
             </Button>
           </div>
           <Button onClick={() => loadRooms(false)} variant="outline" size="sm">
@@ -184,11 +192,11 @@ export function RoomList({
           <div>
             <select
               value={selectedCategory}
-              onChange={(e) => handleCategoryChange(e.target.value)}
+              onChange={e => handleCategoryChange(e.target.value)}
               className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             >
               <option value="">모든 카테고리</option>
-              {BIG_CATEGORIES.map((category) => (
+              {BIG_CATEGORIES.map(category => (
                 <option key={category} value={category}>
                   {category}
                 </option>
@@ -208,20 +216,18 @@ export function RoomList({
                 <p>
                   {selectedCategory
                     ? `${selectedCategory} 카테고리에 표시할 채팅방이 없습니다.`
-                    : '표시할 채팅방이 없습니다.'
-                  }
+                    : '표시할 채팅방이 없습니다.'}
                 </p>
                 {onCreateRoom && (
                   <Button onClick={onCreateRoom} className="mt-4">
-                    <Plus className="w-4 h-4 mr-2" />
-                    첫 번째 방을 만들어보세요
+                    <Plus className="w-4 h-4 mr-2" />첫 번째 방을 만들어보세요
                   </Button>
                 )}
               </div>
             ) : (
               <>
                 <div className="space-y-2">
-                  {(rooms || []).map((room) => (
+                  {(rooms || []).map(room => (
                     <RoomCard
                       key={room.roomId}
                       room={room}
@@ -232,7 +238,10 @@ export function RoomList({
                 </div>
 
                 {/* 무한스크롤 로딩 인디케이터 */}
-                <div ref={observerRef} className="h-10 flex items-center justify-center">
+                <div
+                  ref={observerRef}
+                  className="h-10 flex items-center justify-center"
+                >
                   {isLoadingMore && (
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
                   )}
@@ -252,14 +261,16 @@ export function RoomList({
               </div>
             ) : (
               <div className="space-y-2">
-                {Array.isArray(userRooms) ? userRooms.map((room) => (
-                  <RoomCard
-                    key={room.roomId}
-                    room={room}
-                    onJoinRoom={onJoinRoom}
-                    isJoined={true}
-                  />
-                )) : []}
+                {Array.isArray(userRooms)
+                  ? userRooms.map(room => (
+                      <RoomCard
+                        key={room.roomId}
+                        room={room}
+                        onJoinRoom={onJoinRoom}
+                        isJoined={true}
+                      />
+                    ))
+                  : []}
               </div>
             )}
           </>
