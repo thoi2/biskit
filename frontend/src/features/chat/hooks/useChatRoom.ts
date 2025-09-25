@@ -12,7 +12,7 @@ interface UseChatRoomProps {
 export const useChatRoom = ({
   roomId,
   currentUserId,
-  currentUsername
+  currentUsername,
 }: UseChatRoomProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
@@ -33,12 +33,17 @@ export const useChatRoom = ({
   }, []);
 
   const {
-    connectionStatus: { isConnected, isConnecting, lastError, reconnectAttempts },
+    connectionStatus: {
+      isConnected,
+      isConnecting,
+      lastError,
+      reconnectAttempts,
+    },
     subscribe,
     unsubscribe,
     sendMessage: wsSendMessage,
     joinRoom: wsJoinRoom,
-    leaveRoom: wsLeaveRoom
+    leaveRoom: wsLeaveRoom,
   } = useGlobalWebSocket();
 
   // 초기 메시지 로드
@@ -58,7 +63,10 @@ export const useChatRoom = ({
       // Axios 응답에서 실제 데이터 추출
       const messagesData = recentMessages.data || recentMessages;
       console.log('📊 메시지 데이터:', messagesData);
-      console.log('📊 메시지 개수:', Array.isArray(messagesData) ? messagesData.length : 'not array');
+      console.log(
+        '📊 메시지 개수:',
+        Array.isArray(messagesData) ? messagesData.length : 'not array',
+      );
 
       const messagesArray = Array.isArray(messagesData) ? messagesData : [];
       console.log('📝 처리된 메시지 배열:', messagesArray);
@@ -74,7 +82,7 @@ export const useChatRoom = ({
       const chatError: ChatError = {
         code: 'LOAD_MESSAGES_FAILED',
         message: '최근 메시지를 불러오는데 실패했습니다.',
-        details: error
+        details: error,
       };
       setError(chatError);
     } finally {
@@ -95,7 +103,11 @@ export const useChatRoom = ({
       const oldestMessage = messages[0];
       if (!oldestMessage?.id) return;
 
-      const olderMessages = await chatApi.getMessagesBefore(roomId, oldestMessage.id.toString(), 50);
+      const olderMessages = await chatApi.getMessagesBefore(
+        roomId,
+        oldestMessage.id.toString(),
+        50,
+      );
       const messagesData = olderMessages.data || olderMessages;
       console.log('Older messages response:', olderMessages);
 
@@ -112,7 +124,7 @@ export const useChatRoom = ({
       const chatError: ChatError = {
         code: 'LOAD_MORE_MESSAGES_FAILED',
         message: '이전 메시지를 불러오는데 실패했습니다.',
-        details: error
+        details: error,
       };
       setError(chatError);
     } finally {
@@ -121,49 +133,59 @@ export const useChatRoom = ({
   }, [roomId, isLoadingMessages, hasMoreMessages, messages]);
 
   // 메시지 전송
-  const sendMessage = useCallback((content: string) => {
-    console.log('=== 메시지 전송 시도 ===');
-    console.log('content:', content);
-    console.log('isConnected:', isConnected);
-    console.log('currentUserId:', currentUserId);
-    console.log('currentUsername:', currentUsername);
+  const sendMessage = useCallback(
+    (content: string) => {
+      console.log('=== 메시지 전송 시도 ===');
+      console.log('content:', content);
+      console.log('isConnected:', isConnected);
+      console.log('currentUserId:', currentUserId);
+      console.log('currentUsername:', currentUsername);
 
-    if (!content.trim() || !isConnected || !currentUserId || !currentUsername) {
-      console.warn('메시지 전송 조건 실패');
-      const chatError: ChatError = {
-        code: 'SEND_MESSAGE_FAILED',
-        message: !isConnected ? '연결이 끊어져 메시지를 전송할 수 없습니다.' : '사용자 정보가 없어 메시지를 전송할 수 없습니다.'
-      };
-      setError(chatError);
-      return false;
-    }
-
-    try {
-      const messageRequest = {
-        content,
-        senderId: currentUserId,
-        senderName: currentUsername
-      };
-
-      const success = wsSendMessage(roomId, messageRequest);
-      if (!success) {
+      if (
+        !content.trim() ||
+        !isConnected ||
+        !currentUserId ||
+        !currentUsername
+      ) {
+        console.warn('메시지 전송 조건 실패');
         const chatError: ChatError = {
           code: 'SEND_MESSAGE_FAILED',
-          message: '메시지 전송에 실패했습니다.'
+          message: !isConnected
+            ? '연결이 끊어져 메시지를 전송할 수 없습니다.'
+            : '사용자 정보가 없어 메시지를 전송할 수 없습니다.',
         };
         setError(chatError);
+        return false;
       }
-      return success;
-    } catch (error: any) {
-      const chatError: ChatError = {
-        code: 'SEND_MESSAGE_FAILED',
-        message: '메시지 전송 중 오류가 발생했습니다.',
-        details: error
-      };
-      setError(chatError);
-      return false;
-    }
-  }, [roomId, isConnected, wsSendMessage, currentUserId, currentUsername]);
+
+      try {
+        const messageRequest = {
+          content,
+          senderId: currentUserId,
+          senderName: currentUsername,
+        };
+
+        const success = wsSendMessage(roomId, messageRequest);
+        if (!success) {
+          const chatError: ChatError = {
+            code: 'SEND_MESSAGE_FAILED',
+            message: '메시지 전송에 실패했습니다.',
+          };
+          setError(chatError);
+        }
+        return success;
+      } catch (error: any) {
+        const chatError: ChatError = {
+          code: 'SEND_MESSAGE_FAILED',
+          message: '메시지 전송 중 오류가 발생했습니다.',
+          details: error,
+        };
+        setError(chatError);
+        return false;
+      }
+    },
+    [roomId, isConnected, wsSendMessage, currentUserId, currentUsername],
+  );
 
   // 방 입장
   const joinRoom = useCallback(() => {
@@ -221,7 +243,7 @@ export const useChatRoom = ({
   useEffect(() => {
     console.log('📊 messages 상태 변경됨:', {
       length: messages.length,
-      messages: messages
+      messages: messages,
     });
   }, [messages]);
 
@@ -237,6 +259,6 @@ export const useChatRoom = ({
     loadMoreMessages,
     joinRoom,
     leaveRoom,
-    clearError
+    clearError,
   };
 };
