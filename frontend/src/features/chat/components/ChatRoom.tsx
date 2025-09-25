@@ -21,7 +21,7 @@ export function ChatRoom({
   roomId,
   onLeaveRoom,
   onBackClick,
-  preloadedRoomInfo
+  preloadedRoomInfo,
 }: ChatRoomProps) {
   const [roomInfo, setRoomInfo] = useState<Room | null>(preloadedRoomInfo);
   const [isLoadingRoom, setIsLoadingRoom] = useState(!preloadedRoomInfo);
@@ -43,11 +43,11 @@ export function ChatRoom({
     isConnected,
     isConnecting,
     sendMessage,
-    loadMoreMessages
+    loadMoreMessages,
   } = useChatRoom({
     roomId,
     currentUserId,
-    currentUsername
+    currentUsername,
   });
 
   console.log('🏠 ChatRoom - 상태:', {
@@ -56,7 +56,7 @@ export function ChatRoom({
     isConnected,
     isConnecting,
     roomInfo: roomInfo,
-    isLoadingRoom
+    isLoadingRoom,
   });
 
   // 방 정보 로드 (preloaded가 없을 때만)
@@ -66,7 +66,7 @@ export function ChatRoom({
         setIsLoadingRoom(true);
         console.log('🏠 방 정보 로드:', roomId);
         const response = await chatApi.getRoomInfo(roomId);
-        const room = response?.data || response; // Axios 응답에서 data 추출
+        const room = response; // Axios 응답에서 data 추출
         console.log('🏠 방 정보:', room);
         setRoomInfo(room);
       } catch (error) {
@@ -78,7 +78,7 @@ export function ChatRoom({
           creatorUsername: '',
           maxParticipants: 0,
           currentParticipants: 0,
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
         });
       } finally {
         setIsLoadingRoom(false);
@@ -148,7 +148,9 @@ export function ChatRoom({
               )}
               <Users className="w-3 h-3" />
               <span>
-                {roomInfo ? `${roomInfo.currentParticipants}/${roomInfo.maxParticipants}` : '-'}
+                {roomInfo
+                  ? `${roomInfo.currentParticipants}/${roomInfo.maxParticipants}`
+                  : '-'}
               </span>
               {!isConnected && (
                 <span className="text-red-500 text-xs">
@@ -183,9 +185,7 @@ export function ChatRoom({
         onSendMessage={sendMessage}
         disabled={!isConnected}
         placeholder={
-          isConnected
-            ? '메시지를 입력하세요...'
-            : '연결을 기다리는 중...'
+          isConnected ? '메시지를 입력하세요...' : '연결을 기다리는 중...'
         }
       />
     </div>

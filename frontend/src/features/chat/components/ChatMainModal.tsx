@@ -17,10 +17,7 @@ interface ChatMainModalProps {
 
 type ModalView = 'roomList' | 'chatRoom' | 'createRoom';
 
-export function ChatMainModal({
-  isOpen,
-  onClose
-}: ChatMainModalProps) {
+export function ChatMainModal({ isOpen, onClose }: ChatMainModalProps) {
   const [currentView, setCurrentView] = useState<ModalView>('roomList');
   const [selectedRoomId, setSelectedRoomId] = useState<string>('');
   const [roomInfo, setRoomInfo] = useState<Room | null>(null);
@@ -43,7 +40,7 @@ export function ChatMainModal({
 
       // 먼저 방 정보 API 호출
       const response = await chatApi.getRoomInfo(roomId);
-      const room = response?.data || response; // Axios 응답에서 data 추출
+      const room = response; // Axios 응답에서 data 추출
       console.log('🏠 방 정보 로드 완료:', room);
       console.log('🏠 room.roomName:', room?.roomName);
       console.log('🏠 room.bigCategory:', room?.bigCategory);
@@ -62,7 +59,7 @@ export function ChatMainModal({
         creatorUsername: '',
         maxParticipants: 0,
         currentParticipants: 0,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       });
       setSelectedRoomId(roomId);
       setCurrentView('chatRoom');
@@ -119,21 +116,11 @@ export function ChatMainModal({
 
           <div className="flex items-center gap-2">
             {currentView === 'roomList' && (
-              <Button
-                onClick={handleCreateRoom}
-                variant="outline"
-                size="sm"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                방 만들기
+              <Button onClick={handleCreateRoom} variant="outline" size="sm">
+                <Plus className="w-4 h-4 mr-2" />방 만들기
               </Button>
             )}
-            <Button
-              onClick={onClose}
-              variant="ghost"
-              size="sm"
-              className="p-1"
-            >
+            <Button onClick={onClose} variant="ghost" size="sm" className="p-1">
               <X className="w-4 h-4" />
             </Button>
           </div>
