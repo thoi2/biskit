@@ -16,7 +16,7 @@ export const getSingleRecommendationAPI = async (
   data: SingleRecommendationRequest,
 ) => {
   const response = await apiClient.post<ApiResponse<RecommendationItem[]>>(
-    '/api/v1/ai/single',
+    '/ai/single',
     data,
   );
   return response.data;
@@ -29,7 +29,7 @@ export const getSingleIndustryRecommendationAPI = async (
   data: SingleIndustryRecommendationRequest,
 ) => {
   const response = await apiClient.post<ApiResponse<RecommendationItem[]>>(
-    '/api/v1/ai/single-industry',
+    '/ai/single-industry',
     data,
   );
   return response.data;
@@ -42,7 +42,7 @@ export const getRangeRecommendationAPI = async (
   data: RangeRecommendationRequest,
 ) => {
   const response = await apiClient.post<ApiResponse<RecommendationItem[]>>(
-    '/api/v1/ai/range',
+    '/v1/ai/range',
     data,
   );
   return response.data;

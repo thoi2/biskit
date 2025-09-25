@@ -9,17 +9,23 @@ SET autocommit = 0;
 
 -- 1. user 테이블 생성 (존재하지 않으면)
 CREATE TABLE IF NOT EXISTS user (
-    id INTEGER PRIMARY KEY AUTO_INCREMENT,
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
     email VARCHAR(255) NOT NULL,
     name VARCHAR(255) NOT NULL,
     profile_image_url VARCHAR(255),
     oauth2_provider VARCHAR(255) NOT NULL,
-    oauth2_provider_id VARCHAR(255) NOT NULL
+    oauth2_provider_id VARCHAR(255) NOT NULL,
+
+    -- 설문조사 및 업종 추천 관련 컬럼
+    survey_completed_at DATETIME COMMENT '설문조사 완료 시간',
+    industry_1st VARCHAR(10) COMMENT '1순위 업종코드',
+    industry_2nd VARCHAR(10) COMMENT '2순위 업종코드',
+    industry_3rd VARCHAR(10) COMMENT '3순위 업종코드'
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 2. store 테이블 생성 (존재하지 않으면)
 CREATE TABLE IF NOT EXISTS store (
-    id INTEGER PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    id BIGINT PRIMARY KEY AUTO_INCREMENT NOT NULL,
     store_name VARCHAR(64),                    -- 53자 + 20% 여유분
     branch_name VARCHAR(12),                   -- 9자 + 30% 여유분
     biz_category_code CHAR(6),                 -- 문자1+숫자5 고정
@@ -31,7 +37,7 @@ CREATE TABLE IF NOT EXISTS store (
 
 -- 3. in_out 테이블 생성 (존재하지 않으면)
 CREATE TABLE IF NOT EXISTS in_out (
-    building_id INTEGER PRIMARY KEY,
+    building_id BIGINT PRIMARY KEY,
     lat DECIMAL(15,12) NOT NULL,
     lng DECIMAL(15,12) NOT NULL,
     result JSON NOT NULL
@@ -39,9 +45,9 @@ CREATE TABLE IF NOT EXISTS in_out (
 
 -- 4. login_search 테이블 생성 (존재하지 않으면)
 CREATE TABLE IF NOT EXISTS login_search (
-    id INTEGER PRIMARY KEY AUTO_INCREMENT,
-    user_id INTEGER NOT NULL,
-    building_id INTEGER NOT NULL,
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    building_id BIGINT NOT NULL,
     favorite BOOLEAN DEFAULT FALSE,
 
     UNIQUE KEY unique_user_building (user_id, building_id),

@@ -5,7 +5,7 @@ import Button from '@/lib/components/ui/Button/Button';
 import Image from 'next/image';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { logoutAPI } from '@/features/auth/api/authApi';
-import { User, LogOut, MessageCircle } from 'lucide-react';
+import { User, LogOut, MessageCircle, Zap } from 'lucide-react';
 import { useState } from 'react';
 import { ChatMainModal } from '@/features/chat/components/ChatMainModal';
 
@@ -26,6 +26,62 @@ export default function Header() {
       logout();
     } catch (error) {
       alert('로그아웃에 실패했습니다.');
+    }
+  };
+
+  // 🚀 AI 테스트 함수 추가
+  // 🚀 AI 테스트 함수 수정
+  const testAI = async () => {
+    console.log('🧪 AI API 테스트 시작...');
+
+    try {
+      // ✅ 올바른 백엔드 URL로 수정
+      const response = await fetch(
+        'http://localhost:8080/api/v1/user/industry/ai-recommend',
+        {
+          method: 'POST',
+          credentials: 'include', // 쿠키 포함
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            surveyResponses: [
+              { questionId: 1, selectedOptions: [1, 2] },
+              { questionId: 2, selectedOptions: [3] },
+              { questionId: 3, selectedOptions: [1, 4] },
+            ],
+          }),
+        },
+      );
+
+      console.log('📊 응답 상태:', response.status);
+      console.log(
+        '🔍 CORS 헤더:',
+        response.headers.get('Access-Control-Allow-Origin'),
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ AI 추천 성공!', data);
+        alert(
+          `AI 추천 성공! ${
+            data.data?.recommendations?.length || 0
+          }개 업종 추천`,
+        );
+      } else {
+        const errorText = await response.text();
+        console.log('❌ AI 추천 실패:', response.status, errorText);
+        alert(`AI 추천 실패: ${response.status}`);
+      }
+    } catch (error) {
+      console.log('🚨 네트워크 에러:', error);
+      // 에러가 Error 객체인지 확인하는 타입 가드 추가
+      if (error instanceof Error) {
+        alert('네트워크 에러: ' + error.message);
+      } else {
+        // Error 객체가 아닌 경우
+        alert('알 수 없는 오류가 발생했습니다.');
+      }
     }
   };
 
@@ -90,6 +146,17 @@ export default function Header() {
 
           {/* 네비게이션 - 완전 오른쪽 고정 */}
           <div className="flex items-center gap-4">
+            {/* 🚀 AI 테스트 버튼 (로그인된 사용자에게만 표시) */}
+            {user && (
+              <Button
+                onClick={testAI}
+                className="bg-purple-600 hover:bg-purple-700 text-white text-sm px-4 py-2.5 rounded-lg transition-all duration-200 flex items-center gap-2 font-medium shadow-md border border-purple-500"
+              >
+                <Zap className="w-4 h-4" />
+                <span className="hidden sm:inline">AI테스트</span>
+              </Button>
+            )}
+
             {user ? (
               <>
                 {/* 사용자 정보 */}

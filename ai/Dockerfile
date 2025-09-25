@@ -2,7 +2,7 @@
 FROM python:3.10-slim
 
 # 2. 작업 디렉토리 설정
-WORKDIR /ai_app
+WORKDIR /app
 
 # 3. 의존성 파일 복사 및 설치
 # requirements.txt를 먼저 복사하여 Docker 빌드 캐시를 활용합니다.

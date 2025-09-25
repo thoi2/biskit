@@ -15,6 +15,14 @@ public enum ErrorCode {
     COMMON_ENTITY_NOT_FOUND(NOT_FOUND, "COMMON_ENTITY_NOT_FOUND", "요청한 엔티티를 찾을 수 없습니다."),
 
 
+    // Industry 도메인 에러 (단순화)
+    USER_NOT_FOUND(NOT_FOUND, "USER_NOT_FOUND", "사용자를 찾을 수 없습니다."),
+    USER_INVALID_ID(BAD_REQUEST, "USER_INVALID_ID", "유효하지 않은 사용자 ID입니다."),
+
+    INDUSTRY_INVALID_CODE(BAD_REQUEST, "INDUSTRY_INVALID_CODE", "업종 코드 형식이 올바르지 않습니다."),
+    INDUSTRY_CODE_TOO_LONG(BAD_REQUEST, "INDUSTRY_CODE_TOO_LONG", "업종 코드가 너무 깁니다."),
+    INDUSTRY_DUPLICATE_RECOMMENDATION(BAD_REQUEST, "INDUSTRY_DUPLICATE_RECOMMENDATION", "중복된 업종을 선택할 수 없습니다."),
+
 
     // Store 범위 검색 에러
     STORE_INVALID_BOUNDS(BAD_REQUEST, "STORE_INVALID_BOUNDS", "잘못된 영역 범위입니다."),
