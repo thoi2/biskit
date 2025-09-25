@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useMapStore } from '../store/mapStore';
-import { useStoreStore } from '../../stores/store/storesStore';  // 🔥 추가
-import { useRecommendationStore } from '../../ai/store';  // 🔥 추가
+import { useStoreStore } from '../../stores/store/storesStore'; // 🔥 추가
+import { useRecommendationStore } from '../../ai/store'; // 🔥 추가
 import { useBiskitData } from '../../stores/hooks/useBiskitData';
 import { useMapMarkers } from '../hooks/useMapMarkers';
 import { MapBounds, MapMarkerItem } from '../types';
@@ -40,7 +40,9 @@ export function KakaoMap() {
 
   const mapRef = useRef<HTMLDivElement>(null);
   const [selectedItem, setSelectedItem] = useState<MapMarkerItem | null>(null);
-  const [selectedCluster, setSelectedCluster] = useState<MapMarkerItem[] | null>(null);
+  const [selectedCluster, setSelectedCluster] = useState<
+    MapMarkerItem[] | null
+  >(null);
   const [map, setMap] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -60,95 +62,119 @@ export function KakaoMap() {
     const safeRecommendations = recommendations || [];
 
     const filteredStores = safeStores
-        .filter(store => !store.hidden)
-        .filter(store => {
-          const categoryName = store.categoryName || store.bizCategoryCode;
-          return selectedCategories.some(category =>
-              categoryName.includes(category)
-          );
-        })
-        .map(store => ({
-          id: `store-${store.id}`,
-          name: store.displayName ||
-              `${store.storeName} ${store.branchName || ''}`.trim(),
-          category: store.categoryName || store.bizCategoryCode,
-          address: store.roadAddress,
-          coordinates: { lat: store.lat, lng: store.lng },
-          type: 'store' as const,
-          closureProbability: undefined,
-        }));
+      .filter(store => !store.hidden)
+      .filter(store => {
+        const categoryName = store.categoryName || store.bizCategoryCode;
+        return selectedCategories.some(category =>
+          categoryName.includes(category),
+        );
+      })
+      .map(store => ({
+        id: `store-${store.id}`,
+        name:
+          store.displayName ||
+          `${store.storeName} ${store.branchName || ''}`.trim(),
+        category: store.categoryName || store.bizCategoryCode,
+        address: store.roadAddress,
+        coordinates: { lat: store.lat, lng: store.lng },
+        type: 'store' as const,
+        closureProbability: undefined,
+      }));
 
     const filteredRecommendations = safeRecommendations
-        .filter(rec => !rec.hidden)
-        .map(rec => ({
-          id: `recommendation-${rec.id}`,
-          name: rec.businessName,
-          category: rec.businessType,
-          address: rec.address,
-          coordinates: rec.coordinates,
-          type: 'recommendation' as const,
-          closureProbability: rec.closureProbability.year1,
-          riskLevel: rec.riskLevel,
-        }));
+      .filter(rec => !rec.hidden)
+      .map(rec => ({
+        id: `recommendation-${rec.id}`,
+        name: rec.businessName,
+        category: rec.businessType,
+        address: rec.address,
+        coordinates: rec.coordinates,
+        type: 'recommendation' as const,
+        closureProbability: rec.closureProbability.year1,
+        riskLevel: rec.riskLevel,
+      }));
 
     return [...filteredStores, ...filteredRecommendations];
   }, [stores, selectedCategories, recommendations]);
 
   // 마커 클릭 핸들러
-  const handleMarkerClick = useCallback((item: MapMarkerItem) => {
-    setSelectedItem(item);
-    setSelectedCluster(null);
-    setActiveTab('result');
+  const handleMarkerClick = useCallback(
+    (item: MapMarkerItem) => {
+      setSelectedItem(item);
+      setSelectedCluster(null);
+      setActiveTab('result');
 
-    if (item.type === 'store') {
-      const store = (stores || []).find(s => `store-${s.id}` === item.id);
-      if (store) {
-        selectStore(store);
-        setHighlightedStore(store.id);
-        setHighlightedRecommendation(null);
-        setTimeout(() => setHighlightedStore(null), 3000);
-      }
-    } else if (item.type === 'recommendation') {
-      const recommendation = (recommendations || []).find(
+      if (item.type === 'store') {
+        const store = (stores || []).find(s => `store-${s.id}` === item.id);
+        if (store) {
+          selectStore(store);
+          setHighlightedStore(store.id);
+          setHighlightedRecommendation(null);
+          setTimeout(() => setHighlightedStore(null), 3000);
+        }
+      } else if (item.type === 'recommendation') {
+        const recommendation = (recommendations || []).find(
           r => `recommendation-${r.id}` === item.id,
-      );
-      if (recommendation) {
-        selectRecommendation(recommendation);
-        setHighlightedRecommendation(recommendation.id);
-        setHighlightedStore(null);
-        setTimeout(() => setHighlightedRecommendation(null), 3000);
+        );
+        if (recommendation) {
+          selectRecommendation(recommendation);
+          setHighlightedRecommendation(recommendation.id);
+          setHighlightedStore(null);
+          setTimeout(() => setHighlightedRecommendation(null), 3000);
+        }
       }
-    }
-  }, [stores, recommendations, selectStore, selectRecommendation, setActiveTab, setHighlightedStore, setHighlightedRecommendation]);
+    },
+    [
+      stores,
+      recommendations,
+      selectStore,
+      selectRecommendation,
+      setActiveTab,
+      setHighlightedStore,
+      setHighlightedRecommendation,
+    ],
+  );
 
   // 클러스터 클릭 핸들러
-  const handleClusterClick = useCallback((items: MapMarkerItem[]) => {
-    setSelectedCluster(items);
-    setSelectedItem(null);
-    setActiveTab('result');
-  }, [setActiveTab]);
+  const handleClusterClick = useCallback(
+    (items: MapMarkerItem[]) => {
+      setSelectedCluster(items);
+      setSelectedItem(null);
+      setActiveTab('result');
+    },
+    [setActiveTab],
+  );
 
   // 클러스터 아이템 클릭 핸들러
-  const handleClusterItemClick = useCallback((item: MapMarkerItem) => {
-    setSelectedItem(item);
-    handleMarkerClick(item);
-  }, [handleMarkerClick]);
+  const handleClusterItemClick = useCallback(
+    (item: MapMarkerItem) => {
+      setSelectedItem(item);
+      handleMarkerClick(item);
+    },
+    [handleMarkerClick],
+  );
 
   // 지역 선택 핸들러
-  const handleLocationSelect = useCallback((coordinates: { lat: number; lng: number }) => {
-    if (!map) return;
+  const handleLocationSelect = useCallback(
+    (coordinates: { lat: number; lng: number }) => {
+      if (!map) return;
 
-    const moveLatLon = new window.kakao.maps.LatLng(coordinates.lat, coordinates.lng);
-    map.setCenter(moveLatLon);
-    map.setLevel(4); // 적당한 확대 레벨로 설정
-  }, [map]);
+      const moveLatLon = new window.kakao.maps.LatLng(
+        coordinates.lat,
+        coordinates.lng,
+      );
+      map.setCenter(moveLatLon);
+      map.setLevel(4); // 적당한 확대 레벨로 설정
+    },
+    [map],
+  );
 
   // 마커 관리 훅 사용
   const { markers } = useMapMarkers({
     map,
     mapItems,
-    stores: stores || [],  // 🔥 안전한 기본값
-    recommendations: recommendations || [],  // 🔥 안전한 기본값
+    stores: stores || [], // 🔥 안전한 기본값
+    recommendations: recommendations || [], // 🔥 안전한 기본값
     onMarkerClick: handleMarkerClick,
     onClusterClick: handleClusterClick,
   });
@@ -201,15 +227,15 @@ export function KakaoMap() {
   // 카카오맵 스크립트 로딩
   useEffect(() => {
     let isMounted = true;
-
     const loadKakaoMap = async () => {
       try {
         if (
-            typeof window !== 'undefined' &&
-            window.kakao &&
-            window.kakao.maps
+          typeof window !== 'undefined' &&
+          window.kakao &&
+          window.kakao.maps
         ) {
           setIsLoading(false);
+          console.log('카카오맵 스크립트가 이미 로드되었습니다. ✅');
           return;
         }
 
@@ -220,26 +246,33 @@ export function KakaoMap() {
         script.onload = () => {
           if (isMounted) {
             setIsLoading(false);
+            console.log('카카오맵 스크립트 로딩 성공! 🎉');
           }
         };
 
-        script.onerror = () => {
+        // script.onerror: 이 부분에 디버그 코드를 추가합니다.
+        script.onerror = e => {
           if (isMounted) {
-            setLoadError('카카오맵 API를 불러올 수 없습니다.');
+            const errorMsg = '카카오맵 API 스크립트 로딩 실패 😭';
+            setLoadError(errorMsg);
             setIsLoading(false);
+            console.error(errorMsg, e); // 오류 객체(e)를 함께 출력하여 상세 정보를 확인
           }
         };
 
         document.head.appendChild(script);
-      } catch {
+      } catch (e) {
         if (isMounted) {
-          setLoadError('카카오맵 로딩 중 오류가 발생했습니다.');
+          const errorMsg = '카카오맵 로딩 중 예외 발생 😥';
+          setLoadError(errorMsg);
           setIsLoading(false);
+          console.error(errorMsg, e); // catch 블록에서 잡힌 예외(e)를 출력
         }
       }
     };
 
     loadKakaoMap();
+
     return () => {
       isMounted = false;
     };
@@ -251,9 +284,9 @@ export function KakaoMap() {
 
     const initializeMap = () => {
       if (
-          typeof window === 'undefined' ||
-          !window.kakao ||
-          !window.kakao.maps
+        typeof window === 'undefined' ||
+        !window.kakao ||
+        !window.kakao.maps
       ) {
         setTimeout(initializeMap, 100);
         return;
@@ -304,7 +337,11 @@ export function KakaoMap() {
     return () => {
       if (map && window.kakao && window.kakao.maps) {
         try {
-          window.kakao.maps.event.removeListener(map, 'zoom_changed', handleZoomChanged);
+          window.kakao.maps.event.removeListener(
+            map,
+            'zoom_changed',
+            handleZoomChanged,
+          );
           window.kakao.maps.event.removeListener(map, 'click', handleMapClick);
         } catch {
           console.warn('이벤트 리스너 제거 중 오류:');
@@ -333,56 +370,58 @@ export function KakaoMap() {
   const searchButtonInfo = getSearchButtonInfo(currentLevel);
 
   return (
-      <div className="relative w-full h-full">
-        {/* 애니메이션 CSS */}
-        <style jsx>{`
-          @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+    <div className="relative w-full h-full">
+      {/* 애니메이션 CSS */}
+      <style jsx>{`
+        @keyframes pulse {
+          0%,
+          100% {
+            opacity: 1;
           }
-        `}</style>
+          50% {
+            opacity: 0.5;
+          }
+        }
+      `}</style>
 
-        {/* 지도 컨테이너 */}
-        <div
-            ref={mapRef}
-            className="w-full h-full rounded-lg overflow-hidden"
+      {/* 지도 컨테이너 */}
+      <div ref={mapRef} className="w-full h-full rounded-lg overflow-hidden" />
+
+      {/* 지도 컨트롤들 */}
+      <MapControls
+        isSearching={isSearching}
+        currentLevel={currentLevel}
+        isSearchAvailable={isSearchAvailable}
+        searchButtonInfo={searchButtonInfo}
+        onSearchClick={handleSearchButtonClick}
+        maxSearchLevel={MAX_SEARCH_LEVEL}
+      />
+
+      {/* 지역 선택기 */}
+      <LocationSelector onLocationSelect={handleLocationSelect} />
+
+      {/* 단일 마커 팝업 */}
+      {selectedItem && !selectedCluster && (
+        <MarkerPopup
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
+          getMarkerColorClass={getMarkerColorClass}
         />
+      )}
 
-        {/* 지도 컨트롤들 */}
-        <MapControls
-            isSearching={isSearching}
-            currentLevel={currentLevel}
-            isSearchAvailable={isSearchAvailable}
-            searchButtonInfo={searchButtonInfo}
-            onSearchClick={handleSearchButtonClick}
-            maxSearchLevel={MAX_SEARCH_LEVEL}
+      {/* 클러스터 팝업 */}
+      {selectedCluster && (
+        <ClusterPopup
+          items={selectedCluster}
+          onClose={() => setSelectedCluster(null)}
+          onItemClick={handleClusterItemClick}
+          onViewAllClick={() => {
+            setActiveTab('result');
+            setSelectedCluster(null);
+          }}
+          getMarkerColorClass={getMarkerColorClass}
         />
-
-        {/* 지역 선택기 */}
-        <LocationSelector onLocationSelect={handleLocationSelect} />
-
-        {/* 단일 마커 팝업 */}
-        {selectedItem && !selectedCluster && (
-            <MarkerPopup
-                item={selectedItem}
-                onClose={() => setSelectedItem(null)}
-                getMarkerColorClass={getMarkerColorClass}
-            />
-        )}
-
-        {/* 클러스터 팝업 */}
-        {selectedCluster && (
-            <ClusterPopup
-                items={selectedCluster}
-                onClose={() => setSelectedCluster(null)}
-                onItemClick={handleClusterItemClick}
-                onViewAllClick={() => {
-                  setActiveTab('result');
-                  setSelectedCluster(null);
-                }}
-                getMarkerColorClass={getMarkerColorClass}
-            />
-        )}
-      </div>
+      )}
+    </div>
   );
 }

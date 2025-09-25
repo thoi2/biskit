@@ -17,10 +17,10 @@ pipeline {
         GOOGLE_CLIENT_ID      = credentials('google-client-id')
         GOOGLE_CLIENT_SECRET  = credentials('google-client-secret')
         GOOGLE_REDIRECT_URI   = credentials('google-redirect-uri')
-        KT_API_KEY            = credentials('kt-api-key')
-        PUBLIC_DATA_API_KEY   = credentials('public-data-api-key')
         SPRING_PROFILES_ACTIVE= credentials('spring-profiles-active')
         KAKAO_MAP_KEY= credentials('kakao-map-key')
+        GEOCODER_TOKEN = credentials('geocoder-token')
+        GMS_KEY = credentials('gms-key')
     }
 
     stages {
@@ -42,14 +42,8 @@ pipeline {
         stage('Debug - Verify Files') {
             steps {
                 sh '''
-                    echo "--- [DEBUG] 현재 작업 폴더 위치 ---"
-                    pwd
-                    echo "--- [DEBUG] 전체 파일 목록 및 권한 확인 (재귀적으로) ---"
-                    ls -laR
                     echo "--- [DEBUG] Jenkins가 사용하는 docker-compose.yml 내용 ---"
                     cat docker-compose.yml
-                    echo "--- [DEBUG] Jenkins가 사용하는 custom.cnf 내용 ---"
-                    cat ./mysql/conf/custom.cnf
                     echo "--- [DEBUG] Jenkins가 사용하는 init.sql 내용 ---"
                     cat ./mysql/init.sql
                     cat docker-compose.prod.yml
@@ -96,7 +90,7 @@ pipeline {
                     echo "Deploying new containers..."
                     // 새로운 컨테이너를 백그라운드에서 실행
                     // environment 블록의 변수들이 컨테이너로 주입됨
-                    sh 'docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d'
+                    sh 'docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans'
                     echo "Deployment completed successfully!"
                 }
             }
