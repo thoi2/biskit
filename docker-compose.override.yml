@@ -9,7 +9,7 @@ services:
     ports:
       - "9090:8000" # 컨테이너 내부 8000번 포트를 호스트 9090번 포트로 연결
     volumes:
-      - ./ai:/ai_app # 로컬 ai 폴더를 컨테이너 /ai_app 폴더에 마운트 (핫 리로딩)
+      - ./ai:/app # 로컬 ai 폴더를 컨테이너 /app 폴더에 마운트 (핫 리로딩)
   backend:
     build:
       dockerfile: Dockerfile.dev

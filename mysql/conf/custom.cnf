@@ -1,4 +1,0 @@
-[mysqld]
-# CSV 파일을 읽을 수 있도록 경로를 지정하고, LOAD DATA 기능을 활성화합니다.
-secure-file-priv=/var/lib/mysql-files
-local_infile=1
