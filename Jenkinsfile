@@ -24,6 +24,12 @@ pipeline {
     }
 
     stages {
+        stage('Cleanup Workspace') {
+            steps {
+                // 빌드를 시작하기 전에 워크스페이스를 깨끗하게 삭제
+                cleanWs()
+            }
+        }
         // 1단계: 코드 가져오기
         stage('Checkout') {
             steps {

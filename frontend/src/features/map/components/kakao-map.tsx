@@ -316,7 +316,7 @@ export function KakaoMap() {
 
     const handleMapClick = (mouseEvent: any) => {
       const latlng = mouseEvent.latLng;
-      // handlers.handleMapClick(latlng.getLat(), latlng.getLng());
+      handlers.handleMapClick(latlng.getLat(), latlng.getLng());
 
       setSelectedItem(null);
       setSelectedCluster(null);

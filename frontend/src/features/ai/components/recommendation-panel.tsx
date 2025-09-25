@@ -18,15 +18,8 @@ import { useMapStore } from '@/features/map/store/mapStore';
 
 export function RecommendationPanel() {
   // ✅ 3. 훅을 호출하여 상태와 함수를 모두 가져옴
-  const {
-    coordinates,
-    setCoordinates,
-    category,
-    setCategory,
-    isLoading,
-    error,
-    handleSubmit,
-  } = useRecommendationForm();
+  const { category, setCategory, isLoading, error, handleSubmit } =
+    useRecommendationForm();
   const { coordinates, setCoordinates } = useMapStore();
 
   return (
@@ -57,13 +50,27 @@ export function RecommendationPanel() {
                     <Input
                       id="lat"
                       placeholder="37.5665"
-                      value={coordinates.lat}
-                      onChange={e =>
-                        setCoordinates(prev => ({
-                          ...prev,
-                          lat: e.target.value,
-                        }))
-                      }
+                      value={coordinates.lat ?? ''} // null일 경우 빈 문자열로 표시
+                      onChange={e => {
+                        const value = e.target.value;
+                        // 입력값이 비어있으면 null로, 아니면 숫자로 변환하여 저장
+                        const numericValue =
+                          value === '' ? null : parseFloat(value);
+
+                        // 숫자 형태가 아니거나(예: 'abc'), 범위를 벗어나는 값은 저장하지 않음 (선택 사항)
+                        if (value !== '' && Number.isNaN(numericValue)) {
+                          return;
+                        }
+
+                        // 🔥 핵심: 기존 coordinates 상태를 기반으로 새로운 객체를 만듭니다.
+                        const newCoordinates = {
+                          ...coordinates, // 기존 lng 값은 그대로 유지합니다.
+                          lat: numericValue, // lat 값만 새로 업데이트합니다.
+                        };
+
+                        // 🔥 새로 만든 완벽한 형태의 Coordinates 객체를 액션에 전달합니다.
+                        setCoordinates(newCoordinates);
+                      }}
                       className="text-sm"
                       disabled={isLoading}
                     />
@@ -75,13 +82,27 @@ export function RecommendationPanel() {
                     <Input
                       id="lng"
                       placeholder="126.9780"
-                      value={coordinates.lng}
-                      onChange={e =>
-                        setCoordinates(prev => ({
-                          ...prev,
-                          lng: e.target.value,
-                        }))
-                      }
+                      value={coordinates.lat ?? ''} // null일 경우 빈 문자열로 표시
+                      onChange={e => {
+                        const value = e.target.value;
+                        // 입력값이 비어있으면 null로, 아니면 숫자로 변환하여 저장
+                        const numericValue =
+                          value === '' ? null : parseFloat(value);
+
+                        // 숫자 형태가 아니거나(예: 'abc'), 범위를 벗어나는 값은 저장하지 않음 (선택 사항)
+                        if (value !== '' && Number.isNaN(numericValue)) {
+                          return;
+                        }
+
+                        // 🔥 핵심: 기존 coordinates 상태를 기반으로 새로운 객체를 만듭니다.
+                        const newCoordinates = {
+                          ...coordinates, // 기존 lng 값은 그대로 유지합니다.
+                          l: numericValue, // lat 값만 새로 업데이트합니다.
+                        };
+
+                        // 🔥 새로 만든 완벽한 형태의 Coordinates 객체를 액션에 전달합니다.
+                        setCoordinates(newCoordinates);
+                      }}
                       className="text-sm"
                       disabled={isLoading}
                     />

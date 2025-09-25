@@ -6,7 +6,8 @@ import { useRequestRecommendation } from '@/features/ai/hooks/useRecommendation'
 
 export function useRecommendationForm() {
   // 1. 폼 입력 상태 관리
-  const [coordinates, setCoordinates] = useState({ lat: '', lng: '' });
+  const { coordinates, setCoordinates } = useMapStore();
+  // const [coordinates, setCoordinates] = useState({ lat: '', lng: '' });
   const [category, setCategory] = useState('');
 
   // 2. 외부 훅 연동
@@ -24,10 +25,18 @@ export function useRecommendationForm() {
 
   // 5. 폼 제출 핸들러 (모든 로직을 포함)
   const handleSubmit = () => {
-    const lat = parseFloat(coordinates.lat);
-    const lng = parseFloat(coordinates.lng);
+    const lat =
+      coordinates.lat !== null
+        ? Math.trunc(coordinates.lat * 1e12) / 1e12
+        : null;
 
-    if (Number.isNaN(lat) || Number.isNaN(lng)) {
+    const lng =
+      coordinates.lng !== null
+        ? Math.trunc(coordinates.lng * 1e12) / 1e12
+        : null;
+
+    // 1. null 값인지 먼저 확인합니다.
+    if (lat === null || lng === null) {
       alert('정확한 위도와 경도를 입력해주세요.');
       return;
     }
