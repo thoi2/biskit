@@ -84,30 +84,34 @@ async def build_augmented_subgraph_for_category(ctx: Ctx, lat: float, lon: float
 
     # ==================== 경쟁 점수 직접 주입 (수정된 부분) ====================
     try:
-        _, region_idx = ctx.node_tree.query([lat, lon], k=1)
-        target_region_code = ctx.node_codes[region_idx]
-        stores_in_region = ctx.store_df[ctx.store_df["region_code"] == target_region_code]
+        # 1. Find nearby stores using the store_tree (KDTree)
+        # Radius is approx 300m; 1 degree lat is approx 111.1 km
+        radius_deg = 0.3 / 111.1
+        nearby_store_indices = ctx.store_tree.query_ball_point([lat, lon], r=radius_deg)
 
-        if not stores_in_region.empty:
-            distances = haversine_distance(lat, lon, stores_in_region['_lat'].values, stores_in_region['_lon'].values)
-            distances_of_competitors = distances[distances <= 300]
-            if distances_of_competitors.size > 0:
-                weights = (300.0 - distances_of_competitors) / 300.0
-                competition_score = np.sum(weights)
-            else:
-                competition_score = 0
+        competition_score = 0.0
+        if len(nearby_store_indices) > 0:
+            # 2. Get coordinates and calculate distance/weights
+            nearby_coords = ctx.store_coords[nearby_store_indices]
+            distances_km = haversine_distance(lat, lon, nearby_coords[:, 0], nearby_coords[:, 1])
             
-            # 경쟁 점수를 0-1로 정규화 (높을수록 나쁨 -> 낮은 값)
-            normalized_competition = 1.0 / (1.0 + 0.05 * competition_score)
-            
-            # 'nightview_count' 특성을 찾아 경쟁 점수로 대체
-            if 'nightview_count' in ctx.env_feat_names:
-                night_idx = ctx.env_feat_names.index('nightview_count')
-                original_val = env_mix[night_idx]
-                env_mix[night_idx] = normalized_competition
-                log(f"[COMPETITION] feature 'nightview_count' ({original_val:.2f}) replaced by competition score ({normalized_competition:.2f})")
-            else:
-                log("[COMPETITION] 'nightview_count' not in features. Skipping replacement.")
+            # 3. Apply Gaussian weighting
+            sigma = float(knobs.get("DISTANCE_SIGMA_KM", 0.1))
+            weights = np.exp(-(distances_km**2) / (2 * sigma**2))
+            competition_score = np.sum(weights)
+
+        # 4. Normalize and inject the score
+        # The score represents local competition density. Higher is "worse" for survival.
+        # We transform it so that a higher score results in a lower feature value.
+        normalized_competition = 1.0 / (1.0 + 0.05 * competition_score)
+
+        if 'nightview_count' in ctx.env_feat_names:
+            night_idx = ctx.env_feat_names.index('nightview_count')
+            original_val = env_mix[night_idx]
+            env_mix[night_idx] = normalized_competition
+            log(f"[COMPETITION] Score: {competition_score:.2f} -> Injected: {normalized_competition:.2f} (replaces {original_val:.2f})")
+        else:
+            log("[COMPETITION] 'nightview_count' not in features. Skipping replacement.")
 
     except Exception as e:
         log(f"[COMPETITION] Failed to inject competition score: {e}")
@@ -124,7 +128,7 @@ async def build_augmented_subgraph_for_category(ctx: Ctx, lat: float, lon: float
     if (j is not None) and (0 <= j < num_cats_meta):
         v[env_feat_count + j] = 1.0
 
-    sub_x = torch.tensor(np.vstack([reg_X, v[None, :]]), dtype=torch.float32)
+    sub_x = torch.tensor(np.vstack([reg_X, v[None, :]]), dtype=torch.float16)
     N = sub_x.size(0)
     virtual_idx = N - 1
     add_src, add_dst = [], []

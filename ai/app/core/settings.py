@@ -8,14 +8,14 @@ class Settings(BaseSettings):
     META_PATH: str = "survival_meta.json"
 
     # ===== GNN / 추천 파라미터 =====
-    K_REGION: int = 1
-    ENV_GAIN: float = 5.0
-    ENV_GAMMA: float = 2.0
-    NEIGHBOR_EXPAND: bool = False
-    K_SAME: int = 1
-    K_MIX: int = 1
-    EDGE_GAIN: int = 3
-    MAX_SUB_NODES: int = 40000
+    K_REGION: int = 3
+    ENV_GAIN: float = 1.0
+    ENV_GAMMA: float = 1.0
+    NEIGHBOR_EXPAND: int = 1
+    K_SAME: int = 10
+    K_MIX: int = 5
+    EDGE_GAIN: float = 1.0
+    MAX_SUB_NODES: int = 500
 
     # ===== LLM / 게이트웨이 =====
     GMS_KEY: str | None = None

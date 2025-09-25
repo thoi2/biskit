@@ -28,6 +28,7 @@ def load_model(ctx, meta_path: str, model_path: str):
     model = SurvivalGNN(in_dim=in_dim, hid=64, out_hazards=H).to(ctx.device)
     state = torch.load(model_path, map_location=ctx.device)
     model.load_state_dict(state)
+    model.half()
     model.eval()
     ctx.model = model
     log(f"model loaded: in_dim={in_dim} H={H}")
