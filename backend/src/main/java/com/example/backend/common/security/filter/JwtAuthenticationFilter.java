@@ -84,9 +84,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String requestURI = request.getRequestURI();
         String method = request.getMethod();
 
-        String requestURI = request.getRequestURI();
-        String method = request.getMethod();
-
         System.out.println("🔍 JWT 필터 진입: " + method + " " + requestURI);
         System.out.println("🔍 요청 헤더 확인:");
         System.out.println("  - User-Agent: " + request.getHeader("User-Agent"));

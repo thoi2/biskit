@@ -7,7 +7,11 @@ export const chatApi = {
     apiClient.post('/chat/rooms', request),
 
   // 공개 채팅방 목록 조회 (페이징 지원)
-  getPublicRooms: (bigCategory?: string, limit = 20, cursor?: string): Promise<{
+  getPublicRooms: (
+    bigCategory?: string,
+    limit = 20,
+    cursor?: string,
+  ): Promise<{
     rooms: Room[];
     nextCursor?: string;
     hasMore: boolean;
@@ -17,23 +21,22 @@ export const chatApi = {
       params: {
         ...(bigCategory && { bigCategory }),
         limit,
-        ...(cursor && { cursor })
-      }
+        ...(cursor && { cursor }),
+      },
     }),
 
   // 내가 참여한 채팅방 목록 조회
-  getUserRooms: (): Promise<Room[]> =>
-    apiClient.get('/chat/rooms'),
+  getUserRooms: (): Promise<Room[]> => apiClient.get('/chat/rooms'),
 
   // 채팅방 정보 조회
   getRoomInfo: (roomId: string): Promise<Room> =>
     apiClient.get(`/chat/rooms/${roomId}`),
 
   // 방 참여하기 (REST API가 없으면 공개방 목록에서 정보 찾기)
-  findRoomInPublicList: (roomId: string): Promise<Room | null> =>
+  findRoomInPublicList: (roomId: string): Promise<Room | undefined> =>
     chatApi.getPublicRooms().then(response => {
       const room = response.rooms.find(r => r.roomId === roomId);
-      return room || null;
+      return room;
     }),
 
   // 채팅방 나가기
@@ -43,12 +46,16 @@ export const chatApi = {
   // 최근 메시지 조회
   getRecentMessages: (roomId: string, limit = 50): Promise<ChatMessage[]> =>
     apiClient.get(`/chat/rooms/${roomId}/messages`, {
-      params: { limit }
+      params: { limit },
     }),
 
   // 이전 메시지 조회 (무한 스크롤용)
-  getMessagesBefore: (roomId: string, cursor: string, limit = 50): Promise<ChatMessage[]> =>
+  getMessagesBefore: (
+    roomId: string,
+    cursor: string,
+    limit = 50,
+  ): Promise<ChatMessage[]> =>
     apiClient.get(`/chat/rooms/${roomId}/messages/before`, {
-      params: { cursor, limit }
-    })
+      params: { cursor, limit },
+    }),
 };
