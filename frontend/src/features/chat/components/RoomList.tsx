@@ -56,12 +56,12 @@ export function RoomList({ onJoinRoom, onCreateRoom }: RoomListProps) {
       console.log('myRoomsResponse:', myRoomsResponse);
 
       // API 응답 데이터 처리 - 올바른 데이터 구조 처리
-      const publicRoomsData = publicRoomsResponse || {
+      const publicRoomsData = publicRoomsResponse.data || {
         rooms: [],
         nextCursor: null,
         hasMore: false,
       };
-      const myRooms = isLoadMore ? userRooms : myRoomsResponse || [];
+      const myRooms = isLoadMore ? userRooms : myRoomsResponse.data || [];
 
       console.log('publicRoomsData:', publicRoomsData);
       console.log('myRooms:', myRooms);
