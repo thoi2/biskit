@@ -42,4 +42,8 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessageEntity, 
         return findActiveRoomsSince(LocalDateTime.now().minusDays(7));
     }
 
+    /**
+     * 메시지 ID로 단일 메시지 조회
+     */
+    ChatMessageEntity findByMessageId(String messageId);
 }

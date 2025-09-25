@@ -1,5 +1,6 @@
 export interface ChatMessage {
-  id?: string;
+  id?: number; // Long ID from backend
+  messageId: string;
   type: 'JOIN' | 'CHAT' | 'LEAVE' | 'TYPING' | 'HISTORY' | 'ERROR';
   roomId: string;
   senderId: string;        // 사용자 ID (구분용)
@@ -15,11 +16,11 @@ export interface Room {
   creatorId: string;
   creatorUsername: string;
   bigCategory?: string; // 상권업종대분류명 (소매, 음식, 교육 등)
-  isActive: boolean;
+  isActive?: boolean;
   maxParticipants: number;
   currentParticipants: number;
   createdAt: string;    // ISO string 형태 (yyyy-MM-dd HH:mm:ss)
-  updatedAt: string;    // ISO string 형태 (yyyy-MM-dd HH:mm:ss)
+  updatedAt?: string;   // ISO string 형태 (yyyy-MM-dd HH:mm:ss)
   recentMessageCount?: number;
   participants?: ParticipantResponse[];
 }
@@ -27,7 +28,7 @@ export interface Room {
 export interface ParticipantResponse {
   userId: string;
   username: string;
-  isActive: boolean;
+  isActive?: boolean;
   joinedAt: string;     // ISO string 형태 (yyyy-MM-dd HH:mm:ss)
   leftAt?: string;      // ISO string 형태 (yyyy-MM-dd HH:mm:ss)
 }

@@ -299,7 +299,8 @@ public class ChatCacheService {
      */
     private ChatMessage convertToMessage(ChatMessageEntity entity) {
         return ChatMessage.builder()
-            .id(entity.getMessageId())
+            .id(entity.getId())
+            .messageId(entity.getMessageId())
             .type(entity.getMessageType())
             .roomId(entity.getRoomId())
             .senderId(entity.getSenderId())
