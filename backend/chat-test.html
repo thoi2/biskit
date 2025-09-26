@@ -232,13 +232,13 @@
             const socket = new SockJS(wsUrl);
             stompClient = Stomp.over(socket);
 
-            // 연결 헤더에 쿠키 수동 추가 (WebSocket에서 쿠키가 자동 전달되지 않을 수 있음)
-            const connectHeaders = {
-                'cookie': `accessToken=${jwtToken}`
-            };
+            // // 연결 헤더에 쿠키 수동 추가 (WebSocket에서 쿠키가 자동 전달되지 않을 수 있음)
+            // const connectHeaders = {
+            //     'cookie': `accessToken=${jwtToken}`
+            // };
 
             stompClient.connect(
-                connectHeaders,
+                //connectHeaders,
                 function(frame) {
                     log('연결 성공: ' + frame);
                     updateConnectionStatus(true);
