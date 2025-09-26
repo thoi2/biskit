@@ -147,7 +147,7 @@ public class RecommendService {
     @Transactional
     public RangeResponse getRange(RangeRequest req, Long uid) {
         final String categoryName = req.getCategory();
-        final Integer categoryId   = categoryPort.getIdByName(categoryName);
+        final Integer categoryId  = categoryPort.getIdByName(categoryName);
 
         record R(RangeRequest.Point pt, GeoBuildingService.ResolvedBuilding bld) {}
         List<R> resolved = req.getPoints().stream()
@@ -173,16 +173,17 @@ public class RecommendService {
             int bldId = r.bld().id();
             if (!ensured.add(bldId)) continue; // 이미 처리한 건물
 
-            if (inOutPort.get(bldId, categoryId).isEmpty()) {
+            Optional<List<Double>> hit = inOutPort.get(r.bld.id(), categoryId);
+            List<Double> value;
+            if (hit.isEmpty()) {
                 // AI 전체 응답 한 번 받아 모든 카테고리 upsert
-                JsonNode aiRaw = aiServerClient.requestAll(r.bld().id(), r.bld().lat(), r.bld().lng());
-                Map<String, List<Double>> byCat = aiResponseParser.toCategoryMetricListV2(aiRaw);
-                Map<String, Integer> nameToId = categoryPort.getIdsByNames(byCat.keySet());
-                byCat.forEach((name, v) -> {
-                    Integer cid = nameToId.get(name);
-                    if (cid != null) inOutPort.upsert(bldId, cid, v);
-                });
+                JsonNode aiRaw = aiServerClient.requestCategory(r.bld.id(),r.bld.lat(), r.bld.lng(),categoryId);
+                value = aiResponseParser.toCategoryMetricV2(aiRaw, categoryName);
             }
+            else {
+                value = hit.get();
+            }
+            inOutPort.upsert(r.bld.id(), categoryId, value);
 
             if (uid != null) {
                 loginSearchPort.upsertubid(uid, bldId);
