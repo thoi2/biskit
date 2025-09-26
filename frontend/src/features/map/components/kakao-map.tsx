@@ -35,6 +35,7 @@ export function KakaoMap() {
     setMap,
     activeTab,
     isDrawingMode,
+    isDrawingActive, // ✅ 추가
     setRecommendPin,
     map, // ✅ useMapStore의 map 사용
   } = useMapStore();
@@ -227,42 +228,92 @@ export function KakaoMap() {
   }, [isLoading, loadError, setMap]);
 
   // 지도 커서 변경 효과
+  // src/features/map/components/KakaoMap.tsx
+// 이벤트 리스너 useEffect 수정 (스마트한 조건 처리)
+
+// src/features/map/components/KakaoMap.tsx
+// 이벤트 리스너 useEffect를 간단하게
+
   useEffect(() => {
     if (!map) return;
-    const mapContainer = map.getNode();
-    if (isDrawingMode) {
-      mapContainer.style.cursor = 'crosshair';
-    } else if (activeTab === 'recommend') {
-      mapContainer.style.cursor = 'crosshair';
-    } else {
-      mapContainer.style.cursor = 'grab';
-    }
-  }, [map, isDrawingMode, activeTab]);
 
-  // 이벤트 리스너
+    console.log('🎧 기본 이벤트 리스너 등록 (클릭 제외)');
+
+    const handleZoomChanged = () => setCurrentLevel(map.getLevel());
+
+    // ✅ 줌 이벤트만 등록 (클릭은 useAreaDrawing에서 처리)
+    window.kakao.maps.event.addListener(map, 'zoom_changed', handleZoomChanged);
+    setCurrentLevel(map.getLevel());
+
+    console.log('✅ 기본 이벤트 리스너 등록 완료');
+
+    return () => {
+      if (map && window.kakao?.maps) {
+        try {
+          window.kakao.maps.event.removeListener(map, 'zoom_changed', handleZoomChanged);
+        } catch (e) {
+          console.warn('이벤트 리스너 제거 중 오류:', e);
+        }
+      }
+    };
+  }, [map]);
+
+  // 이벤트 리스너 (수정)
+  // src/features/map/components/KakaoMap.tsx
+// 이벤트 리스너 useEffect를 이렇게 교체하세요:
+
   useEffect(() => {
     if (!map) return;
 
     const handleZoomChanged = () => setCurrentLevel(map.getLevel());
 
+    // handleMapClick 함수를 더 세밀하게 제어
+    // src/features/map/components/KakaoMap.tsx
+// handleMapClick 부분 수정
+
     const handleMapClick = (mouseEvent: any) => {
+      // ✅ 드로잉이 실제로 진행 중일 때만 차단
+      const { isDrawingMode, isDrawingActive } = useMapStore.getState();
+
+      // 드로잉 진행 중이거나 드로잉 도구가 활성화된 상태에서만 차단
+      if (isDrawingActive) {
+        console.log('🚫 드로잉 진행 중 - 지도 클릭 차단');
+        mouseEvent.stop && mouseEvent.stop();
+        return false;
+      }
+
+      // ✅ 드로잉 모드이지만 실제 드로잉이 진행 중이 아닐 때는 허용
+      // (사용자가 드로잉 도구를 선택했지만 아직 그리기 시작 안 함)
+
       const latlng = mouseEvent.latLng;
       const lat = latlng.getLat();
       const lng = latlng.getLng();
 
+      console.log('🗺️ 지도 클릭:', { lat, lng, activeTab, isDrawingMode, isDrawingActive });
+
+      // ✅ 추천 탭에서 핀 생성
       if (activeTab === 'recommend') {
+        console.log('📍 추천 핀 생성 시작');
         setCoordinates({ lat, lng });
         const newPin = createRecommendPin(lat, lng);
         setRecommendPin(newPin);
+        console.log('✅ 추천 핀 생성 완료');
       }
 
+      // 기존 로직 실행
       handlers.handleMapClick(lat, lng);
       setSelectedItem(null);
       setSelectedCluster(null);
     };
 
     window.kakao.maps.event.addListener(map, 'zoom_changed', handleZoomChanged);
-    window.kakao.maps.event.addListener(map, 'click', handleMapClick);
+
+    // ✅ 드로잉 모드가 아닐 때만 클릭 이벤트 등록
+    const { isDrawingMode } = useMapStore.getState();
+    if (!isDrawingMode) {
+      window.kakao.maps.event.addListener(map, 'click', handleMapClick);
+    }
+
     setCurrentLevel(map.getLevel());
 
     return () => {
@@ -275,7 +326,7 @@ export function KakaoMap() {
         }
       }
     };
-  }, [map, handlers.handleMapClick, setCoordinates, activeTab, createRecommendPin, setRecommendPin]);
+  }, [map, isDrawingMode]); // ✅ isDrawingMode 의존성 추가
 
   // 지도 크기 변화 감지
   useEffect(() => {
@@ -342,7 +393,6 @@ export function KakaoMap() {
               📍 지도를 클릭하여 분석 위치를 선택하세요
             </div>
         )}
-
 
         {/* 지도 컨트롤들 */}
         <MapControls

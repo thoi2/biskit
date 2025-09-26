@@ -1,6 +1,16 @@
 // src/features/ai/store.ts
 import { create } from 'zustand';
 
+// ✅ 배열에서 대표값 추출 함수
+const getDisplaySurvivalRate = (rates: number[] | number): number => {
+    if (Array.isArray(rates)) {
+        if (rates.length === 0) return 0;
+        // 마지막 년도 값을 대표값으로 사용
+        return rates[rates.length - 1];
+    }
+    return typeof rates === 'number' ? rates : 0;
+};
+
 interface RecommendationState {
     recommendationResults: SingleBuildingRecommendationResponse[];  // ✅ any[] → 구체적 타입
     recommendationMarkers: any[];
@@ -307,7 +317,7 @@ export const useRecommendationStore = create<RecommendationState>()((set, get) =
                 category: topResult.category || '추천 업종',
                 lat: Number(building.lat),
                 lng: Number(building.lng),
-                survivalRate: topResult.survivalRate || 0,
+                survivalRate: getDisplaySurvivalRate(topResult.survivalRate), // ✅ 배열에서 단일값 추출
                 type: 'recommendation' as const,
                 isFromBackend: (result as any).isFromBackend || false,
                 isHighlighted: preservedState.isHighlighted,  // ✅ 기존 하이라이트 상태 보존
@@ -372,10 +382,10 @@ export const useRecommendationStore = create<RecommendationState>()((set, get) =
     },
 }));
 
-// 타입 정의들
+// ✅ 타입 정의들 - survivalRate를 number[]로 변경
 export interface RecommendationItem {
     category: string;
-    survivalRate: number;
+    survivalRate: number[]; // ✅ number에서 number[]로 변경
 }
 
 export interface BuildingInfo {

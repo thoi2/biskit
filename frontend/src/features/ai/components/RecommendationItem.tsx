@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'; // ✅ useEffect 추가
+import { useState, useEffect } from 'react';
 import { Heart, Trash2, MapPin, Target, List, Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-react';
 import type { SingleBuildingRecommendationResponse } from '@/features/ai/types';
 
@@ -40,11 +40,35 @@ export function RecommendationItem({
         }
     }, [isHighlighted, isSingleAnalysis, additionalResults.length, recommendation.building.building_id]);
 
-    // 🎯 생존율 색상
+    // 🎯 생존율 색상 (개별 값용)
     const getSurvivalColor = (rate: number) => {
-        if (rate >= 7) return 'text-green-600 bg-green-50 border-green-200';
-        if (rate >= 5) return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+        if (rate >= 70) return 'text-green-600 bg-green-50 border-green-200';
+        if (rate >= 50) return 'text-yellow-600 bg-yellow-50 border-yellow-200';
         return 'text-orange-600 bg-orange-50 border-orange-200';
+    };
+
+    // ✅ 5개년 생존율 표시 컴포넌트
+    const SurvivalRateDisplay = ({ rates, isCompact = false }: { rates: number[], isCompact?: boolean }) => {
+        if (!Array.isArray(rates) || rates.length === 0) {
+            return <span className="text-gray-400 text-xs">데이터 없음</span>;
+        }
+
+        return (
+            <div className={`flex items-center gap-1 ${isCompact ? 'flex-wrap' : ''}`}>
+                {rates.map((rate, index) => (
+                    <div key={index} className={`flex flex-col items-center ${isCompact ? 'min-w-0' : ''}`}>
+                        <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${getSurvivalColor(rate)} ${
+                            isCompact ? 'text-xs px-1 py-0.5' : ''
+                        }`}>
+                            {rate.toFixed(1)}%
+                        </span>
+                        <span className={`text-xs text-gray-400 mt-0.5 ${isCompact ? 'text-xs' : ''}`}>
+                            {index + 1}년
+                        </span>
+                    </div>
+                ))}
+            </div>
+        );
     };
 
     // 🎯 데이터 검증
@@ -56,7 +80,7 @@ export function RecommendationItem({
         <div
             className={`border rounded-lg p-3 space-y-2 cursor-pointer transition-all duration-500 hover:shadow-sm ${
                 isHighlighted
-                    ? 'border-orange-400 bg-gradient-to-r from-orange-50 to-amber-50 shadow-md transform scale-[1.02] ring-2 ring-orange-200' // ✅ 효과 강화
+                    ? 'border-orange-400 bg-gradient-to-r from-orange-50 to-amber-50 shadow-md transform scale-[1.02] ring-2 ring-orange-200'
                     : 'border-gray-200 bg-white hover:border-gray-300'
             } ${!isVisible ? 'opacity-60' : ''}`}
             onClick={() => onClick(recommendation.building.building_id)}
@@ -67,7 +91,7 @@ export function RecommendationItem({
                 <div className="flex items-center gap-2">
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold transition-all duration-300 ${
                         isHighlighted
-                            ? 'bg-gradient-to-r from-orange-500 to-pink-500 animate-pulse' // ✅ 하이라이트 시 강조
+                            ? 'bg-gradient-to-r from-orange-500 to-pink-500 animate-pulse'
                             : 'bg-gradient-to-r from-orange-400 to-pink-400'
                     }`}>
                         #{recommendation.building.building_id}
@@ -76,7 +100,6 @@ export function RecommendationItem({
                         <div className="flex items-center gap-1">
                             <span className="font-medium text-sm text-gray-800">
                                 AI 추천 위치
-                                {/* ✅ 하이라이트 시 NEW 뱃지 */}
                                 {isHighlighted && (
                                     <span className="ml-2 px-2 py-0.5 bg-orange-500 text-white text-xs font-bold rounded-full animate-bounce">
                                         NEW
@@ -93,7 +116,6 @@ export function RecommendationItem({
 
                 {/* 🎯 액션 버튼들 */}
                 <div className="flex items-center gap-0.5">
-                    {/* ✅ 눈 버튼 */}
                     {onToggleVisibility && (
                         <button
                             onClick={(e) => {
@@ -111,7 +133,6 @@ export function RecommendationItem({
                         </button>
                     )}
 
-                    {/* ✅ 하트 버튼 (로그인 시에만 표시) */}
                     {user && (
                         <button
                             onClick={(e) => {
@@ -129,7 +150,6 @@ export function RecommendationItem({
                         </button>
                     )}
 
-                    {/* ✅ X 버튼 (로그인 시에만 표시) */}
                     {user && (
                         <button
                             onClick={(e) => {
@@ -145,32 +165,33 @@ export function RecommendationItem({
                 </div>
             </div>
 
-            {/* 🎯 메인 결과 (컴팩트) */}
+            {/* 🎯 메인 결과 (5개년 데이터 표시) */}
             <div className="space-y-2">
-                <div className={`flex items-center justify-between p-2 rounded-md transition-all duration-300 ${
-                    isHighlighted ? 'bg-orange-100' : 'bg-gray-50' // ✅ 하이라이트 시 색상 변경
+                <div className={`p-3 rounded-md transition-all duration-300 ${
+                    isHighlighted ? 'bg-orange-100' : 'bg-gray-50'
                 }`}>
-                    <div className="flex items-center gap-2">
-                        {isSingleAnalysis ? (
-                            <Target className={`w-3 h-3 ${isHighlighted ? 'text-orange-500' : 'text-blue-400'}`} />
-                        ) : (
-                            <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
-                                isHighlighted
-                                    ? 'text-orange-500 bg-orange-200'
-                                    : 'text-purple-500 bg-purple-100'
-                            }`}>
-                                #1
-                            </span>
-                        )}
-                        <span className="text-sm font-medium text-gray-800">{mainResult.category}</span>
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                            {isSingleAnalysis ? (
+                                <Target className={`w-3 h-3 ${isHighlighted ? 'text-orange-500' : 'text-blue-400'}`} />
+                            ) : (
+                                <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
+                                    isHighlighted
+                                        ? 'text-orange-500 bg-orange-200'
+                                        : 'text-purple-500 bg-purple-100'
+                                }`}>
+                                    #1
+                                </span>
+                            )}
+                            <span className="text-sm font-medium text-gray-800">{mainResult.category}</span>
+                        </div>
                     </div>
 
-                    <span className={`text-sm font-bold px-2 py-1 rounded-md border ${getSurvivalColor(mainResult.survivalRate)}`}>
-                        {mainResult.survivalRate.toFixed(1)}%
-                    </span>
+                    {/* ✅ 5개년 생존율 표시 */}
+                    <SurvivalRateDisplay rates={mainResult.survivalRate} />
                 </div>
 
-                {/* ✅ 상세보기 버튼 (더 컴팩트) */}
+                {/* ✅ 상세보기 버튼 */}
                 {!isSingleAnalysis && additionalResults.length > 0 && (
                     <button
                         onClick={(e) => {
@@ -197,21 +218,20 @@ export function RecommendationItem({
                     </button>
                 )}
 
-                {/* ✅ 상세 결과 (컴팩트) - 애니메이션 추가 */}
+                {/* ✅ 상세 결과 (5개년 데이터 표시) */}
                 {showDetails && additionalResults.length > 0 && (
-                    <div className="space-y-1 pt-1 border-t border-gray-100 animate-slideDown">
+                    <div className="space-y-2 pt-1 border-t border-gray-100 animate-slideDown">
                         {additionalResults.map((item: any, index: number) => (
-                            <div key={index + 1} className="flex items-center justify-between py-1 px-2 bg-white rounded border border-gray-100 hover:border-gray-200 transition-colors">
-                                <div className="flex items-center gap-2">
+                            <div key={index + 1} className="p-2 bg-white rounded border border-gray-100 hover:border-gray-200 transition-colors">
+                                <div className="flex items-center gap-2 mb-2">
                                     <span className="text-xs font-medium text-gray-400 bg-gray-100 px-1 py-0.5 rounded-full">
                                         #{index + 2}
                                     </span>
-                                    <span className="text-xs text-gray-700">{item.category}</span>
+                                    <span className="text-xs text-gray-700 font-medium">{item.category}</span>
                                 </div>
 
-                                <span className={`text-xs font-medium px-1.5 py-0.5 rounded border ${getSurvivalColor(item.survivalRate)}`}>
-                                    {item.survivalRate.toFixed(1)}%
-                                </span>
+                                {/* ✅ 상세 결과도 5개년 데이터 표시 (컴팩트 버전) */}
+                                <SurvivalRateDisplay rates={item.survivalRate} isCompact={true} />
                             </div>
                         ))}
                     </div>

@@ -1,7 +1,7 @@
 // 추천 결과의 각 항목에 대한 타입
 export interface RecommendationItem {
   category: string;
-  survivalRate: number;
+  survivalRate: number[];
 }
 
 // 빌딩 정보에 대한 타입
