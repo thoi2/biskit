@@ -1,6 +1,6 @@
 // components/MarkerPopup.tsx
 
-import { MapMarkerItem } from '../types';
+import { MapMarkerItem } from '../../types';
 
 interface MarkerPopupProps {
     item: MapMarkerItem;

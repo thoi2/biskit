@@ -12,20 +12,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.ReactiveSecurityContextHolder;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.DeferredResult;
-import reactor.core.publisher.Mono;
-import reactor.util.context.Context;
-
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/v1/user/industry")
@@ -151,27 +144,6 @@ public class UserIndustryController {
         log.info("사용자 {}의 업종 추천 결과가 삭제되었습니다.", userId);
         return ApiResponse.of("업종 추천 결과가 성공적으로 삭제되었습니다.");
     }
-
-    /**
-     * AI 기반 업종 추천 (POST /api/v1/user/industry/ai-recommend)
-     * 비동기 처리 + ResponseBodyAdvice 호환
-     */
-    /**
-     * AI 기반 업종 추천 (POST /api/v1/user/industry/ai-recommend)
-     * SecurityContext 보존하여 Reactive 환경에서 인증 정보 유지
-     */
-    /**
-     * AI 기반 업종 추천 (POST /api/v1/user/industry/ai-recommend)
-     * SecurityContext 보존하여 Reactive 환경에서 인증 정보 유지
-     */
-    /**
-     * AI 기반 업종 추천 (POST /api/v1/user/industry/ai-recommend)
-     * Spring Security Context 완벽 전파 방식
-     */
-    /**
-     * AI 기반 업종 추천 (POST /api/v1/user/industry/ai-recommend)
-     * Spring Security + Reactive 완벽 호환
-     */
     /**
      * AI 기반 업종 추천 (POST /api/v1/user/industry/ai-recommend)
      * RestTemplate + @Async 방식으로 Spring Security 완벽 호환
@@ -185,7 +157,7 @@ public class UserIndustryController {
 
         // DeferredResult 생성 (30초 타임아웃)
         DeferredResult<ApiResponse<AIRecommendationResponse>> deferredResult =
-                new DeferredResult<>(30000L);
+                new DeferredResult<>(60000L);
 
         // 사용자 존재 확인
         if (!userRepository.existsById(userId)) {

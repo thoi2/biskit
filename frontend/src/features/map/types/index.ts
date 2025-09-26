@@ -10,8 +10,21 @@ export interface MapMarkerItem {
   category?: string;
   address?: string;
   coordinates: { lat: number; lng: number };
-  type: 'store' | 'recommendation';
+  type: 'store' | 'recommendation' | 'favorite';
   closureProbability?: number;
   riskLevel?: 'low' | 'medium' | 'high';
   hidden?: boolean;
+  originalData?: any;
+}
+export interface FavoriteLocation {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  category?: string;
+}
+
+export interface MarkerProps {
+  map: any;
+  onMarkerClick?: (data: any) => void;
 }

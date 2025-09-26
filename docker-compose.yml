@@ -55,10 +55,13 @@ services:
       - GEOCODER_TOKEN=${GEOCODER_TOKEN}
       - AI_GMS_BASE_URL=https://gms.ssafy.io/gmsapi
       - AI_GMS_API_KEY=${GMS_KEY}
+      - AI_SERVER_BASE_URL=${AI_SERVER_BASE_URL}
     networks:
       - my-network
 
     depends_on:
+      ai:
+        condition: service_started
       mysql:
         condition: service_healthy
       redis:

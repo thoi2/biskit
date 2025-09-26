@@ -13,10 +13,12 @@ export const chatApi = {
     cursor?: string,
   ): Promise<{
     data: {
-      rooms: Room[];
-      nextCursor?: string;
-      hasMore: boolean;
-      totalCount: number;
+      body: {
+        rooms: Room[];
+        nextCursor?: string;
+        hasMore: boolean;
+        totalCount: number;
+      };
     };
   }> =>
     apiClient.get('/chat/rooms/public', {
@@ -28,7 +30,8 @@ export const chatApi = {
     }),
 
   // 내가 참여한 채팅방 목록 조회
-  getUserRooms: (): Promise<{ data: Room[] }> => apiClient.get('/chat/rooms'),
+  getUserRooms: (): Promise<{ data: { body: Room[] } }> =>
+    apiClient.get('/chat/rooms'),
 
   // 채팅방 정보 조회
   getRoomInfo: (roomId: string): Promise<{ data: Room }> =>
@@ -37,7 +40,7 @@ export const chatApi = {
   // 방 참여하기 (REST API가 없으면 공개방 목록에서 정보 찾기)
   findRoomInPublicList: (roomId: string): Promise<Room | null | undefined> =>
     chatApi.getPublicRooms().then(response => {
-      const room = response.data.rooms.find(r => r.roomId === roomId);
+      const room = response.data.body.rooms.find(r => r.roomId === roomId);
       return room || null;
     }),
 

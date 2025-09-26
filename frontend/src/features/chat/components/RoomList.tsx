@@ -15,7 +15,9 @@ interface RoomListProps {
 
 export function RoomList({ onJoinRoom, onCreateRoom }: RoomListProps) {
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [userRooms, setUserRooms] = useState<{ data: Room[] }>({ data: [] });
+  const [userRooms, setUserRooms] = useState<{ data: { body: Room[] } }>({
+    data: { body: [] },
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,19 +67,19 @@ export function RoomList({ onJoinRoom, onCreateRoom }: RoomListProps) {
 
       console.log('publicRoomsData:', publicRoomsData);
       console.log('myRooms:', myRooms);
-      console.log('publicRoomsData.rooms:', publicRoomsData.rooms);
+      console.log('publicRoomsData.rooms:', publicRoomsData.body.rooms);
 
       if (isLoadMore) {
         // 무한스크롤: 기존 목록에 추가
-        setRooms(prev => [...prev, ...publicRoomsData.rooms]);
+        setRooms(prev => [...prev, ...publicRoomsData.body.rooms]);
       } else {
         // 첫 로드: 새로운 목록으로 교체
-        setRooms(publicRoomsData.rooms);
+        setRooms(publicRoomsData.body.rooms);
         setUserRooms(myRooms);
       }
 
-      setNextCursor(publicRoomsData.nextCursor || null);
-      setHasMore(publicRoomsData.hasMore);
+      setNextCursor(publicRoomsData.body.nextCursor || null);
+      setHasMore(publicRoomsData.body.hasMore);
     } catch (err) {
       console.error('방 목록 로드 실패:', err);
       setError('방 목록을 불러오는데 실패했습니다.');
@@ -129,7 +131,7 @@ export function RoomList({ onJoinRoom, onCreateRoom }: RoomListProps) {
   }, [hasMore, isLoadingMore, activeTab]);
 
   const isUserInRoom = (roomId: string) => {
-    return (userRooms.data || []).some(room => room.roomId === roomId);
+    return (userRooms.data.body || []).some(room => room.roomId === roomId);
   };
 
   if (isLoading) {
@@ -254,7 +256,7 @@ export function RoomList({ onJoinRoom, onCreateRoom }: RoomListProps) {
         {/* 내 방 탭 */}
         {activeTab === 'my' && (
           <>
-            {(userRooms.data || []).length === 0 ? (
+            {(userRooms.data.body || []).length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <p>참여 중인 채팅방이 없습니다.</p>
                 <p className="text-sm mt-1">채팅방에 참여해보세요!</p>

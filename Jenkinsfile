@@ -21,9 +21,16 @@ pipeline {
         KAKAO_MAP_KEY= credentials('kakao-map-key')
         GEOCODER_TOKEN = credentials('geocoder-token')
         GMS_KEY = credentials('gms-key')
+        AI_SERVER_BASE_URL = credentials('ai_server_base_url')
     }
 
     stages {
+        stage('Cleanup Workspace') {
+            steps {
+                // 빌드를 시작하기 전에 워크스페이스를 깨끗하게 삭제
+                cleanWs()
+            }
+        }
         // 1단계: 코드 가져오기
         stage('Checkout') {
             steps {

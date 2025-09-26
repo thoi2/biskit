@@ -115,3 +115,18 @@ html {
 
 
 
+/* 🎯 드로잉 모드일 때 마커/오버레이 클릭 차단 */
+.drawing-mode [class*="marker"],
+.drawing-mode [class*="overlay"]:not([class*="drawing"]),
+.drawing-mode .kakao-marker,
+.drawing-mode .map-marker {
+    pointer-events: none !important;
+    cursor: crosshair !important;
+}
+
+/* 드로잉 관련 요소들은 클릭 허용 */
+.drawing-mode [class*="drawing"],
+.drawing-mode .drawing-manager,
+.drawing-mode canvas {
+    pointer-events: auto !important;
+}
