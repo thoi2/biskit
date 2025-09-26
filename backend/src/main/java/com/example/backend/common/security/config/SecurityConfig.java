@@ -57,6 +57,7 @@ public class SecurityConfig {
                 .requestCache(cache -> cache.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(SecurityPaths.PUBLIC_PATHS).permitAll()
+                        .requestMatchers(SecurityPaths.rc_PATHS).permitAll()
                         .requestMatchers("/error", "/favicon.ico").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated())

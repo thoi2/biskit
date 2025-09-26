@@ -39,15 +39,15 @@ public class HttpAiServerClient implements AiServerClient {
         return postJson(uri.toString(), payload(id, lat, lng, null));
     }
 
-//    @Override
-//    public JsonNode requestCategory(BigDecimal lat, BigDecimal lng, int categoryId) {
-//        URI uri = UriComponentsBuilder
-//                .fromUriString(baseUrl)
-//                .path("/ai/v1/recommend/category")
-//                .build(true)
-//                .toUri();
-//        return postJson(uri.toString(), payload(lat, lng, categoryId));
-//    }
+    @Override
+    public JsonNode requestCategory(int id, BigDecimal lat, BigDecimal lng, int categoryId) {
+        URI uri = UriComponentsBuilder
+                .fromUriString(baseUrl)
+                .path("/api/v1/ai/job")
+                .build(true)
+                .toUri();
+        return postJson(uri.toString(), payload(id, lat, lng, categoryId));
+    }
 
     private Map<String, Object> payload(int id, BigDecimal lat, BigDecimal lng, Integer categoryId) {
         Map<String, Object> body = new HashMap<>();

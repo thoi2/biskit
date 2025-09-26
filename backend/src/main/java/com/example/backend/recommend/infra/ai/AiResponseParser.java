@@ -35,6 +35,28 @@ public class AiResponseParser {
         return out;
     }
 
+    public List<Double> toCategoryMetricV2(JsonNode aiResponse, String categoryName) {
+        JsonNode data = requireDataPresent(aiResponse);
+
+        // "category": "치과의원" 같은 문자열
+        String category = data.path("category").asText(null);
+        if (category == null || category.isBlank() || !category.equals(categoryName)) {
+            throw new BusinessException(
+                    RecommendErrorCode.AI_UPSTREAM_BAD_RESPONSE.getCommonCode(),
+                    "AI 응답에 'category' 필드가 없거나 요청한 필드가 아닙니다."
+            );
+        }
+
+        // "1"..."5" 각 칸에서 숫자만 추출, 아니면 null로 채워 길이 5 고정
+        List<Double> vals = new java.util.ArrayList<>(METRIC_KEYS.length);
+        for (String k : METRIC_KEYS) {
+            JsonNode v = data.get(k);
+            vals.add((v != null && v.isNumber()) ? v.asDouble() : null);
+        }
+
+        return vals;
+    }
+
     // ---------- 내부 유틸 ----------
 
     /** data가 JSON '배열'이어야 할 때 */

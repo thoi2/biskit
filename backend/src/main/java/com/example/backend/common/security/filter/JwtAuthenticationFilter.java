@@ -33,7 +33,6 @@ import static com.example.backend.common.security.config.SecurityPaths.PUBLIC_PA
 
 /**
  * JWT 기반 인증을 처리하는 필터 클래스 (디버깅 로그 강화)
- *
  * HTTP 요청의 쿠키에서 JWT 토큰을 추출하고 검증하여
  * Spring Security의 SecurityContext에 인증 정보를 설정합니다.
  * OncePerRequestFilter를 상속하여 요청당 한 번만 실행됩니다.
@@ -93,6 +92,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 System.out.println("🚨 응답 상태: " + response.getStatus());
                 exceptionHandler.handleAccessTokenMissing(response, request.getRequestURI());
                 System.out.println("🚨 401 에러 응답 완료 - 필터 체인 중단");
+                filterChain.doFilter(request,response);
                 return;
             }
 

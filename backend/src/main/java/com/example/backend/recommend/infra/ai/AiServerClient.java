@@ -6,5 +6,5 @@ import java.math.BigDecimal;
 
 public interface AiServerClient {
     JsonNode requestAll(int id, BigDecimal lat, BigDecimal lng);
-//    JsonNode requestCategory(BigDecimal lat, BigDecimal lng, int categoryId);
+    JsonNode requestCategory(int id, BigDecimal lat, BigDecimal lng, int categoryId);
 }

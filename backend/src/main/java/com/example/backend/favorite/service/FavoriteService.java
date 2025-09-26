@@ -17,6 +17,6 @@ public class FavoriteService {
 
         loginSearchPort.set(uid, bid, on);
 
-        return FavoriteResponse.builder().build();
+        return FavoriteResponse.of(bid, on);
     }
 }

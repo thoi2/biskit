@@ -25,6 +25,8 @@ import java.util.LinkedHashSet;
 import java.util.HashSet;
 import java.util.stream.Stream;
 
+
+
 @Service
 @RequiredArgsConstructor
 public class RecommendService {
@@ -108,26 +110,9 @@ public class RecommendService {
             source = Source.DB;
         } else {
             // 3) 없으면 AI 서버 호출 → Double 파싱 후 upsert
-            JsonNode aiRaw = aiServerClient.requestAll(bld.id(),bld.lat(), bld.lng());
-            Map<String, List<Double>> byCat = aiResponseParser.toCategoryMetricListV2(aiRaw);
-            Map<String, Integer> nameToId = categoryPort.getIdsByNames(byCat.keySet());
-            byCat.forEach((name, values) -> {
-                Integer catId = nameToId.get(name);
-                if (catId == null) {
-                    return;
-                }
-                inOutPort.upsert(bld.id(), catId, values);
-            });
-            Optional<List<Double>> hit2 = inOutPort.get(bld.id(), categoryId);
-            if(hit2.isPresent()) {
-                value = hit2.get();
-            }
-            else {
-                throw new BusinessException(
-                        RecommendErrorCode.AI_UPSTREAM_BAD_RESPONSE.getCommonCode(),
-                        "AI 응답이 틀립니다."
-                );
-            }
+            JsonNode aiRaw = aiServerClient.requestCategory(bld.id(),bld.lat(), bld.lng(),categoryId);
+            value = aiResponseParser.toCategoryMetricV2(aiRaw, categoryName);
+            inOutPort.upsert(bld.id(), categoryId, value);
             source = Source.AI;
         }
 
@@ -171,8 +156,6 @@ public class RecommendService {
                         var b = geoBuildingService.resolve(p.getLat(), p.getLng());
                         return Stream.of(new R(p, b));
                     } catch (Exception e) {
-                        // 필요시 로그
-                        // log.warn("geo resolve 실패 lat={}, lng={}", p.getLat(), p.getLng(), e);
                         return Stream.empty(); // 실패는 제거
                     }
                 })

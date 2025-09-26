@@ -119,7 +119,7 @@ public class ResultService {
 
     @Transactional
     public ResultDeleteCategoriesResponse deleteCategories(Long userId, int buildingId, ResultDeleteCategoriesRequest req) {
-        List<String> rawNames = (req == null ? Collections.emptyList() : req.getCategoryNames());
+        List<String> rawNames = (req == null ? Collections.emptyList() : req.getCategories());
 
         List<String> names = rawNames == null ? Collections.emptyList()
                 : rawNames.stream()

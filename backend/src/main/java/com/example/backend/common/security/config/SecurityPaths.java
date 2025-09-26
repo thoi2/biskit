@@ -18,11 +18,7 @@ public final class SecurityPaths {
         "/api/v1/auth/oauth2/*/login",
         "/api/v1/auth/oauth2/logout",
         "/api/v1/store/in-bounds",
-        "/api/v1/ai/single",
-        "/api/v1/ai/single-industry",
-        "/api/v1/ai/range",
         "/api/v1/ai/seoul",
-        "/api/v1/ai/*",
         "/public/**",
         "/health",
         "/actuator/health",
@@ -38,7 +34,11 @@ public final class SecurityPaths {
         "/images/**",
         "/error"
     };
-
+    public static final String[] rc_PATHS = {
+            "/api/v1/ai/single",
+            "/api/v1/ai/single-industry",
+            "/api/v1/ai/range",
+    };
     /**
      * GET 메서드로만 인증 없이 접근 가능한 경로
      */
