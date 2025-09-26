@@ -180,7 +180,7 @@ export default function Header() {
           </div>
         </div>
         {/* 채팅 모달 */}
-        {isLoggedIn && (
+        {isClient && isLoggedIn && (
           <ChatMainModal
             isOpen={isChatOpen}
             onClose={() => setIsChatOpen(false)}

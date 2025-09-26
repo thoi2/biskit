@@ -49,7 +49,7 @@ export function CreateRoomModal({
       setError(null);
 
       const room = await chatApi.createRoom(formData);
-      onRoomCreated(room.roomId);
+      onRoomCreated(room.data.body.roomId);
       onClose();
 
       // 폼 초기화
