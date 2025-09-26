@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Set;
 import java.util.LinkedHashSet;
 import java.util.HashSet;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -45,7 +46,7 @@ public class RecommendService {
         GeoBuildingService.ResolvedBuilding bld = geoBuildingService.resolve(lat, lng);
 
         // 2) AI 서버 호출(모든 카테고리)
-        JsonNode aiRaw = aiServerClient.requestAll(bld.lat(), bld.lng());
+        JsonNode aiRaw = aiServerClient.requestAll(bld.id(), bld.lat(), bld.lng());
         Map<String, List<Double>> byCat = aiResponseParser.toCategoryMetricListV2(aiRaw);
         Map<String, Integer> nameToId = categoryPort.getIdsByNames(byCat.keySet());
 
@@ -107,7 +108,7 @@ public class RecommendService {
             source = Source.DB;
         } else {
             // 3) 없으면 AI 서버 호출 → Double 파싱 후 upsert
-            JsonNode aiRaw = aiServerClient.requestAll(bld.lat(), bld.lng());
+            JsonNode aiRaw = aiServerClient.requestAll(bld.id(),bld.lat(), bld.lng());
             Map<String, List<Double>> byCat = aiResponseParser.toCategoryMetricListV2(aiRaw);
             Map<String, Integer> nameToId = categoryPort.getIdsByNames(byCat.keySet());
             byCat.forEach((name, values) -> {
@@ -165,8 +166,24 @@ public class RecommendService {
 
         record R(RangeRequest.Point pt, GeoBuildingService.ResolvedBuilding bld) {}
         List<R> resolved = req.getPoints().stream()
-                .map(p -> new R(p, geoBuildingService.resolve(p.getLat(), p.getLng())))
+                .flatMap(p -> {
+                    try {
+                        var b = geoBuildingService.resolve(p.getLat(), p.getLng());
+                        return Stream.of(new R(p, b));
+                    } catch (Exception e) {
+                        // 필요시 로그
+                        // log.warn("geo resolve 실패 lat={}, lng={}", p.getLat(), p.getLng(), e);
+                        return Stream.empty(); // 실패는 제거
+                    }
+                })
                 .toList();
+
+        if (resolved.isEmpty()) {
+            throw new BusinessException(
+                    RecommendErrorCode.AI_UPSTREAM_BAD_RESPONSE.getCommonCode(),
+                    "모든 좌표 resolve에 실패했습니다."
+            );
+        }
 
         Set<Integer> ensured = new HashSet<>();
         for (R r : resolved) {
@@ -175,7 +192,7 @@ public class RecommendService {
 
             if (inOutPort.get(bldId, categoryId).isEmpty()) {
                 // AI 전체 응답 한 번 받아 모든 카테고리 upsert
-                JsonNode aiRaw = aiServerClient.requestAll(r.bld().lat(), r.bld().lng());
+                JsonNode aiRaw = aiServerClient.requestAll(r.bld().id(), r.bld().lat(), r.bld().lng());
                 Map<String, List<Double>> byCat = aiResponseParser.toCategoryMetricListV2(aiRaw);
                 Map<String, Integer> nameToId = categoryPort.getIdsByNames(byCat.keySet());
                 byCat.forEach((name, v) -> {

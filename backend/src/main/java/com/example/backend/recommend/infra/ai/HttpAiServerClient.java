@@ -30,13 +30,13 @@ public class HttpAiServerClient implements AiServerClient {
     private String baseUrl;
 
     @Override
-    public JsonNode requestAll(BigDecimal lat, BigDecimal lng) {
+    public JsonNode requestAll(int id, BigDecimal lat, BigDecimal lng) {
         URI uri = UriComponentsBuilder
                 .fromUriString(baseUrl)
-                .path("/ai/v1/recommend")
+                .path("/api/v1/ai/location")
                 .build(true)
                 .toUri();
-        return postJson(uri.toString(), payload(lat, lng, null));
+        return postJson(uri.toString(), payload(id, lat, lng, null));
     }
 
 //    @Override
@@ -49,9 +49,10 @@ public class HttpAiServerClient implements AiServerClient {
 //        return postJson(uri.toString(), payload(lat, lng, categoryId));
 //    }
 
-    private Map<String, Object> payload(BigDecimal lat, BigDecimal lng, Integer categoryId) {
+    private Map<String, Object> payload(int id, BigDecimal lat, BigDecimal lng, Integer categoryId) {
         Map<String, Object> body = new HashMap<>();
         // 정밀도 보존을 위해 문자열로 직렬화
+        body.put("building_id", id);
         body.put("lat", lat.toPlainString());
         body.put("lng", lng.toPlainString());
         if (categoryId != null) body.put("categoryId", categoryId);

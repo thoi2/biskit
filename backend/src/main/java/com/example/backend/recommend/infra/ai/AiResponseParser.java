@@ -59,9 +59,16 @@ public class AiResponseParser {
         }
         JsonNode data = aiResponse.get("data");
         if (data == null || data.isNull()) {
+            JsonNode body = aiResponse.get("body");
+            if (body != null && !body.isNull()) {
+                data = body.get("data");
+            }
+        }
+
+        if (data == null || data.isNull()) {
             throw new BusinessException(
                     RecommendErrorCode.AI_UPSTREAM_BAD_RESPONSE.getCommonCode(),
-                    "AI 응답에 'data' 필드가 없거나 null 입니다."
+                    "AI 응답에 'data' 필드가 없거나 null 입니다.(root/body)"
             );
         }
         return data;

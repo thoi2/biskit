@@ -50,6 +50,7 @@ services:
     volumes:
       - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
       - ./mysql/input_store.csv:/var/lib/mysql-files/input_store.csv
+      - ./mysql/categories.csv:/var/lib/mysql-files/categories.csv
 
   redis:
     ports:
