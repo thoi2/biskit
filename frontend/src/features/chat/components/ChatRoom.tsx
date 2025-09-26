@@ -68,7 +68,7 @@ export function ChatRoom({
         setIsLoadingRoom(true);
         console.log('🏠 방 정보 로드:', roomId);
         const response = await chatApi.getRoomInfo(roomId);
-        const room = response; // Axios 응답에서 data 추출
+        const room = response.data; // Axios 응답에서 data 추출
         console.log('🏠 방 정보:', room);
         setRoomInfo(room);
       } catch (error) {
