@@ -15,9 +15,7 @@ interface RoomListProps {
 
 export function RoomList({ onJoinRoom, onCreateRoom }: RoomListProps) {
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [userRooms, setUserRooms] = useState<{ data: { body: Room[] } }>({
-    data: { body: [] },
-  });
+  const [userRooms, setUserRooms] = useState<Room[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,12 +48,14 @@ export function RoomList({ onJoinRoom, onCreateRoom }: RoomListProps) {
           20,
           cursor || undefined,
         ),
-        isLoadMore ? Promise.resolve(userRooms) : chatApi.getUserRooms(), // 더보기일 때는 기존 userRooms 사용
+        isLoadMore ? Promise.resolve({ data: { body: userRooms } }) : chatApi.getUserRooms(), // 더보기일 때는 기존 userRooms 사용
       ]);
 
       console.log('=== RoomList Debug ===');
       console.log('publicRoomsResponse:', publicRoomsResponse);
       console.log('myRoomsResponse:', myRoomsResponse);
+      console.log('myRoomsResponse.data:', myRoomsResponse?.data);
+      console.log('myRoomsResponse.data.body:', myRoomsResponse?.data?.body);
 
       // API 응답 데이터 처리 - 올바른 데이터 구조 처리
       const publicRoomsData = publicRoomsResponse.data || {
@@ -63,11 +63,12 @@ export function RoomList({ onJoinRoom, onCreateRoom }: RoomListProps) {
         nextCursor: null,
         hasMore: false,
       };
-      const myRooms = isLoadMore ? userRooms : myRoomsResponse || [];
+      const myRooms = isLoadMore ? userRooms : (myRoomsResponse?.data?.body || []);
 
       console.log('publicRoomsData:', publicRoomsData);
       console.log('myRooms:', myRooms);
-      console.log('publicRoomsData.rooms:', publicRoomsData.body.rooms);
+      console.log('myRooms length:', myRooms.length);
+      console.log('publicRoomsData.rooms:', publicRoomsData.body?.rooms);
 
       if (isLoadMore) {
         // 무한스크롤: 기존 목록에 추가
@@ -131,7 +132,7 @@ export function RoomList({ onJoinRoom, onCreateRoom }: RoomListProps) {
   }, [hasMore, isLoadingMore, activeTab]);
 
   const isUserInRoom = (roomId: string) => {
-    return (userRooms.data.body || []).some(room => room.roomId === roomId);
+    return userRooms.some(room => room.roomId === roomId);
   };
 
   if (isLoading) {
@@ -256,23 +257,23 @@ export function RoomList({ onJoinRoom, onCreateRoom }: RoomListProps) {
         {/* 내 방 탭 */}
         {activeTab === 'my' && (
           <>
-            {(userRooms.data.body || []).length === 0 ? (
+            {console.log('🔍 내 방 탭 렌더링 - userRooms:', userRooms)}
+            {console.log('🔍 내 방 탭 렌더링 - userRooms.length:', userRooms.length)}
+            {userRooms.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <p>참여 중인 채팅방이 없습니다.</p>
                 <p className="text-sm mt-1">채팅방에 참여해보세요!</p>
               </div>
             ) : (
               <div className="space-y-2">
-                {Array.isArray(userRooms.data)
-                  ? userRooms.data.map(room => (
-                      <RoomCard
-                        key={room.roomId}
-                        room={room}
-                        onJoinRoom={onJoinRoom}
-                        isJoined={true}
-                      />
-                    ))
-                  : []}
+                {userRooms.map(room => (
+                  <RoomCard
+                    key={room.roomId}
+                    room={room}
+                    onJoinRoom={onJoinRoom}
+                    isJoined={true}
+                  />
+                ))}
               </div>
             )}
           </>

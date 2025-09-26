@@ -119,7 +119,8 @@ export function ChatRoom({
 
   const handleLeaveRoom = async () => {
     try {
-      await chatApi.leaveRoom(roomId);
+      const response = await chatApi.leaveRoom(roomId);
+      console.log('방 나가기 성공:', response.data.body);
       onLeaveRoom?.();
     } catch (error) {
       console.error('방 나가기 실패:', error);

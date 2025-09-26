@@ -137,23 +137,56 @@ export function useRecommendationForm() {
       console.error('❌ 분석 실패:', error);
       console.error('❌ 에러 상세:', {
         status: error.response?.status,
+        statusText: error.response?.statusText,
         data: error.response?.data,
-        message: error.message
+        message: error.message,
+        code: error.code
       });
 
-      const errorMessage = error.response?.data?.message ||
+      const status = error.response?.status;
+      let errorMessage = error.response?.data?.message ||
           error.response?.data?.error ||
           error.message ||
           '알 수 없는 오류가 발생했습니다.';
 
+      let helpMessage = '';
+
+      // 상태 코드별 맞춤 메시지
+      if (status === 503) {
+        errorMessage = 'AI 분석 서비스가 일시적으로 사용할 수 없습니다.';
+        helpMessage = `💡 해결방법:\n` +
+            `- 잠시 후 다시 시도해주세요 (서버 재시작 중일 수 있습니다)\n` +
+            `- 문제가 지속되면 관리자에게 문의해주세요\n` +
+            `- 현재 AI 서비스가 점검 중일 수 있습니다`;
+      } else if (status === 500) {
+        errorMessage = 'AI 분석 처리 중 내부 오류가 발생했습니다.';
+        helpMessage = `💡 해결방법:\n` +
+            `- 다른 위치에서 다시 시도해주세요\n` +
+            `- 좌표가 유효한 위치인지 확인해주세요\n` +
+            `- 문제가 반복되면 관리자에게 문의해주세요`;
+      } else if (status === 400) {
+        errorMessage = '잘못된 요청입니다. 입력 데이터를 확인해주세요.';
+        helpMessage = `💡 확인사항:\n` +
+            `- 좌표가 유효한 범위인지 확인 (위도: -90~90, 경도: -180~180)\n` +
+            `- 업종명이 올바르게 입력되었는지 확인\n` +
+            `- 특수문자나 공백이 포함되어 있지 않은지 확인`;
+      } else if (status === 408 || error.code === 'ECONNABORTED') {
+        errorMessage = '요청 시간이 초과되었습니다.';
+        helpMessage = `💡 해결방법:\n` +
+            `- 네트워크 연결 상태를 확인해주세요\n` +
+            `- 잠시 후 다시 시도해주세요\n` +
+            `- 서버가 과부하 상태일 수 있습니다`;
+      } else {
+        helpMessage = `💡 일반적인 해결방법:\n` +
+            `- 좌표가 유효한 범위인지 확인\n` +
+            `- 네트워크 연결 상태 확인\n` +
+            `- 잠시 후 다시 시도해보세요`;
+      }
+
       setRequestError(errorMessage);
 
-      // ✅ 에러 시에만 Alert 사용
-      alert(`❌ 분석 실패\n\n${errorMessage}\n\n` +
-          `💡 확인사항:\n` +
-          `- 좌표가 유효한 범위인지 확인\n` +
-          `- 네트워크 연결 상태 확인\n` +
-          `- 잠시 후 다시 시도해보세요`);
+      // ✅ 상태 코드별 맞춤 에러 메시지
+      alert(`❌ 분석 실패 ${status ? `(${status})` : ''}\n\n${errorMessage}\n\n${helpMessage}`);
     }
   }, [coordinates, category, startRequest, setRequestSuccess, setRequestError, addRecommendationMarker, setActiveTab, setHighlightedRecommendation]); // ✅ 의존성 배열에 추가
 

@@ -9,52 +9,20 @@ export function TabNavigation() {
     const { activeTab, setActiveTab } = useMapStore();
     const [mounted, setMounted] = useState(false);
 
-    // ✅ 클라이언트에서만 렌더링되도록 보장
+    // 클라이언트에서만 렌더링되도록 보장
     useEffect(() => {
         setMounted(true);
     }, []);
 
-    // ✅ 서버 렌더링 중에는 기본 상태로 표시 (동적 스타일 없음)
-    if (!mounted) {
-        return (
-            <div className="flex gap-2 mb-8 p-1 bg-orange-100 rounded-xl">
-                <Button
-                    variant="default"
-                    size="sm"
-                    className="flex-1 bg-amber-600 hover:bg-orange-700 text-white shadow-sm"
-                >
-                    <Search className="w-4 h-4 mr-2" />
-                    검색
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="flex-1 hover:bg-orange-200 text-orange-700"
-                >
-                    <BarChart3 className="w-4 h-4 mr-2" />
-                    추천
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="flex-1 hover:bg-orange-200 text-orange-700"
-                >
-                    <FileText className="w-4 h-4 mr-2" />
-                    결과
-                </Button>
-            </div>
-        );
-    }
-
-    // ✅ 클라이언트에서는 정상적으로 동적 스타일 적용
+    // 서버/클라이언트 모두 동일한 마크업 구조를 사용하여 하이드레이션 에러 방지
     return (
         <div className="flex gap-2 mb-8 p-1 bg-orange-100 rounded-xl">
             <Button
-                variant={activeTab === 'search' ? 'default' : 'ghost'}
+                variant={mounted && activeTab === 'search' ? 'default' : 'ghost'}
                 size="sm"
-                onClick={() => setActiveTab('search')}
+                onClick={mounted ? () => setActiveTab('search') : undefined}
                 className={`flex-1 transition-all duration-300 ${
-                    activeTab === 'search'
+                    mounted && activeTab === 'search'
                         ? 'bg-amber-600 hover:bg-orange-700 text-white shadow-sm'
                         : 'hover:bg-orange-200 text-orange-700'
                 }`}
@@ -64,11 +32,11 @@ export function TabNavigation() {
             </Button>
 
             <Button
-                variant={activeTab === 'recommend' ? 'default' : 'ghost'}
+                variant={mounted && activeTab === 'recommend' ? 'default' : 'ghost'}
                 size="sm"
-                onClick={() => setActiveTab('recommend')}
+                onClick={mounted ? () => setActiveTab('recommend') : undefined}
                 className={`flex-1 transition-all duration-300 ${
-                    activeTab === 'recommend'
+                    mounted && activeTab === 'recommend'
                         ? 'bg-amber-600 hover:bg-orange-700 text-white shadow-sm'
                         : 'hover:bg-orange-200 text-orange-700'
                 }`}
@@ -78,11 +46,11 @@ export function TabNavigation() {
             </Button>
 
             <Button
-                variant={activeTab === 'result' ? 'default' : 'ghost'}
+                variant={mounted && activeTab === 'result' ? 'default' : 'ghost'}
                 size="sm"
-                onClick={() => setActiveTab('result')}
+                onClick={mounted ? () => setActiveTab('result') : undefined}
                 className={`flex-1 transition-all duration-300 ${
-                    activeTab === 'result'
+                    mounted && activeTab === 'result'
                         ? 'bg-amber-600 hover:bg-orange-700 text-white shadow-sm'
                         : 'hover:bg-orange-200 text-orange-700'
                 }`}

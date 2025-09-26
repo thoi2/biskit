@@ -35,17 +35,55 @@ interface RecommendResponse {
 // 🌟 다중 분석 API (업종 없음 → 여러 추천 업종)
 export const getSingleRecommendation = async (request: SingleRequest) => {
   console.log('🌟 다중 분석 API 호출:', request);
-  const response = await apiClient.post('/ai/single', request);
-  console.log('🌟 다중 분석 응답:', response.data);
-  return response.data; // ApiResponse<RecommendResponse> 구조
+
+  try {
+    const response = await apiClient.post('/ai/single', request);
+    console.log('🌟 다중 분석 응답:', response.data);
+    return response.data; // ApiResponse<RecommendResponse> 구조
+  } catch (error: any) {
+    const status = error.response?.status;
+    console.error('🌟 다중 분석 API 에러:', {
+      status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      url: '/ai/single',
+      request
+    });
+
+    // 503 에러에 대한 특별 처리
+    if (status === 503) {
+      throw new Error('AI 분석 서비스가 현재 사용할 수 없습니다. AI 서버가 시작 중이거나 점검 중일 수 있습니다.');
+    }
+
+    throw error; // 원본 에러를 다시 던져서 상위에서 처리하도록 함
+  }
 };
 
 // 🎯 단일 업종 분석 API (특정 업종 → 1개 결과)
 export const getSingleIndustryRecommendation = async (request: SingleIndustryRequest) => {
   console.log('🎯 단일 업종 분석 API 호출:', request);
-  const response = await apiClient.post('/ai/single-industry', request);
-  console.log('🎯 단일 업종 분석 응답:', response.data);
-  return response.data; // ApiResponse<RecommendResponse> 구조
+
+  try {
+    const response = await apiClient.post('/ai/single-industry', request);
+    console.log('🎯 단일 업종 분석 응답:', response.data);
+    return response.data; // ApiResponse<RecommendResponse> 구조
+  } catch (error: any) {
+    const status = error.response?.status;
+    console.error('🎯 단일 업종 분석 API 에러:', {
+      status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      url: '/ai/single-industry',
+      request
+    });
+
+    // 503 에러에 대한 특별 처리
+    if (status === 503) {
+      throw new Error('AI 분석 서비스가 현재 사용할 수 없습니다. AI 서버가 시작 중이거나 점검 중일 수 있습니다.');
+    }
+
+    throw error; // 원본 에러를 다시 던져서 상위에서 처리하도록 함
+  }
 };
 
 // 🔄 범위 분석 API (개발 예정)

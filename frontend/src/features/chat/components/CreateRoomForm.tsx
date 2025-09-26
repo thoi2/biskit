@@ -45,7 +45,8 @@ export function CreateRoomForm({
       setIsLoading(true);
       setError(null);
 
-      const room = await chatApi.createRoom(formData);
+      const response = await chatApi.createRoom(formData);
+      const room = response.data.body;
 
       // 💡 [핵심] 방 생성이 성공한 후, 두 개의 콜백 함수를 호출합니다.
       // 1. 방 목록 화면으로 전환

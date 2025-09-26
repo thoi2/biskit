@@ -1,6 +1,6 @@
 export interface ChatMessage {
-  id?: number; // Long ID from backend
-  messageId: string;
+  id?: number | null; // Long ID from backend, nullable
+  messageId?: string | null; // nullable in backend
   type: 'JOIN' | 'CHAT' | 'LEAVE' | 'TYPING' | 'HISTORY' | 'ERROR';
   roomId: string;
   senderId: string;        // 사용자 ID (구분용)
@@ -21,8 +21,8 @@ export interface Room {
   currentParticipants: number;
   createdAt: string;    // ISO string 형태 (yyyy-MM-dd HH:mm:ss)
   updatedAt?: string;   // ISO string 형태 (yyyy-MM-dd HH:mm:ss)
-  recentMessageCount?: number;
-  participants?: ParticipantResponse[];
+  recentMessageCount?: number | null; // nullable in backend
+  participants?: ParticipantResponse[] | null; // nullable in backend
 }
 
 export interface ParticipantResponse {

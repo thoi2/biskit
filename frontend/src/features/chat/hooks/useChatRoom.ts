@@ -22,8 +22,8 @@ export const useChatRoom = ({
   const handleNewMessage = useCallback((message: ChatMessage) => {
     console.log('=== 새 메시지 수신 ===', message);
     setMessages(prev => {
-      // 중복 메시지 방지
-      if (prev.some(m => m.messageId === message.messageId)) {
+      // 중복 메시지 방지 (messageId가 있는 경우에만)
+      if (message.messageId && prev.some(m => m.messageId === message.messageId)) {
         console.log('중복 메시지 무시:', message.messageId);
         return prev;
       }
@@ -60,8 +60,8 @@ export const useChatRoom = ({
       const recentMessages = await chatApi.getRecentMessages(roomId, 50);
       console.log('✅ Recent messages response:', recentMessages);
 
-      // Axios 응답에서 실제 데이터 추출
-      const messagesData = recentMessages.data || recentMessages;
+      // 실제 메시지 데이터는 body에 있음
+      const messagesData = recentMessages.data.body;
       console.log('📊 메시지 데이터:', messagesData);
       console.log(
         '📊 메시지 개수:',
@@ -101,14 +101,18 @@ export const useChatRoom = ({
 
       // 현재 가장 오래된 메시지의 ID를 cursor로 사용
       const oldestMessage = messages[0];
-      if (!oldestMessage?.id) return;
+      if (!oldestMessage?.id) {
+        console.log('가장 오래된 메시지의 ID가 없어서 더 불러올 수 없음');
+        setHasMoreMessages(false);
+        return;
+      }
 
       const olderMessages = await chatApi.getMessagesBefore(
         roomId,
         oldestMessage.id.toString(),
         50,
       );
-      const messagesData = olderMessages.data || olderMessages;
+      const messagesData = olderMessages.data.body;
       console.log('Older messages response:', olderMessages);
 
       const messagesArray = Array.isArray(messagesData) ? messagesData : [];
