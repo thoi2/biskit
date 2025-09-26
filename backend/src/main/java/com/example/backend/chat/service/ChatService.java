@@ -19,11 +19,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.security.Principal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
@@ -322,7 +324,13 @@ public class ChatService {
      */
     private JwtUserInfo extractJwtUserInfo(SimpMessageHeaderAccessor headerAccessor) {
         // 세션 속성에서 JwtUserInfo 가져오기
-        JwtUserInfo userInfo = (JwtUserInfo) headerAccessor.getSessionAttributes().get("jwtUserInfo");
+        Principal user = headerAccessor.getUser();
+        JwtUserInfo userInfo = null;
+        if (user instanceof UsernamePasswordAuthenticationToken) {
+            UsernamePasswordAuthenticationToken auth = (UsernamePasswordAuthenticationToken) user;
+            userInfo = (JwtUserInfo) auth.getPrincipal();
+            // userInfo 사용
+        }
 
         if (userInfo == null) {
             // 인증되지 않은 사용자 처리
