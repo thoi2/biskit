@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * 사용자 엔티티 (업종 추천 기능 포함)
+ * 사용자 엔티티 (간소화 버전)
  */
 @Entity
 @Table(name = "user")

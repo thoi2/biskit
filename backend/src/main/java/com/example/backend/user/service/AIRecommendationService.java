@@ -20,7 +20,6 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -55,27 +54,29 @@ public class AIRecommendationService {
         log.info("🎯 AI 서비스 @Async 시작: userId={}, thread={}", userId, Thread.currentThread().getName());
 
         try {
-            final String AI_API_URL = "https://gms.ssafy.io/gmsapi/api.openai.com/v1/chat/completions";
+            // ✅ baseUrl 사용하도록 변경 (이것만!)
+            final String AI_ENDPOINT = "/api.openai.com/v1/chat/completions";
+            final String AI_API_URL = baseUrl + AI_ENDPOINT;
 
             String prompt = buildPrompt(request, userId);
             String fullPrompt = getSystemPrompt() + "\n\n" + prompt;
 
             String jsonBody = String.format("""
-        {
-          "model": "gpt-5-mini",
-          "messages": [
-            {
-              "role": "developer",
-              "content": "Answer in Korean"
-            },
-            {
-              "role": "user",
-              "content": "%s"
-            }
-          ],
-          "max_completion_tokens": 2000
-        }
-        """, fullPrompt.replace("\"", "\\\"").replace("\n", "\\n"));
+{
+  "model": "gpt-5-mini",
+  "messages": [
+    {
+      "role": "developer",
+      "content": "Answer in Korean"
+    },
+    {
+      "role": "user",
+      "content": "%s"
+    }
+  ],
+  "max_completion_tokens": 2000
+}
+""", fullPrompt.replace("\"", "\\\"").replace("\n", "\\n"));
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);

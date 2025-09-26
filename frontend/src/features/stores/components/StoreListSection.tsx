@@ -4,7 +4,7 @@ import { MapPin, ChevronDown, ChevronUp } from 'lucide-react';
 import { useMapStore } from '@/features/map/store/mapStore';
 import { useStoreStore } from '@/features/stores/store/storesStore';
 import { StoreItem } from './StoreItem';
-import { EmptyState } from '../../../lib/components/EmptyState';
+import { EmptyState } from './EmptyState';
 
 export function StoreListSection() {
     // 🔥 Zustand에서 직접 상태 가져오기
@@ -51,7 +51,6 @@ export function StoreListSection() {
     const handleStoreClick = (storeId: number) => {
         setHighlightedStore(storeId);
         setHighlightedRecommendation(null);
-        setTimeout(() => setHighlightedStore(null), 3000);
     };
 
     const hasSearched = stores.length > 0;

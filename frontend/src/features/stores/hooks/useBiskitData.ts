@@ -1,7 +1,10 @@
 // hooks/useBiskitData.ts
 import { useState, useEffect } from 'react';
 import { Store } from '@/features/stores/types/store';
-import { getStoresInBoundsAPI, mapBoundsToApiBounds } from '@/features/stores/api/store-api';
+import {
+  getStoresInBoundsAPI,
+  mapBoundsToApiBounds,
+} from '@/features/stores/api/store-api';
 
 // 🔥 분리된 store들 import
 import { useMapStore } from '../../map/store/mapStore';
@@ -14,6 +17,8 @@ export function useBiskitData(user: Record<string, any> | null) {
     isSearching,
     mapBounds,
     selectedCategories,
+    coordinates,
+    setCoordinates,
     setIsSearching,
     setSelectedCategories,
   } = useMapStore();
@@ -54,14 +59,16 @@ export function useBiskitData(user: Record<string, any> | null) {
       if (storeData.length === 0) {
         setSearchError('해당 영역에서 상가를 찾을 수 없습니다.');
       } else {
-        console.log(`✅ ${storeData.length}개 상가 로딩 완료 - 왼쪽 필터에서 업종을 선택하세요`);
+        console.log(
+          `✅ ${storeData.length}개 상가 로딩 완료 - 왼쪽 필터에서 업종을 선택하세요`,
+        );
       }
     } catch (error) {
       console.error('지도 검색 실패:', error);
       setSearchError(
-          error instanceof Error
-              ? error.message
-              : '상가 검색 중 오류가 발생했습니다.',
+        error instanceof Error
+          ? error.message
+          : '상가 검색 중 오류가 발생했습니다.',
       );
       // 🔥 에러 발생 시 빈 배열로 초기화 (useStoreStore의 setStores 사용)
       setStores([]);
@@ -85,9 +92,9 @@ export function useBiskitData(user: Record<string, any> | null) {
       setFilteredStores(storeData);
     } else {
       const filtered = storeData.filter(store =>
-          categories.some(category =>
-              (store.categoryName || store.bizCategoryCode).includes(category),
-          ),
+        categories.some(category =>
+          (store.categoryName || store.bizCategoryCode).includes(category),
+        ),
       );
       setFilteredStores(filtered);
     }
@@ -116,9 +123,9 @@ export function useBiskitData(user: Record<string, any> | null) {
 
     // 로컬 필터된 스토어에서도 업데이트
     setFilteredStores(prev =>
-        prev.map(store =>
-            store.id === storeId ? { ...store, hidden: !store.hidden } : store,
-        ),
+      prev.map(store =>
+        store.id === storeId ? { ...store, hidden: !store.hidden } : store,
+      ),
     );
   };
 
@@ -134,6 +141,7 @@ export function useBiskitData(user: Record<string, any> | null) {
   };
 
   const handleMapClick = (lat: number, lng: number) => {
+    setCoordinates({ lat, lng });
     console.log(`지도 클릭: ${lat}, ${lng}`);
   };
 

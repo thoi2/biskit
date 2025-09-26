@@ -59,6 +59,8 @@ services:
       - my-network
 
     depends_on:
+      ai:
+        condition: service_started
       mysql:
         condition: service_healthy
       redis:
