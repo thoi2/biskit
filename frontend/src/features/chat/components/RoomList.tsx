@@ -261,8 +261,8 @@ export function RoomList({ onJoinRoom, onCreateRoom }: RoomListProps) {
               </div>
             ) : (
               <div className="space-y-2">
-                {Array.isArray(userRooms)
-                  ? userRooms.map(room => (
+                {Array.isArray(userRooms.data)
+                  ? userRooms.data.map(room => (
                       <RoomCard
                         key={room.roomId}
                         room={room}

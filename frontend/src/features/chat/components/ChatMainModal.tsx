@@ -40,7 +40,7 @@ export function ChatMainModal({ isOpen, onClose }: ChatMainModalProps) {
 
       // 먼저 방 정보 API 호출
       const response = await chatApi.getRoomInfo(roomId);
-      const room = response; // Axios 응답에서 data 추출
+      const room = response.data; // Axios 응답에서 data 추출
       console.log('🏠 방 정보 로드 완료:', room);
       console.log('🏠 room.roomName:', room?.roomName);
       console.log('🏠 room.bigCategory:', room?.bigCategory);
