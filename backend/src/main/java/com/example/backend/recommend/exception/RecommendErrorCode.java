@@ -39,8 +39,4 @@ public enum RecommendErrorCode {
     public HttpStatus getHttpStatus() {
         return commonCode.getStatus(); // 이미 HttpStatus 타입
     }
-    /** 공통 시스템 코드(e.g., "COMMON_INVALID_INPUT")가 필요하면 사용 */
-    public String getSystemCode() {
-        return commonCode.getCode();
-    }
 }
