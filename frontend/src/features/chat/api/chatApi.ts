@@ -34,7 +34,7 @@ export const chatApi = {
     apiClient.get('/chat/rooms'),
 
   // 채팅방 정보 조회
-  getRoomInfo: (roomId: string): Promise<{ data: Room }> =>
+  getRoomInfo: (roomId: string): Promise<{ data: { body: Room; status: number; success: boolean } }> =>
     apiClient.get(`/chat/rooms/${roomId}`),
 
   // 방 참여하기 (REST API가 없으면 공개방 목록에서 정보 찾기)

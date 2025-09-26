@@ -23,11 +23,21 @@ export function ChatRoom({
   onBackClick,
   preloadedRoomInfo,
 }: ChatRoomProps) {
+  console.log('🔍 ChatRoom 컴포넌트 시작');
+  console.log('🔍 roomId:', roomId);
+  console.log('🔍 preloadedRoomInfo:', preloadedRoomInfo);
+  console.log('🔍 preloadedRoomInfo type:', typeof preloadedRoomInfo);
+  console.log('🔍 preloadedRoomInfo null check:', preloadedRoomInfo === null);
+  console.log('🔍 preloadedRoomInfo undefined check:', preloadedRoomInfo === undefined);
+
   const [roomInfo, setRoomInfo] = useState<Room | null>(
     preloadedRoomInfo || null,
   );
   const [isLoadingRoom, setIsLoadingRoom] = useState(!preloadedRoomInfo);
   const { user } = useAuth();
+
+  console.log('🔍 초기 roomInfo 상태:', roomInfo);
+  console.log('🔍 초기 isLoadingRoom 상태:', isLoadingRoom);
 
   // useAuth에서 사용자 정보 가져오기
   const currentUserId = user?.userId;
@@ -63,17 +73,25 @@ export function ChatRoom({
 
   // 방 정보 로드 (preloaded가 없을 때만)
   useEffect(() => {
+    console.log('🔍 useEffect 실행 - 방 정보 로드');
+    console.log('🔍 roomId:', roomId);
+    console.log('🔍 preloadedRoomInfo 체크:', preloadedRoomInfo);
+    console.log('🔍 조건 체크 - roomId && !preloadedRoomInfo:', roomId && !preloadedRoomInfo);
+
     const loadRoomInfo = async () => {
       try {
         setIsLoadingRoom(true);
-        console.log('🏠 방 정보 로드:', roomId);
+        console.log('🔍 API 호출 시작 - 방 정보 로드:', roomId);
         const response = await chatApi.getRoomInfo(roomId);
-        const room = response.data; // Axios 응답에서 data 추출
-        console.log('🏠 방 정보:', room);
+        console.log('🔍 API 응답 원본:', response);
+        const room = response.data.body; // 실제 room 데이터는 body에 있음
+        console.log('🔍 추출된 방 정보:', room);
+        console.log('🔍 방 정보 타입:', typeof room);
         setRoomInfo(room);
+        console.log('🔍 setRoomInfo 호출 완료');
       } catch (error) {
-        console.error('방 정보 로드 실패:', error);
-        setRoomInfo({
+        console.error('🔍 방 정보 로드 실패:', error);
+        const fallbackRoom = {
           roomId,
           roomName: `방 ${roomId.slice(-8)}`,
           creatorId: '',
@@ -81,15 +99,21 @@ export function ChatRoom({
           maxParticipants: 0,
           currentParticipants: 0,
           createdAt: new Date().toISOString(),
-        });
+        };
+        console.log('🔍 fallback 룸 정보 설정:', fallbackRoom);
+        setRoomInfo(fallbackRoom);
       } finally {
         setIsLoadingRoom(false);
+        console.log('🔍 로딩 상태 false로 변경');
       }
     };
 
     // preloadedRoomInfo가 없을 때만 API 호출
     if (roomId && !preloadedRoomInfo) {
+      console.log('🔍 조건 만족 - API 호출 실행');
       loadRoomInfo();
+    } else {
+      console.log('🔍 조건 불만족 - API 호출 스킵');
     }
   }, [roomId, preloadedRoomInfo]);
 
@@ -102,7 +126,15 @@ export function ChatRoom({
     }
   };
 
+  console.log('🔍 렌더링 직전 상태 체크:');
+  console.log('🔍 isLoadingRoom:', isLoadingRoom);
+  console.log('🔍 roomInfo:', roomInfo);
+  console.log('🔍 roomInfo null 체크:', roomInfo === null);
+  console.log('🔍 roomInfo undefined 체크:', roomInfo === undefined);
+  console.log('🔍 !roomInfo 체크:', !roomInfo);
+
   if (isLoadingRoom) {
+    console.log('🔍 로딩 중 화면 렌더링');
     return (
       <div className="h-full flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -111,6 +143,7 @@ export function ChatRoom({
   }
 
   if (!roomInfo) {
+    console.log('🔍 roomInfo 없음 - 에러 화면 렌더링');
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
@@ -122,6 +155,8 @@ export function ChatRoom({
       </div>
     );
   }
+
+  console.log('🔍 정상 렌더링 - roomInfo 존재:', roomInfo);
 
   return (
     <div className="h-full flex flex-col bg-white">
