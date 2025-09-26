@@ -12,16 +12,8 @@ import SockJS from 'sockjs-client';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { ChatMessage, ChatError, ConnectionStatus } from '../types/chat';
 
-// 쿠키에서 토큰 읽기 유틸리티
-const getCookieValue = (name: string): string | null => {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) {
-    const part = parts.pop();
-    return part ? part.split(';').shift() || null : null;
-  }
-  return null;
-};
+// 💡 HttpOnly 쿠키를 직접 읽는 함수는 더 이상 사용되지 않으므로 제거합니다.
+// 브라우저가 withCredentials: true를 통해 자동으로 쿠키를 보냅니다.
 
 interface WebSocketContextType {
   connectionStatus: ConnectionStatus;
@@ -82,26 +74,21 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     }));
 
     console.log('Global WebSocket 연결 시도 URL:', url);
-    const socket = new SockJS(url, null, {
-      // withCredentials: true
-    });
 
-    // 연결 시마다 쿠키에서 액세스 토큰을 새로 읽기
-    const accessToken = getCookieValue('accessToken');
+    // 💡 1. SockJS에 withCredentials: true를 설정하여 HttpOnly 쿠키를 자동으로 포함하도록 지시
+    const socket = new SockJS(url, null, {
+      withCredentials: true,
+    } as any);
+
+    // 💡 2. 쿠키를 읽어 Authorization 헤더에 담는 로직은 제거 (HttpOnly이므로 불가능)
+    //    Authorization 헤더 없이, 브라우저가 자동으로 보낸 Cookie 헤더로 서버가 인증을 수행합니다.
     const connectHeaders: Record<string, string> = {};
 
-    console.log('=== Global 토큰 확인 ===');
-    console.log(
-      'accessToken:',
-      accessToken ? `${accessToken.substring(0, 20)}...` : 'null',
-    );
+    console.log('=== Global 인증 방식 변경 확인 ===');
+    console.log('HttpOnly 쿠키를 withCredentials: true를 통해 전송 시도.');
 
-    if (accessToken) {
-      connectHeaders['Authorization'] = `Bearer ${accessToken}`;
-      console.log('Global WebSocket 연결에 Authorization 헤더 추가됨');
-    } else {
-      console.warn('accessToken 쿠키를 찾을 수 없음');
-    }
+    // Authorization 헤더는 더 이상 사용하지 않음
+    // if (accessToken) { ... } else { ... } 로직 제거
 
     const client = new Client({
       webSocketFactory: () => socket,
@@ -109,7 +96,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
-      connectHeaders,
+      connectHeaders, // 💡 빈 헤더 또는 최소한의 헤더만 전송
       onConnect: () => {
         console.log('Global WebSocket 연결됨');
         setConnectionStatus(prev => ({
