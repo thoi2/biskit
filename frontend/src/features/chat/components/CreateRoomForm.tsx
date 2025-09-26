@@ -18,12 +18,12 @@ interface CreateRoomFormProps {
 export function CreateRoomForm({
   onRoomCreated,
   onCancel,
-  defaultCategory
+  defaultCategory,
 }: CreateRoomFormProps) {
   const [formData, setFormData] = useState<RoomCreateRequest>({
     roomName: '',
     bigCategory: defaultCategory || '',
-    maxParticipants: 500
+    maxParticipants: 500,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +46,13 @@ export function CreateRoomForm({
       setError(null);
 
       const room = await chatApi.createRoom(formData);
+
+      // 💡 [핵심] 방 생성이 성공한 후, 두 개의 콜백 함수를 호출합니다.
+      // 1. 방 목록 화면으로 전환
       onRoomCreated(room.roomId);
+
+      // 2. 모달 닫기
+      onCancel();
     } catch (err: any) {
       console.error('방 생성 실패:', err);
       setError(err.response?.data?.message || '방 생성에 실패했습니다.');
@@ -66,7 +72,7 @@ export function CreateRoomForm({
               id="roomName"
               type="text"
               value={formData.roomName}
-              onChange={(e) =>
+              onChange={e =>
                 setFormData({ ...formData, roomName: e.target.value })
               }
               placeholder="채팅방 이름을 입력하세요"
@@ -83,14 +89,14 @@ export function CreateRoomForm({
             <select
               id="bigCategory"
               value={formData.bigCategory}
-              onChange={(e) =>
+              onChange={e =>
                 setFormData({ ...formData, bigCategory: e.target.value })
               }
               disabled={isLoading}
               className="w-full mt-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">카테고리를 선택하세요</option>
-              {BIG_CATEGORIES.map((category) => (
+              {BIG_CATEGORIES.map(category => (
                 <option key={category} value={category}>
                   {category}
                 </option>
@@ -108,10 +114,10 @@ export function CreateRoomForm({
               id="maxParticipants"
               type="number"
               value={formData.maxParticipants}
-              onChange={(e) =>
+              onChange={e =>
                 setFormData({
                   ...formData,
-                  maxParticipants: parseInt(e.target.value) || 500
+                  maxParticipants: parseInt(e.target.value) || 500,
                 })
               }
               min={2}
