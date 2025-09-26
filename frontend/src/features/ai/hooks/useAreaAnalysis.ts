@@ -1,6 +1,21 @@
 import { useState, useCallback } from 'react';
 import { useStoreSelectors } from '@/features/stores/store/storesStore';
-import { useRecommendationStore, type RecommendationMarker } from '@/features/ai/store';
+import { useRecommendationStore } from '@/features/ai/store';
+
+// ✅ RecommendationMarker 타입을 직접 정의
+interface RecommendationMarker {
+    id: string;
+    lat: number;
+    lng: number;
+    type: 'recommendation';
+    title: string;
+    category: string;
+    survivalRate: number;
+    buildingId: number;
+    isAreaResult?: boolean;
+    isFromBackend?: boolean;
+    isHighlighted?: boolean;
+}
 
 interface PolygonPoint {
     lat: number;
@@ -39,7 +54,7 @@ export function useAreaAnalysis(
     const [isAreaAnalyzing, setIsAreaAnalyzing] = useState(false);
     const { uniqueStoreCoords } = useStoreSelectors();
 
-    // 🎯 추천 스토어에서만 가져오기
+    // ✅ 추천 스토어에서만 가져오기 (타입 수정)
     const {
         startRequest,
         setRequestSuccess,
@@ -156,10 +171,10 @@ export function useAreaAnalysis(
                 generateMockSingleIndustryResult(point.lat, point.lng, areaCategory, 10000 + index)
             );
 
-            // 🎯 추천 결과 저장
-            setRequestSuccess(mockRecommendations);
+            // 🎯 추천 결과 저장 (any 타입으로 캐스팅)
+            setRequestSuccess(mockRecommendations as any);
 
-            // 🎯 추천 마커들 생성 및 저장
+            // ✅ 추천 마커들 생성 및 저장 (타입 명시)
             const markers: RecommendationMarker[] = mockRecommendations.map((rec, index) => ({
                 id: `ai-area-${rec.building.building_id}`,
                 lat: rec.building.lat,
@@ -169,10 +184,13 @@ export function useAreaAnalysis(
                 category: areaCategory,
                 survivalRate: rec.result.find(r => r.category === areaCategory)?.survivalRate || 0,
                 buildingId: rec.building.building_id,
-                isAreaResult: true // 🎯 범위 분석 결과임을 표시
+                isAreaResult: true, // 🎯 범위 분석 결과임을 표시
+                isFromBackend: false,
+                isHighlighted: false
             }));
 
-            setRecommendationMarkers(markers);
+            // ✅ 안전한 마커 설정 (타입 단언)
+            setRecommendationMarkers(markers as any);
 
             console.log('🎉 범위 분석 완료 (Mock):', mockRecommendations);
             console.log('🗺️ 추천 마커들 생성:', markers);

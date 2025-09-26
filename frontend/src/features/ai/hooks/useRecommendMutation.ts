@@ -1,63 +1,40 @@
+// useRecommendMutation.ts
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  deleteResultAPI,
-  deleteResultCategoriesAPI,
-  addLikeAPI,
-  deleteLikeAPI,
-} from '@/features/ai/api';
-import type { DeleteCategoriesRequest } from '@/features/ai/types';
+import { deleteResult, addLike, deleteLike } from '@/features/ai/api';
 
 export const useRecommendMutations = () => {
   const queryClient = useQueryClient();
 
-  const invalidateRecommendList = () => {
-    queryClient.invalidateQueries({ queryKey: ['recommendList'] });
-  };
-
   const deleteResultMutation = useMutation({
-    mutationFn: deleteResultAPI,
-    onSuccess: () => {
-      invalidateRecommendList();
+    mutationFn: (buildingId: string) => deleteResult(buildingId),
+    onSuccess: (data) => {
+      console.log('✅ 삭제 성공:', data);
+      queryClient.invalidateQueries({ queryKey: ['recommendList'] });
     },
-    onError: error => {},
+    onError: (error) => {
+      console.error('❌ 삭제 실패:', error);
+    }
   });
 
   const addLikeMutation = useMutation({
-    mutationFn: addLikeAPI,
-    onSuccess: invalidateRecommendList,
+    mutationFn: (buildingId: string) => addLike(buildingId),
+    onSuccess: (data) => {
+      console.log('✅ 좋아요 추가 성공:', data);
+      queryClient.invalidateQueries({ queryKey: ['recommendList'] });
+    }
   });
 
   const deleteLikeMutation = useMutation({
-    mutationFn: deleteLikeAPI,
-    onSuccess: invalidateRecommendList,
-  });
-
-  // 🎯 수정: categories 프로퍼티 사용
-  const deleteCategoriesMutation = useMutation({
-    mutationFn: ({
-                   buildingId,
-                   data,
-                 }: {
-      buildingId: number;
-      data: DeleteCategoriesRequest;
-    }) => {
-      // 🎯 data에서 categories 추출 (categoryIds 아님)
-      const categoryIds = data.categories || [];
-      return deleteResultCategoriesAPI(categoryIds);
-    },
-    onSuccess: invalidateRecommendList,
-  });
-
-  const deleteCategoriesMutationSimple = useMutation({
-    mutationFn: (categoryIds: string[]) => deleteResultCategoriesAPI(categoryIds),
-    onSuccess: invalidateRecommendList,
+    mutationFn: (buildingId: string) => deleteLike(buildingId),
+    onSuccess: (data) => {
+      console.log('✅ 좋아요 삭제 성공:', data);
+      queryClient.invalidateQueries({ queryKey: ['recommendList'] });
+    }
   });
 
   return {
     deleteResultMutation,
     addLikeMutation,
     deleteLikeMutation,
-    deleteCategoriesMutation,
-    deleteCategoriesMutationSimple,
   };
 };

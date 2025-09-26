@@ -1,6 +1,7 @@
+// src/features/ai/api/index.ts
 import apiClient from '@/lib/apiClient';
 
-// ===== 타입 정의 =====
+// ===== 실제 사용하는 타입 정의 =====
 interface SingleRequest {
   lat: number;
   lng: number;
@@ -23,214 +24,108 @@ interface RecommendResponse {
     survivalRate: number;
   }>;
   meta: {
-    source: string;
+    source: 'CACHE' | 'DB' | 'AI';
     version: string;
     last_at: string;
   };
 }
 
-// ===== 헬퍼 함수 =====
-const wrapApiResponse = (data: any) => ({
-  success: true,
-  status: 200,
-  timestamp: new Date().toISOString(),
-  body: data
-});
+// ===== AI 분석 API =====
 
-// ===== 새로 추가된 분석 API (단순 버전) =====
+// 🌟 다중 분석 API (업종 없음 → 여러 추천 업종)
 export const getSingleRecommendation = async (request: SingleRequest) => {
+  console.log('🌟 다중 분석 API 호출:', request);
   const response = await apiClient.post('/ai/single', request);
-  return response.data;
+  console.log('🌟 다중 분석 응답:', response.data);
+  return response.data; // ApiResponse<RecommendResponse> 구조
 };
 
+// 🎯 단일 업종 분석 API (특정 업종 → 1개 결과)
 export const getSingleIndustryRecommendation = async (request: SingleIndustryRequest) => {
+  console.log('🎯 단일 업종 분석 API 호출:', request);
   const response = await apiClient.post('/ai/single-industry', request);
+  console.log('🎯 단일 업종 분석 응답:', response.data);
+  return response.data; // ApiResponse<RecommendResponse> 구조
+};
+
+// 🔄 범위 분석 API (개발 예정)
+export const getRangeRecommendation = async (request: any) => {
+  const response = await apiClient.post('/ai/range', request);
   return response.data;
 };
 
-// ===== 기존 API 함수들 (ApiResponse 래퍼 버전) =====
-export const getSingleRecommendationAPI = async (request: any) => {
-  const response = await apiClient.post('/ai/single', request);
-  return wrapApiResponse(response.data);
+// ===== ResultController API (기존 컨트롤러 활용) =====
+
+// ✅ 사용자 결과 조회 - GET /api/v1/result
+export const getUserResults = async () => {
+  console.log('📊 사용자 결과 조회 API 호출');
+  const response = await apiClient.get('/result');
+  console.log('📊 사용자 결과 응답:', response.data);
+  return response.data; // ApiResponse<ResultGetResponse> 형태
 };
 
-export const getSingleIndustryRecommendationAPI = async (request: any) => {
-  const response = await apiClient.post('/ai/single-industry', request);
-  return wrapApiResponse(response.data);
+// ✅ 결과 삭제 - DELETE /api/v1/result/{buildingId}
+export const deleteResult = async (buildingId: string) => {
+  console.log('🗑️ 결과 삭제 API 호출:', buildingId);
+  const response = await apiClient.delete(`/result/${buildingId}`);
+  console.log('🗑️ 결과 삭제 응답:', response.data);
+  return response.data; // ApiResponse<ResultDeleteResponse> 형태
 };
 
-export const getRangeRecommendationAPI = async (request: any) => {
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  return wrapApiResponse({
-    recommendations: [],
-    meta: {
-      source: "MOCK",
-      version: "v1.0",
-      last_at: new Date().toISOString()
-    }
+// ===== 좋아요 API (아직 구현되지 않음 - Mock) =====
+
+// ⚠️ 좋아요 추가 (Mock - 실제 엔드포인트 없음)
+export const addLike = async (buildingId: string) => {
+  console.warn('⚠️ 좋아요 기능은 아직 구현되지 않았습니다:', buildingId);
+
+  // Mock 응답
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        success: true,
+        status: 200,
+        body: {
+          buildingId: parseInt(buildingId),
+          isLiked: true
+        }
+      });
+    }, 500);
   });
 };
 
-// ===== React Query용 결과 조회 API =====
-export const getResultsAPI = async ({ queryKey }: { queryKey: string[] }) => {
-  const [_, page = '1', limit = '20'] = queryKey;
-  const response = await apiClient.get(`/ai/results?page=${page}&limit=${limit}`);
-  return wrapApiResponse(response.data);
-};
+// ⚠️ 좋아요 삭제 (Mock - 실제 엔드포인트 없음)
+export const deleteLike = async (buildingId: string) => {
+  console.warn('⚠️ 좋아요 삭제 기능은 아직 구현되지 않았습니다:', buildingId);
 
-export const getRecommendationListAPI = async ({ queryKey }: { queryKey: string[] }) => {
-  const response = await apiClient.get('/ai/recommendations');
-  return wrapApiResponse(response.data);
-};
-
-export const getRecommendationDetailAPI = async ({ queryKey }: { queryKey: string[] }) => {
-  const [_, recommendationId] = queryKey;
-  const response = await apiClient.get(`/ai/recommendations/${recommendationId}`);
-  return wrapApiResponse(response.data);
-};
-
-// ===== 일반 버전 API (React Query 외부에서 사용) =====
-export const fetchResults = async (page: number = 1, limit: number = 20) => {
-  const response = await apiClient.get(`/ai/results?page=${page}&limit=${limit}`);
-  return wrapApiResponse(response.data);
-};
-
-export const fetchRecommendationList = async () => {
-  const response = await apiClient.get('/ai/recommendations');
-  return wrapApiResponse(response.data);
-};
-
-export const fetchRecommendationDetail = async (recommendationId: string) => {
-  const response = await apiClient.get(`/ai/recommendations/${recommendationId}`);
-  return wrapApiResponse(response.data);
-};
-
-// ===== 결과 관리 API들 =====
-export const deleteResultAPI = async (resultId: string) => {
-  const response = await apiClient.delete(`/ai/results/${resultId}`);
-  return wrapApiResponse(response.data);
-};
-
-// 🎯 기존 함수 (string[] 받음) - 유지
-export const deleteResultCategoriesAPI = async (categoryIds: string[]) => {
-  const response = await apiClient.delete('/ai/results/categories', {
-    data: { categoryIds }
+  // Mock 응답
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        success: true,
+        status: 200,
+        body: {
+          buildingId: parseInt(buildingId),
+          isLiked: false
+        }
+      });
+    }, 500);
   });
-  return wrapApiResponse(response.data);
 };
 
-// 🎯 새로운 함수 (buildingId + data 받음)
-export const deleteResultCategoriesWithBuildingAPI = async ({
-                                                              buildingId,
-                                                              data,
-                                                            }: {
-  buildingId: number;
-  data: any;
-}) => {
-  const response = await apiClient.delete(`/ai/results/${buildingId}/categories`, {
-    data: data
+// ===== 카테고리 삭제 API (ResultController 활용) =====
+
+// ✅ 카테고리별 삭제 - DELETE /api/v1/result/{buildingId}/categories
+export const deleteResultCategories = async (buildingId: string, categoryIds: string[]) => {
+  console.log('🏷️ 카테고리 삭제 API 호출:', { buildingId, categoryIds });
+
+  const requestData = {
+    categories: categoryIds // ResultDeleteCategoriesRequest 형태
+  };
+
+  const response = await apiClient.delete(`/result/${buildingId}/categories`, {
+    data: requestData
   });
-  return wrapApiResponse(response.data);
-};
 
-// ===== 좋아요 API들 =====
-export const addLikeAPI = async (resultId: string) => {
-  const response = await apiClient.post(`/ai/results/${resultId}/like`);
-  return wrapApiResponse(response.data);
-};
-
-export const deleteLikeAPI = async (resultId: string) => {
-  const response = await apiClient.delete(`/ai/results/${resultId}/like`);
-  return wrapApiResponse(response.data);
-};
-
-// ===== React Query용 검색/필터 API들 =====
-export const searchResultsAPI = async ({ queryKey }: { queryKey: string[] }) => {
-  const [_, query, ...filters] = queryKey;
-  const response = await apiClient.get('/ai/results/search', {
-    params: { query, ...filters }
-  });
-  return wrapApiResponse(response.data);
-};
-
-export const getResultsByCategoryAPI = async ({ queryKey }: { queryKey: string[] }) => {
-  const [_, category, page = '1'] = queryKey;
-  const response = await apiClient.get(`/ai/results/category/${category}?page=${page}`);
-  return wrapApiResponse(response.data);
-};
-
-// ===== 사용자 관련 API들 =====
-export const getUserRecommendationsAPI = async ({ queryKey }: { queryKey: string[] }) => {
-  const [_, userId] = queryKey;
-  const endpoint = userId ? `/ai/users/${userId}/recommendations` : '/ai/users/me/recommendations';
-  const response = await apiClient.get(endpoint);
-  return wrapApiResponse(response.data);
-};
-
-export const getUserFavoritesAPI = async ({ queryKey }: { queryKey: string[] }) => {
-  const response = await apiClient.get('/ai/users/me/favorites');
-  return wrapApiResponse(response.data);
-};
-
-// ===== 통계/분석 API들 =====
-export const getAnalyticsAPI = async ({ queryKey }: { queryKey: string[] }) => {
-  const [_, period = '30d'] = queryKey;
-  const response = await apiClient.get(`/ai/analytics?period=${period}`);
-  return wrapApiResponse(response.data);
-};
-
-export const getPopularCategoriesAPI = async ({ queryKey }: { queryKey: string[] }) => {
-  const response = await apiClient.get('/ai/categories/popular');
-  return wrapApiResponse(response.data);
-};
-
-// ===== 설정/환경 API들 =====
-export const getAIConfigAPI = async ({ queryKey }: { queryKey: string[] }) => {
-  const response = await apiClient.get('/ai/config');
-  return wrapApiResponse(response.data);
-};
-
-export const updateAIConfigAPI = async (config: any) => {
-  const response = await apiClient.put('/ai/config', config);
-  return wrapApiResponse(response.data);
-};
-
-// ===== 피드백 API들 =====
-export const submitFeedbackAPI = async ({ resultId, feedback }: { resultId: string; feedback: any }) => {
-  const response = await apiClient.post(`/ai/results/${resultId}/feedback`, feedback);
-  return wrapApiResponse(response.data);
-};
-
-export const reportIssueAPI = async (issue: any) => {
-  const response = await apiClient.post('/ai/issues', issue);
-  return wrapApiResponse(response.data);
-};
-
-// ===== 내보내기/가져오기 API들 =====
-export const exportResultsAPI = async (format: 'json' | 'csv' | 'excel' = 'json') => {
-  const response = await apiClient.get(`/ai/results/export?format=${format}`, {
-    responseType: 'blob'
-  });
-  return response.data;
-};
-
-export const importResultsAPI = async (file: File) => {
-  const formData = new FormData();
-  formData.append('file', file);
-  const response = await apiClient.post('/ai/results/import', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
-  });
-  return wrapApiResponse(response.data);
-};
-
-// ===== Mock API들 (개발용) =====
-export const getMockDataAPI = async (type: string) => {
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  return wrapApiResponse({
-    type,
-    data: `Mock data for ${type}`,
-    timestamp: new Date().toISOString()
-  });
+  console.log('🏷️ 카테고리 삭제 응답:', response.data);
+  return response.data; // ApiResponse<ResultDeleteCategoriesResponse> 형태
 };

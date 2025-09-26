@@ -3,36 +3,25 @@ import { useMapStore } from '@/features/map/store/mapStore';
 import { useRecommendationStore } from '@/features/ai/store';
 import { getSingleRecommendation, getSingleIndustryRecommendation } from '@/features/ai/api';
 
-// 타입 정의
-interface CategoryResult {
-  category: string;
-  survivalRate: number;
-}
-
-interface RecommendationResult {
-  building: {
-    building_id: number;
-    lat: number;
-    lng: number;
-  };
-  result: CategoryResult[];
-  meta: {
-    source: string;
-    version: string;
-    last_at: string;
-  };
-}
+// 🎯 좌표 포맷팅 유틸리티 함수
+const formatCoordinateForDB = (coord: number): number => {
+  return parseFloat(coord.toFixed(12));
+};
 
 export function useRecommendationForm() {
   const [category, setCategory] = useState<string>('');
-  const { coordinates } = useMapStore(); // 🎯 지도는 좌표만
+  const {
+    coordinates,
+    setActiveTab,                    // ✅ 탭 이동
+    setHighlightedRecommendation     // ✅ 하이라이트 (추가)
+  } = useMapStore();
 
   const {
     isLoading,
     startRequest,
     setRequestSuccess,
     setRequestError,
-    setRecommendationMarkers // 🎯 추천 스토어에서 마커 관리
+    addRecommendationMarker
   } = useRecommendationStore();
 
   const handleSubmit = useCallback(async () => {
@@ -41,83 +30,132 @@ export function useRecommendationForm() {
       return;
     }
 
-    // 🎯 스토어에서 로딩 시작 (기존 마커도 초기화)
+    const formattedLat = formatCoordinateForDB(coordinates.lat);
+    const formattedLng = formatCoordinateForDB(coordinates.lng);
+
+    // 🎯 백엔드 validation 범위 체크
+    if (formattedLat < -90 || formattedLat > 90) {
+      alert('위도는 -90.0 ~ 90.0 범위여야 합니다.');
+      return;
+    }
+    if (formattedLng < -180 || formattedLng > 180) {
+      alert('경도는 -180.0 ~ 180.0 범위여야 합니다.');
+      return;
+    }
+
+    console.log('📍 원본 좌표:', { lat: coordinates.lat, lng: coordinates.lng });
+    console.log('📍 포맷된 좌표:', { lat: formattedLat, lng: formattedLng });
+
     startRequest();
 
     try {
-      let result: RecommendationResult;
+      let apiResponse: any;
 
-      if (category) {
-        // 🎯 단일+업종 분석
-        console.log('🚀 단일+업종 분석 요청:', {
-          lat: coordinates.lat,
-          lng: coordinates.lng,
-          categoryName: category
-        });
+      if (category && category.trim()) {
+        // 🎯 단일 업종 분석 API
+        const industryRequest = {
+          lat: formattedLat,
+          lng: formattedLng,
+          categoryName: category.trim()
+        };
 
-        result = await getSingleIndustryRecommendation({
-          lat: coordinates.lat,
-          lng: coordinates.lng,
-          categoryName: category
-        });
+        console.log('🎯 단일 업종 분석 요청:', industryRequest);
+        apiResponse = await getSingleIndustryRecommendation(industryRequest);
+        console.log('✅ 단일 업종 분석 응답:', apiResponse);
 
-        console.log('✅ 단일+업종 분석 결과:', result);
       } else {
-        // 🎯 단일 분석
-        console.log('🚀 단일 분석 요청:', {
-          lat: coordinates.lat,
-          lng: coordinates.lng
-        });
+        // 🎯 다중 분석 API
+        const singleRequest = {
+          lat: formattedLat,
+          lng: formattedLng
+        };
 
-        result = await getSingleRecommendation({
-          lat: coordinates.lat,
-          lng: coordinates.lng
-        });
-
-        console.log('✅ 단일 분석 결과:', result);
+        console.log('🌟 다중 분석 요청:', singleRequest);
+        apiResponse = await getSingleRecommendation(singleRequest);
+        console.log('✅ 다중 분석 응답:', apiResponse);
       }
 
-      // 🎯 추천 결과 저장
-      setRequestSuccess(result);
+      // 🎯 ApiResponse<RecommendResponse>에서 실제 데이터 추출
+      const result = apiResponse?.body || apiResponse;
 
-      // 🎯 추천 마커 생성 및 저장
+      console.log('🔍 추출된 결과:', result);
+      console.log('🔍 결과 타입:', category ? '단일 업종 분석' : '다중 분석');
+      console.log('🔍 결과 개수:', result?.result?.length);
+
+      // 🎯 결과 저장 (누적)
+      setRequestSuccess(result as any);
+
+      // 🎯 마커 생성 (누적) - 새로운 분석은 파란색
       const marker = {
-        id: `ai-${result.building.building_id}`,
-        lat: result.building.lat,
-        lng: result.building.lng,
+        id: `ai-${result?.building?.building_id || Date.now()}`,
+        lat: Number(result?.building?.lat) || formattedLat,
+        lng: Number(result?.building?.lng) || formattedLng,
         type: 'recommendation' as const,
-        title: `AI 추천 #${result.building.building_id}`,
-        category: result.result[0]?.category || '분석 결과',
-        survivalRate: result.result[0]?.survivalRate || 0,
-        buildingId: result.building.building_id
+        title: `AI 추천 #${result?.building?.building_id || 'Unknown'}`,
+        category: result?.result?.[0]?.category || '분석 결과',
+        survivalRate: result?.result?.[0]?.survivalRate || 0,
+        buildingId: result?.building?.building_id || 0,
+        isFromBackend: false, // ✅ 현재 세션 마커
+        color: 'blue' // ✅ 파란색으로 구분
       };
 
-      setRecommendationMarkers([marker]);
+      addRecommendationMarker(marker);
+      console.log('🗺️ 새 분석 마커 생성:', marker);
 
-      console.log('🗺️ 추천 마커 생성:', marker);
+      // ✅ 분석 완료 후 자동 처리 (수정)
+      setTimeout(() => {
+        console.log('🚀 분석 완료 후 처리 시작');
 
-      // 🎯 성공 메시지
-      const resultText = result.result.map((r: CategoryResult) =>
-          `${r.category}: ${(r.survivalRate * 100).toFixed(1)}%`
-      ).join('\n');
+        // 1. 결과 탭으로 이동
+        setActiveTab('result');
+        console.log('📋 결과 탭으로 이동 완료');
 
-      const analysisType = category ? '단일+업종' : '단일';
-      alert(`✅ ${analysisType} 분석 완료!\n\n` +
-          `📍 위치: ${coordinates.lat.toFixed(6)}, ${coordinates.lng.toFixed(6)}\n` +
-          `${category ? `🎯 업종: ${category}\n` : ''}` +
-          `🏢 건물 ID: ${result.building.building_id}\n` +
-          `🔄 Source: ${result.meta.source}\n\n` +
-          `📊 생존율 분석:\n${resultText}\n\n` +
-          `🗺️ 지도에 마커가 표시되었습니다!\n` +
-          `👉 자세한 결과는 결과 탭에서 확인하세요!`);
+        // 2. 해당 결과 하이라이트 (탭 이동 후 추가 딜레이)
+        setTimeout(() => {
+          if (result?.building?.building_id) {
+            setHighlightedRecommendation(String(result.building.building_id));
+            console.log('✨ 하이라이트 시작:', result.building.building_id);
+          }
+        }, 300);
+
+        // 성공 알림을 더 부드럽게 처리 (선택사항)
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+          const resultCount = result?.result?.length || 0;
+          const analysisType = category ? `업종 분석 (${category})` : '다중 분석';
+
+          new Notification('✅ 분석 완료!', {
+            body: `${analysisType} - ${resultCount}개 결과`,
+            icon: '/favicon.ico',
+            tag: 'ai-analysis'
+          });
+        }
+      }, 200);
 
       return result;
+
     } catch (error: any) {
-      console.error('분석 오류:', error);
-      setRequestError(error.response?.data?.message || error.message);
-      alert(`❌ 분석 실패\n\n${error.response?.data?.message || error.message}`);
+      console.error('❌ 분석 실패:', error);
+      console.error('❌ 에러 상세:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+
+      const errorMessage = error.response?.data?.message ||
+          error.response?.data?.error ||
+          error.message ||
+          '알 수 없는 오류가 발생했습니다.';
+
+      setRequestError(errorMessage);
+
+      // ✅ 에러 시에만 Alert 사용
+      alert(`❌ 분석 실패\n\n${errorMessage}\n\n` +
+          `💡 확인사항:\n` +
+          `- 좌표가 유효한 범위인지 확인\n` +
+          `- 네트워크 연결 상태 확인\n` +
+          `- 잠시 후 다시 시도해보세요`);
     }
-  }, [coordinates, category, startRequest, setRequestSuccess, setRequestError, setRecommendationMarkers]);
+  }, [coordinates, category, startRequest, setRequestSuccess, setRequestError, addRecommendationMarker, setActiveTab, setHighlightedRecommendation]); // ✅ 의존성 배열에 추가
 
   return {
     category,

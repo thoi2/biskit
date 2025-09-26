@@ -20,6 +20,12 @@ interface RecommendationMarker {
   isAreaResult?: boolean;
 }
 
+// ✅ 통합 하이라이트 타입 정의
+interface ActiveHighlight {
+  type: 'store' | 'recommendation' | null;
+  id: string | number | null;
+}
+
 // Map 상태
 interface MapState {
   mapBounds: MapBounds | null;
@@ -31,14 +37,17 @@ interface MapState {
   coordinates: Coordinates;
   map: any | null;
 
-  // 🎯 드로잉 상태 (다각형 추가)
+  // ✅ 통합 하이라이트 상태
+  activeHighlight: ActiveHighlight;
+
+  // 드로잉 상태 (다각형 추가)
   isDrawingMode: boolean;
   drawingType: 'rectangle' | 'circle' | 'polygon';
 
   // 추천 탭 핀 상태
   recommendPin: any | null;
 
-  // 🎯 추천 마커들 (AI 분석 결과)
+  // 추천 마커들 (AI 분석 결과)
   recommendationMarkers: RecommendationMarker[];
 }
 
@@ -54,6 +63,10 @@ interface MapActions {
   setMap: (mapInstance: any) => void;
   clearMapState: () => void;
 
+  // ✅ 통합 하이라이트 관리
+  setActiveHighlight: (type: 'store' | 'recommendation' | null, id: string | number | null) => void;
+  clearAllHighlights: () => void;
+
   // 드로잉 액션
   setIsDrawingMode: (isDrawing: boolean) => void;
   setDrawingType: (type: 'rectangle' | 'circle' | 'polygon') => void;
@@ -61,7 +74,7 @@ interface MapActions {
   // 추천 핀 액션
   setRecommendPin: (pin: any | null) => void;
 
-  // 🎯 추천 마커 액션들
+  // 추천 마커 액션들
   setRecommendationMarkers: (markers: RecommendationMarker[]) => void;
   addRecommendationMarker: (marker: RecommendationMarker) => void;
   removeRecommendationMarker: (markerId: string) => void;
@@ -69,7 +82,7 @@ interface MapActions {
 }
 
 // Map Store
-export const useMapStore = create<MapState & MapActions>(set => ({
+export const useMapStore = create<MapState & MapActions>()((set, get) => ({
   // 초기 상태
   mapBounds: null,
   isSearching: false,
@@ -80,6 +93,12 @@ export const useMapStore = create<MapState & MapActions>(set => ({
   coordinates: { lat: null, lng: null },
   map: null,
 
+  // ✅ 통합 하이라이트 초기 상태
+  activeHighlight: {
+    type: null,
+    id: null
+  },
+
   // 드로잉 초기 상태
   isDrawingMode: false,
   drawingType: 'rectangle',
@@ -87,15 +106,14 @@ export const useMapStore = create<MapState & MapActions>(set => ({
   // 추천 핀 초기 상태
   recommendPin: null,
 
-  // 🎯 추천 마커 초기 상태
+  // 추천 마커 초기 상태
   recommendationMarkers: [],
 
-  // 액션들
+  // 기존 액션들
   setMapBounds: bounds => set({ mapBounds: bounds }),
   setIsSearching: isSearching => set({ isSearching }),
   setActiveTab: tab => set(state => ({
     activeTab: tab,
-    // 탭 변경시 추천 핀 제거
     ...(tab !== 'recommend' && state.recommendPin && {
       recommendPin: (() => {
         state.recommendPin.setMap(null);
@@ -109,6 +127,56 @@ export const useMapStore = create<MapState & MapActions>(set => ({
   setCoordinates: coords => set({ coordinates: coords }),
   setMap: mapInstance => set({ map: mapInstance }),
 
+  // ✅ 통합 하이라이트 관리
+  setActiveHighlight: (type, id) => {
+    console.log('🎯 setActiveHighlight:', { type, id });
+
+    // 이전 하이라이트 해제
+    const { activeHighlight } = get();
+    if (activeHighlight.type && activeHighlight.id) {
+      console.log('🔘 이전 하이라이트 해제:', activeHighlight);
+
+      // AI 스토어의 하이라이트 해제 (동적 import로 순환 참조 방지)
+      if (activeHighlight.type === 'recommendation') {
+        import('@/features/ai/store').then(({ useRecommendationStore }) => {
+          const { clearHighlight } = useRecommendationStore.getState();
+          clearHighlight?.();
+        });
+      }
+    }
+
+    // 새 하이라이트 설정
+    set({
+      activeHighlight: { type, id },
+      highlightedStoreId: type === 'store' ? id as number : null,
+      highlightedRecommendationId: type === 'recommendation' ? String(id) : null
+    });
+
+    // AI 스토어 하이라이트 설정
+    if (type === 'recommendation' && id) {
+      import('@/features/ai/store').then(({ useRecommendationStore }) => {
+        const { highlightMarker } = useRecommendationStore.getState();
+        highlightMarker?.(Number(id));
+      });
+    }
+  },
+
+  clearAllHighlights: () => {
+    console.log('🔘 모든 하이라이트 해제');
+
+    // AI 스토어 하이라이트 해제
+    import('@/features/ai/store').then(({ useRecommendationStore }) => {
+      const { clearHighlight } = useRecommendationStore.getState();
+      clearHighlight?.();
+    });
+
+    set({
+      activeHighlight: { type: null, id: null },
+      highlightedStoreId: null,
+      highlightedRecommendationId: null
+    });
+  },
+
   // 드로잉 액션들
   setIsDrawingMode: isDrawing => set({ isDrawingMode: isDrawing }),
   setDrawingType: type => set({ drawingType: type }),
@@ -121,7 +189,7 @@ export const useMapStore = create<MapState & MapActions>(set => ({
     return { recommendPin: pin };
   }),
 
-  // 🎯 추천 마커 액션들
+  // 추천 마커 액션들
   setRecommendationMarkers: markers => set({ recommendationMarkers: markers }),
 
   addRecommendationMarker: marker => set(state => ({
@@ -144,16 +212,17 @@ export const useMapStore = create<MapState & MapActions>(set => ({
           selectedCategories: [],
           highlightedStoreId: null,
           highlightedRecommendationId: null,
+          activeHighlight: { type: null, id: null }, // ✅ 통합 하이라이트도 초기화
           isSearching: false,
           coordinates: { lat: null, lng: null },
           map: null,
           isDrawingMode: false,
           drawingType: 'rectangle',
           recommendPin: null,
-          recommendationMarkers: [], // 🎯 추천 마커도 초기화
+          recommendationMarkers: [],
         };
       }),
 }));
 
-// 🎯 타입 export (다른 파일에서 사용)
+// 타입 export
 export type { RecommendationMarker };

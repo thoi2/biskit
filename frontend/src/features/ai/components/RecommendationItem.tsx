@@ -1,108 +1,222 @@
-// features/ai/components/RecommendationItem.tsx
+import { useState, useEffect } from 'react'; // ✅ useEffect 추가
+import { Heart, Trash2, MapPin, Target, List, Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-react';
+import type { SingleBuildingRecommendationResponse } from '@/features/ai/types';
 
-import { Button } from '@/lib/components/ui/button';
-import { Badge } from '@/lib/components/ui/badge';
-import { Heart, Trash2 } from 'lucide-react';
-import { SingleBuildingRecommendationResponse } from '@/features/ai/types';
-
-// ✅ 1. Props 타입 최신화
 interface RecommendationItemProps {
-  recommendation: SingleBuildingRecommendationResponse;
-  isHighlighted: boolean;
-  user: Record<string, any> | null;
-  onToggleFavorite: (buildingId: number, isFavorite: boolean) => void;
-  onDelete: (buildingId: number) => void;
-  onClick: (buildingId: number) => void;
+    recommendation: SingleBuildingRecommendationResponse;
+    isHighlighted: boolean;
+    user: any;
+    onToggleFavorite: (buildingId: number, isFavorite: boolean) => void;
+    onDelete: (buildingId: number) => void;
+    onClick: (buildingId: number) => void;
+    onToggleVisibility?: (buildingId: number, isVisible: boolean) => void;
+    isVisible?: boolean;
+    isFavorite?: boolean;
 }
 
 export function RecommendationItem({
-  recommendation,
-  isHighlighted,
-  user,
-  onToggleFavorite,
-  onDelete,
-  onClick,
-}: RecommendationItemProps) {
-  // ✅ 2. 새로운 데이터 구조에 맞게 비구조화 할당
-  const { building, result } = recommendation;
+                                       recommendation,
+                                       isHighlighted,
+                                       user,
+                                       onToggleFavorite,
+                                       onDelete,
+                                       onClick,
+                                       onToggleVisibility,
+                                       isVisible = true,
+                                       isFavorite = false
+                                   }: RecommendationItemProps) {
+    const [showDetails, setShowDetails] = useState(false);
 
-  // AI 추천 결과는 여러 업종일 수 있으므로, 가장 확률 높은 첫 번째 결과를 대표로 사용
-  const primaryResult = result?.[0];
+    // 🎯 분석 타입 판별
+    const isSingleAnalysis = recommendation.result?.length === 1;
+    const mainResult = recommendation.result?.[0];
+    const additionalResults = recommendation.result?.slice(1) || [];
 
-  // ✅ 3. isFavorite 상태는 API 응답에 없으므로, 우선 false로 가정합니다.
-  // (실제로는 찜 목록(useRecommendQuery) 데이터와 비교하여 이 값을 결정해야 합니다)
-  const isFavorite = false;
+    // ✅ 하이라이트될 때 상세보기 자동 열기
+    useEffect(() => {
+        if (isHighlighted && !isSingleAnalysis && additionalResults.length > 0) {
+            console.log('✨ 하이라이트됨 → 상세보기 자동 열기:', recommendation.building.building_id);
+            setShowDetails(true);
+        }
+    }, [isHighlighted, isSingleAnalysis, additionalResults.length, recommendation.building.building_id]);
 
-  // ✅ 4. 생존율을 폐업률로 변환
-  const closureRate = primaryResult
-    ? (100 - primaryResult.survivalRate).toFixed(1)
-    : 'N/A';
+    // 🎯 생존율 색상
+    const getSurvivalColor = (rate: number) => {
+        if (rate >= 7) return 'text-green-600 bg-green-50 border-green-200';
+        if (rate >= 5) return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+        return 'text-orange-600 bg-orange-50 border-orange-200';
+    };
 
-  const handleFavoriteClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // 이벤트 버블링 방지
-    if (!user) {
-      alert('찜 기능을 사용하려면 로그인이 필요합니다.');
-      return;
+    // 🎯 데이터 검증
+    if (!recommendation?.building?.building_id || !recommendation?.result?.length || !mainResult) {
+        return null;
     }
-    onToggleFavorite(building.building_id, isFavorite);
-  };
 
-  const handleDeleteClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onDelete(building.building_id);
-  };
+    return (
+        <div
+            className={`border rounded-lg p-3 space-y-2 cursor-pointer transition-all duration-500 hover:shadow-sm ${
+                isHighlighted
+                    ? 'border-orange-400 bg-gradient-to-r from-orange-50 to-amber-50 shadow-md transform scale-[1.02] ring-2 ring-orange-200' // ✅ 효과 강화
+                    : 'border-gray-200 bg-white hover:border-gray-300'
+            } ${!isVisible ? 'opacity-60' : ''}`}
+            onClick={() => onClick(recommendation.building.building_id)}
+            data-building-id={recommendation.building.building_id}
+        >
+            {/* 🎯 컴팩트 헤더 */}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold transition-all duration-300 ${
+                        isHighlighted
+                            ? 'bg-gradient-to-r from-orange-500 to-pink-500 animate-pulse' // ✅ 하이라이트 시 강조
+                            : 'bg-gradient-to-r from-orange-400 to-pink-400'
+                    }`}>
+                        #{recommendation.building.building_id}
+                    </div>
+                    <div>
+                        <div className="flex items-center gap-1">
+                            <span className="font-medium text-sm text-gray-800">
+                                AI 추천 위치
+                                {/* ✅ 하이라이트 시 NEW 뱃지 */}
+                                {isHighlighted && (
+                                    <span className="ml-2 px-2 py-0.5 bg-orange-500 text-white text-xs font-bold rounded-full animate-bounce">
+                                        NEW
+                                    </span>
+                                )}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-gray-500">
+                            <MapPin className="w-3 h-3" />
+                            <span>{Number(recommendation.building.lat).toFixed(4)}, {Number(recommendation.building.lng).toFixed(4)}</span>
+                        </div>
+                    </div>
+                </div>
 
-  return (
-    <div
-      // ✅ 5. 데이터 속성 및 키를 building_id로 변경
-      data-building-id={building.building_id}
-      className={`p-3 border rounded-lg bg-white hover:bg-orange-50 transition-all cursor-pointer ${
-        isHighlighted
-          ? 'ring-2 ring-orange-500 transform scale-[1.02]'
-          : 'border-gray-200'
-      }`}
-      onClick={() => onClick(building.building_id)}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col gap-1">
-          <Badge className="text-white bg-orange-500 w-fit">AI 추천</Badge>
-          <span className="font-semibold text-base text-gray-800">
-            {/* ✅ 6. 대표 추천 업종 이름 표시 */}
-            {primaryResult?.category || '추천 업종 없음'}
-          </span>
+                {/* 🎯 액션 버튼들 */}
+                <div className="flex items-center gap-0.5">
+                    {/* ✅ 눈 버튼 */}
+                    {onToggleVisibility && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onToggleVisibility(recommendation.building.building_id, !isVisible);
+                            }}
+                            className={`p-1 rounded-md transition-colors ${
+                                isVisible
+                                    ? 'hover:bg-blue-50 text-gray-600'
+                                    : 'hover:bg-gray-50 bg-gray-100 text-gray-400'
+                            }`}
+                            title={isVisible ? "지도에서 숨기기" : "지도에 표시하기"}
+                        >
+                            {isVisible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                        </button>
+                    )}
+
+                    {/* ✅ 하트 버튼 (로그인 시에만 표시) */}
+                    {user && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onToggleFavorite(recommendation.building.building_id, isFavorite);
+                            }}
+                            className={`p-1 rounded-md transition-colors ${
+                                isFavorite
+                                    ? 'text-pink-500 hover:bg-pink-50'
+                                    : 'text-gray-400 hover:bg-pink-50 hover:text-pink-500'
+                            }`}
+                            title={isFavorite ? "즐겨찾기 해제" : "즐겨찾기 추가"}
+                        >
+                            <Heart className={`w-3 h-3 ${isFavorite ? 'fill-current' : ''}`} />
+                        </button>
+                    )}
+
+                    {/* ✅ X 버튼 (로그인 시에만 표시) */}
+                    {user && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onDelete(recommendation.building.building_id);
+                            }}
+                            className="p-1 rounded-md hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                            title="삭제"
+                        >
+                            <Trash2 className="w-3 h-3" />
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* 🎯 메인 결과 (컴팩트) */}
+            <div className="space-y-2">
+                <div className={`flex items-center justify-between p-2 rounded-md transition-all duration-300 ${
+                    isHighlighted ? 'bg-orange-100' : 'bg-gray-50' // ✅ 하이라이트 시 색상 변경
+                }`}>
+                    <div className="flex items-center gap-2">
+                        {isSingleAnalysis ? (
+                            <Target className={`w-3 h-3 ${isHighlighted ? 'text-orange-500' : 'text-blue-400'}`} />
+                        ) : (
+                            <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
+                                isHighlighted
+                                    ? 'text-orange-500 bg-orange-200'
+                                    : 'text-purple-500 bg-purple-100'
+                            }`}>
+                                #1
+                            </span>
+                        )}
+                        <span className="text-sm font-medium text-gray-800">{mainResult.category}</span>
+                    </div>
+
+                    <span className={`text-sm font-bold px-2 py-1 rounded-md border ${getSurvivalColor(mainResult.survivalRate)}`}>
+                        {mainResult.survivalRate.toFixed(1)}%
+                    </span>
+                </div>
+
+                {/* ✅ 상세보기 버튼 (더 컴팩트) */}
+                {!isSingleAnalysis && additionalResults.length > 0 && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setShowDetails(!showDetails);
+                        }}
+                        className={`w-full flex items-center justify-center gap-1 py-1 text-xs transition-colors ${
+                            isHighlighted
+                                ? 'text-orange-600 hover:text-orange-800'
+                                : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                    >
+                        {showDetails ? (
+                            <>
+                                <ChevronUp className="w-3 h-3" />
+                                접기
+                            </>
+                        ) : (
+                            <>
+                                <ChevronDown className="w-3 h-3" />
+                                +{additionalResults.length}개 더
+                            </>
+                        )}
+                    </button>
+                )}
+
+                {/* ✅ 상세 결과 (컴팩트) - 애니메이션 추가 */}
+                {showDetails && additionalResults.length > 0 && (
+                    <div className="space-y-1 pt-1 border-t border-gray-100 animate-slideDown">
+                        {additionalResults.map((item: any, index: number) => (
+                            <div key={index + 1} className="flex items-center justify-between py-1 px-2 bg-white rounded border border-gray-100 hover:border-gray-200 transition-colors">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-medium text-gray-400 bg-gray-100 px-1 py-0.5 rounded-full">
+                                        #{index + 2}
+                                    </span>
+                                    <span className="text-xs text-gray-700">{item.category}</span>
+                                </div>
+
+                                <span className={`text-xs font-medium px-1.5 py-0.5 rounded border ${getSurvivalColor(item.survivalRate)}`}>
+                                    {item.survivalRate.toFixed(1)}%
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
-        <div className="flex gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleFavoriteClick}
-            className={`h-8 w-8 p-0 ${
-              isFavorite
-                ? 'text-yellow-500 hover:text-yellow-600'
-                : 'text-gray-400 hover:text-yellow-500'
-            }`}
-            title={user ? '찜하기/찜 해제' : '로그인 후 이용 가능'}
-          >
-            <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleDeleteClick}
-            className="text-red-500 hover:text-red-700 h-8 w-8 p-0"
-            title="목록에서 완전 삭제"
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
-      <div className="mt-2 text-xs text-gray-500">
-        {/* ✅ 7. 주소 정보가 없으므로 좌표로 대체 (API 수정 필요) */}
-        위치: {building.lat.toFixed(4)}, {building.lng.toFixed(4)}
-      </div>
-      <div className="mt-1 text-sm font-medium text-orange-600">
-        1년 내 폐업률: {closureRate}%
-      </div>
-    </div>
-  );
+    );
 }

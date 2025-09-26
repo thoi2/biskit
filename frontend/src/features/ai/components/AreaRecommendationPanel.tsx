@@ -8,13 +8,13 @@ import { useMapStore } from '@/features/map/store/mapStore';
 import { useIndustryStore } from '@/features/survey/store/industryStore';
 import { useStoreStore } from '@/features/stores/store/storesStore';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import DrawingToolSelector from './DrawingToolSelector';
-import AreaLimitsInfo from './AreaLimitsInfo';
-import DrawingControls from './DrawingControls';
-import AreaInfoDisplay from './AreaInfoDisplay';
+import DrawingToolSelector from './drawing/DrawingToolSelector';
+import AreaLimitsInfo from './drawing/AreaLimitsInfo';
+import DrawingControls from './drawing/DrawingControls';
+import AreaInfoDisplay from './drawing/AreaInfoDisplay';
 import AnalysisButton from './AnalysisButton';
 import IndustrySelectModal from '@/features/survey/components/IndustrySelectModal';
-import { useAreaDrawing } from '../hooks/useAreaDrawing';
+import { useAreaDrawing } from '../hooks/drawing/useAreaDrawing';
 import { useAreaAnalysis } from '../hooks/useAreaAnalysis';
 import storeCategories from '@/lib/data/store_categories.json';
 

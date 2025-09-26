@@ -51,7 +51,6 @@ export function StoreListSection() {
     const handleStoreClick = (storeId: number) => {
         setHighlightedStore(storeId);
         setHighlightedRecommendation(null);
-        setTimeout(() => setHighlightedStore(null), 3000);
     };
 
     const hasSearched = stores.length > 0;
