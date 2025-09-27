@@ -22,7 +22,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     console.log('test');
     try {
       const user = await checkAuthStatusAPI();
-      if (user) {
+      if (user && user.user) {
         set({ isLoggedIn: true });
         queryClient.setQueryData(['user', 'profile'], user);
       }
