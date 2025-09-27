@@ -78,6 +78,8 @@ public class RecommendService {
                             .survivalRate(value)
                             .build()
             );
+        });
+
         if (uid != null && userRepository.existsById(uid)) {
             loginSearchPort.upsertubid(uid, bld.id());
             searchCategoryPort.upsertubcS(uid, bld.id(), cidSet);
