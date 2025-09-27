@@ -10,6 +10,4 @@ COPY categories.csv /var/lib/mysql-files/categories.csv
 
 # 컨테이너 내에서 파일 소유권을 mysql 유저로 변경
 # 이 명령어는 특히 중요합니다.
-RUN chown mysql:mysql /var/lib/mysql-files/input_store.csv
-
-RUN chown mysql:mysql /var/lib/mysql-files/categories.csv
+RUN chown mysql:mysql /var/lib/mysql-files/input_store.csv /var/lib/mysql-files/categories.csv
