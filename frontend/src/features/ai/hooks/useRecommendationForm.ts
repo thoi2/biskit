@@ -12,16 +12,16 @@ export function useRecommendationForm() {
   const [category, setCategory] = useState<string>('');
   const {
     coordinates,
-    setActiveTab,                    // ✅ 탭 이동
-    setHighlightedRecommendation     // ✅ 하이라이트 (추가)
+    setActiveTab,
+    setHighlightedRecommendation
   } = useMapStore();
 
   const {
     isLoading,
     startRequest,
     setRequestError,
-    addSingleResult,     // ✅ 새로운 스토어 함수 사용
-    highlightMarker      // ✅ 마커 하이라이트
+    addSingleResult,
+    highlightMarker
   } = useRecommendationStore();
 
   const handleSubmit = useCallback(async () => {
@@ -52,11 +52,11 @@ export function useRecommendationForm() {
       let apiResponse: any;
 
       if (category && category.trim()) {
-        // 🎯 단일 업종 분석 API
+        // 🎯 단일 업종 분석 API - ✅ 필드명 수정
         const industryRequest = {
           lat: formattedLat,
           lng: formattedLng,
-          categoryName: category.trim()
+          category: category.trim() // ✅ categoryName → category
         };
 
         console.log('🎯 단일 업종 분석 요청:', industryRequest);
@@ -81,6 +81,17 @@ export function useRecommendationForm() {
       console.log('🔍 추출된 결과:', result);
       console.log('🔍 결과 타입:', category ? '단일 업종 분석' : '다중 분석');
       console.log('🔍 결과 개수:', result?.result?.length);
+
+      // ✅ 필드명 호환성 확인 및 변환
+      if (result && result.result) {
+        // ✅ 백엔드 응답의 survival_rate → survivalRate 변환
+        result.result = result.result.map((item: any) => ({
+          category: item.category,
+          survivalRate: item.survival_rate || item.survivalRate, // ✅ 호환성 보장
+        }));
+
+        console.log('🔄 필드명 변환 완료:', result.result);
+      }
 
       // ✅ 새로운 스토어 시스템 사용 (중복 방지 + 순위 재계산)
       addSingleResult(result as any);
@@ -126,16 +137,33 @@ export function useRecommendationForm() {
         message: error.message
       });
 
-      const errorMessage = error.response?.data?.message ||
-          error.response?.data?.error ||
-          error.message ||
-          '알 수 없는 오류가 발생했습니다.';
+      // ✅ 백엔드 검증 오류 처리
+      let errorMessage = '알 수 없는 오류가 발생했습니다.';
+
+      if (error.response?.status === 400) {
+        // 검증 오류일 경우
+        if (error.response?.data?.details) {
+          // ValidationError 배열 처리
+          const validationErrors = error.response.data.details
+              .map((err: any) => `• ${err.field}: ${err.message}`)
+              .join('\n');
+          errorMessage = `입력값 검증 실패:\n${validationErrors}`;
+        } else {
+          errorMessage = error.response?.data?.message || '잘못된 요청입니다.';
+        }
+      } else {
+        errorMessage = error.response?.data?.message ||
+            error.response?.data?.error ||
+            error.message ||
+            '알 수 없는 오류가 발생했습니다.';
+      }
 
       setRequestError(errorMessage);
 
       // ✅ 에러 시에만 Alert 사용
       alert(`❌ 분석 실패\n\n${errorMessage}\n\n` +
           `💡 확인사항:\n` +
+          `- 업종명이 올바르게 입력되었는지 확인\n` +
           `- 좌표가 유효한 범위인지 확인\n` +
           `- 네트워크 연결 상태 확인\n` +
           `- 잠시 후 다시 시도해보세요`);
@@ -145,8 +173,8 @@ export function useRecommendationForm() {
     category,
     startRequest,
     setRequestError,
-    addSingleResult,    // ✅ 변경
-    highlightMarker,    // ✅ 추가
+    addSingleResult,
+    highlightMarker,
     setActiveTab,
     setHighlightedRecommendation
   ]);

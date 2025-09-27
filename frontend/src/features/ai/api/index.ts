@@ -1,7 +1,9 @@
 // src/features/ai/api/index.ts
 import apiClient from '@/lib/apiClient';
 
-// ===== 실제 사용하는 타입 정의 =====
+// ===== 백엔드 DTO와 정확히 매칭되는 타입 정의 =====
+
+// AI 분석 요청/응답
 interface SingleRequest {
   lat: number;
   lng: number;
@@ -10,7 +12,15 @@ interface SingleRequest {
 interface SingleIndustryRequest {
   lat: number;
   lng: number;
-  categoryName: string;
+  category: string;
+}
+
+interface RangeRequest {
+  polygon: Array<{
+    lat: number;
+    lng: number;
+  }>;
+  category: string;
 }
 
 interface RecommendResponse {
@@ -21,13 +31,64 @@ interface RecommendResponse {
   };
   result: Array<{
     category: string;
-    survivalRate: number;
+    survival_rate: number[]; // ✅ 백엔드 JsonProperty와 매칭
   }>;
   meta: {
-    source: 'CACHE' | 'DB' | 'AI';
+    source: 'DB' | 'AI';
     version: string;
     last_at: string;
   };
+}
+
+interface RangeResponse {
+  items: Array<{
+    building_id: number; // ✅ 백엔드 JsonProperty와 매칭
+    category: string;
+    lat: number;
+    lng: number;
+    survival_rate: number[]; // ✅ 백엔드 JsonProperty와 매칭
+  }>;
+}
+
+interface ExplainResponse {
+  building_id: number;
+  category: string;
+  explanation: string;
+}
+
+// 결과 관리 요청/응답
+interface ResultGetResponse {
+  items: Array<{
+    buildingId: number;
+    lat: number;
+    lng: number;
+    favorite: boolean;
+    categories: Array<{
+      category: string;
+      survivalRate: number[];
+    }>;
+  }>;
+}
+
+interface ResultDeleteResponse {
+  buildingId: number;
+  deletedCount: number;
+}
+
+interface ResultDeleteCategoriesRequest {
+  categories: string[];
+}
+
+interface ResultDeleteCategoriesResponse {
+  buildingId: number;
+  deletedCategoryNames: string[];
+  deletedCount: number;
+}
+
+// 좋아요 응답
+interface FavoriteResponse {
+  buildingId: number;
+  isLiked: boolean; // ✅ 백엔드 JsonProperty와 매칭
 }
 
 // ===== AI 분석 API =====
@@ -37,7 +98,7 @@ export const getSingleRecommendation = async (request: SingleRequest) => {
   console.log('🌟 다중 분석 API 호출:', request);
   const response = await apiClient.post('/ai/single', request);
   console.log('🌟 다중 분석 응답:', response.data);
-  return response.data; // ApiResponse<RecommendResponse> 구조
+  return response.data as { success: boolean; body: RecommendResponse };
 };
 
 // 🎯 단일 업종 분석 API (특정 업종 → 1개 결과)
@@ -45,81 +106,52 @@ export const getSingleIndustryRecommendation = async (request: SingleIndustryReq
   console.log('🎯 단일 업종 분석 API 호출:', request);
   const response = await apiClient.post('/ai/single-industry', request);
   console.log('🎯 단일 업종 분석 응답:', response.data);
-  return response.data; // ApiResponse<RecommendResponse> 구조
+  return response.data as { success: boolean; body: RecommendResponse };
 };
 
-// 🔄 범위 분석 API (개발 예정)
-export const getRangeRecommendation = async (request: any) => {
+// 🗺️ 범위 분석 API
+export const getRangeRecommendation = async (request: RangeRequest) => {
+  console.log('🗺️ 범위 분석 API 호출:', request);
   const response = await apiClient.post('/ai/range', request);
-  return response.data;
+  console.log('🗺️ 범위 분석 응답:', response.data);
+  return response.data as { success: boolean; body: RangeResponse };
 };
 
-// ===== ResultController API (기존 컨트롤러 활용) =====
+// 💬 GMS 설명 API
+export const getIndustryExplanation = async (request: {
+  building_id: number;
+  category: string;
+}) => {
+  console.log('💬 GMS 설명 API 호출:', request);
+  const response = await apiClient.post('/ai/single-industry-explanation', request);
+  console.log('💬 GMS 설명 응답:', response.data);
+  return response.data as { success: boolean; body: ExplainResponse };
+};
+
+// ===== 결과 관리 API (ResultController) =====
 
 // ✅ 사용자 결과 조회 - GET /api/v1/result
 export const getUserResults = async () => {
   console.log('📊 사용자 결과 조회 API 호출');
   const response = await apiClient.get('/result');
   console.log('📊 사용자 결과 응답:', response.data);
-  return response.data; // ApiResponse<ResultGetResponse> 형태
+  return response.data as { success: boolean; body: ResultGetResponse };
 };
 
-// ✅ 결과 삭제 - DELETE /api/v1/result/{buildingId}
-export const deleteResult = async (buildingId: string) => {
-  console.log('🗑️ 결과 삭제 API 호출:', buildingId);
+// ✅ 건물 결과 삭제 - DELETE /api/v1/result/{buildingId}
+export const deleteResult = async (buildingId: number) => {
+  console.log('🗑️ 건물 결과 삭제 API 호출:', buildingId);
   const response = await apiClient.delete(`/result/${buildingId}`);
-  console.log('🗑️ 결과 삭제 응답:', response.data);
-  return response.data; // ApiResponse<ResultDeleteResponse> 형태
+  console.log('🗑️ 건물 결과 삭제 응답:', response.data);
+  return response.data as { success: boolean; body: ResultDeleteResponse };
 };
-
-// ===== 좋아요 API (아직 구현되지 않음 - Mock) =====
-
-// ⚠️ 좋아요 추가 (Mock - 실제 엔드포인트 없음)
-export const addLike = async (buildingId: string) => {
-  console.warn('⚠️ 좋아요 기능은 아직 구현되지 않았습니다:', buildingId);
-
-  // Mock 응답
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        success: true,
-        status: 200,
-        body: {
-          buildingId: parseInt(buildingId),
-          isLiked: true
-        }
-      });
-    }, 500);
-  });
-};
-
-// ⚠️ 좋아요 삭제 (Mock - 실제 엔드포인트 없음)
-export const deleteLike = async (buildingId: string) => {
-  console.warn('⚠️ 좋아요 삭제 기능은 아직 구현되지 않았습니다:', buildingId);
-
-  // Mock 응답
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        success: true,
-        status: 200,
-        body: {
-          buildingId: parseInt(buildingId),
-          isLiked: false
-        }
-      });
-    }, 500);
-  });
-};
-
-// ===== 카테고리 삭제 API (ResultController 활용) =====
 
 // ✅ 카테고리별 삭제 - DELETE /api/v1/result/{buildingId}/categories
-export const deleteResultCategories = async (buildingId: string, categoryIds: string[]) => {
-  console.log('🏷️ 카테고리 삭제 API 호출:', { buildingId, categoryIds });
+export const deleteResultCategories = async (buildingId: number, categoryNames: string[]) => {
+  console.log('🏷️ 카테고리 삭제 API 호출:', { buildingId, categoryNames });
 
-  const requestData = {
-    categories: categoryIds // ResultDeleteCategoriesRequest 형태
+  const requestData: ResultDeleteCategoriesRequest = {
+    categories: categoryNames
   };
 
   const response = await apiClient.delete(`/result/${buildingId}/categories`, {
@@ -127,5 +159,23 @@ export const deleteResultCategories = async (buildingId: string, categoryIds: st
   });
 
   console.log('🏷️ 카테고리 삭제 응답:', response.data);
-  return response.data; // ApiResponse<ResultDeleteCategoriesResponse> 형태
+  return response.data as { success: boolean; body: ResultDeleteCategoriesResponse };
+};
+
+// ===== 좋아요 API (FavoriteController) =====
+
+// ✅ 좋아요 추가 - POST /api/v1/like/{buildingId}
+export const addLike = async (buildingId: number) => {
+  console.log('❤️ 좋아요 추가 API 호출:', buildingId);
+  const response = await apiClient.post(`/like/${buildingId}`);
+  console.log('❤️ 좋아요 추가 응답:', response.data);
+  return response.data as { success: boolean; body: FavoriteResponse };
+};
+
+// ✅ 좋아요 삭제 - DELETE /api/v1/like/{buildingId}
+export const deleteLike = async (buildingId: number) => {
+  console.log('💔 좋아요 삭제 API 호출:', buildingId);
+  const response = await apiClient.delete(`/like/${buildingId}`);
+  console.log('💔 좋아요 삭제 응답:', response.data);
+  return response.data as { success: boolean; body: FavoriteResponse };
 };

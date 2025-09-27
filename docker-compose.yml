@@ -51,8 +51,6 @@ services:
       - GEOCODER_TOKEN=${GEOCODER_TOKEN}
       - AI_GMS_BASE_URL=https://gms.ssafy.io/gmsapi
       - AI_GMS_API_KEY=${GMS_KEY}
-    networks:
-      - my-network
 
     depends_on:
       ai:

@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.LinkedHashMap;
 import java.util.Collection;
@@ -58,7 +59,25 @@ public class CategoryAdapter implements CategoryPort {
                 .distinct()
                 .toList();
         if (cleaned.isEmpty()) return Map.of();
+
         List<CategoryProjection> rows = categoryRepository.findAllByCategoryIdIn(cleaned);
+
+        return rows.stream()
+                .collect(Collectors.toMap(
+                        CategoryProjection::getCategoryId,
+                        CategoryProjection::getName,
+                        (a, b) -> a,
+                        LinkedHashMap::new
+                ));
+    }
+
+    // ✅ 추가: Set 버전
+    @Transactional(readOnly = true)
+    @Override
+    public Map<Integer, String> getNamesByIds(Set<Integer> ids) {
+        if (ids == null || ids.isEmpty()) return Map.of();
+
+        List<CategoryProjection> rows = categoryRepository.findAllByCategoryIdIn(ids);
 
         return rows.stream()
                 .collect(Collectors.toMap(

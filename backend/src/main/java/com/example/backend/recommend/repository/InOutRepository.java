@@ -15,6 +15,7 @@ public interface InOutRepository extends JpaRepository<InOutEntity, Key> {
 
     Optional<InOutEntity> findByBuildingIdAndCategoryId(Integer buildingId, Integer categoryId);
     List<InOutProjection> findAllByBuildingIdAndCategoryIdIn(int buildingId, List<Integer> categoryIds);
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
        update InOutEntity io
@@ -24,4 +25,10 @@ public interface InOutRepository extends JpaRepository<InOutEntity, Key> {
           and io.categoryId = :categoryId
     """)
     void bumpUsage(@Param("buildingId") Integer buildingId, @Param("categoryId") Integer categoryId);
+
+    // ✅ 추가: 캐시 완성도 체크용 메소드들
+    @Query("SELECT COUNT(io) FROM InOutEntity io WHERE io.buildingId = :buildingId")
+    int countByBuildingId(@Param("buildingId") Integer buildingId);
+
+    List<InOutEntity> findAllByBuildingId(Integer buildingId);
 }

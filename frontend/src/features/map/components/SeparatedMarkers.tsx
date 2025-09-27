@@ -1,7 +1,7 @@
 // src/features/map/components/SeparatedMarkers.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useStoreMarkers } from '../hooks/useStoreMarkers';
 import { useAIMarkers } from '../hooks/useAIMarkers';
 import { useMapStore } from '../store/mapStore';
@@ -24,7 +24,7 @@ export function SeparatedMarkers({ map, selectedCategories }: SeparatedMarkersPr
     } = useMapStore();
 
     const { selectStore } = useStoreStore();
-    const { highlightMarker } = useRecommendationStore();
+    const { highlightMarker, clearHighlight } = useRecommendationStore();
 
     // 클러스터/팝업 상태
     const [selectedStoreCluster, setSelectedStoreCluster] = useState<any[] | null>(null);
@@ -37,11 +37,12 @@ export function SeparatedMarkers({ map, selectedCategories }: SeparatedMarkersPr
         return 'bg-green-500';
     };
 
-    // ✅ 상가 클릭 핸들러
-    const handleStoreClick = (store: any) => {
-        console.log('📦 상가 마커 클릭:', store.id);
+    // ✅ 상가 클릭 핸들러 (안정화)
+    const handleStoreClick = useCallback((store: any) => {
+        console.log('📦 [상가 클릭] ID:', store.id);
 
-        // 다른 하이라이트 해제
+        // ✅ AI 하이라이트 먼저 해제
+        clearHighlight();
         setHighlightedRecommendation(null);
 
         // 상가 하이라이트 및 선택
@@ -55,21 +56,20 @@ export function SeparatedMarkers({ map, selectedCategories }: SeparatedMarkersPr
             const moveLatLng = new window.kakao.maps.LatLng(store.lat, store.lng);
             map.setCenter(moveLatLng);
         }
-    };
+    }, [map, clearHighlight, setHighlightedRecommendation, setHighlightedStore, selectStore, setActiveTab]);
 
     // ✅ 상가 클러스터 클릭 핸들러
-    const handleStoreClusterClick = (stores: any[]) => {
-        console.log('📦 상가 클러스터 클릭:', stores.length, '개');
+    const handleStoreClusterClick = useCallback((stores: any[]) => {
+        console.log('📦 [상가 클러스터 클릭] 개수:', stores.length);
         setSelectedStoreCluster(stores);
-    };
+    }, []);
 
-    // ✅ AI 마커 클릭 핸들러
-    const handleAIMarkerClick = (building: any) => {
-        console.log('🤖 AI 마커 클릭:', building.building.building_id);
-
+    // ✅ AI 마커 클릭 핸들러 (안정화)
+    const handleAIMarkerClick = useCallback((building: any) => {
         const buildingId = building.building?.building_id || building.buildingId;
+        console.log('🤖 [AI 마커 클릭] ID:', buildingId);
 
-        // 다른 하이라이트 해제
+        // ✅ 상가 하이라이트 먼저 해제
         setHighlightedStore(null);
 
         // AI 추천 하이라이트
@@ -85,13 +85,13 @@ export function SeparatedMarkers({ map, selectedCategories }: SeparatedMarkersPr
             );
             map.setCenter(moveLatLng);
         }
-    };
+    }, [map, setHighlightedStore, setHighlightedRecommendation, highlightMarker, setActiveTab]);
 
     // ✅ 클러스터 팝업에서 상가 선택
-    const handleStoreClusterItemClick = (store: any) => {
+    const handleStoreClusterItemClick = useCallback((store: any) => {
         setSelectedStoreCluster(null);
         handleStoreClick(store);
-    };
+    }, [handleStoreClick]);
 
     // ✅ 상가 마커 Hook
     const { storeMarkers } = useStoreMarkers({
@@ -102,15 +102,15 @@ export function SeparatedMarkers({ map, selectedCategories }: SeparatedMarkersPr
     });
 
     // ✅ AI 마커 Hook
-    const { aiMarkers } = useAIMarkers({
+    const { aiMarkers, markerCount, favoriteCount } = useAIMarkers({
         map,
         onAIMarkerClick: handleAIMarkerClick
     });
 
-    console.log('🎯 [SeparatedMarkers] 총 마커:', {
+    console.log('🎯 [SeparatedMarkers] 마커 상태:', {
         stores: storeMarkers.length,
-        ai: aiMarkers.length,
-        total: storeMarkers.length + aiMarkers.length,
+        ai: markerCount,
+        favorites: favoriteCount,
         highlightedStore: highlightedStoreId,
         highlightedRecommendation: highlightedRecommendationId
     });

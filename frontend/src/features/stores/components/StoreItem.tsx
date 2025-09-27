@@ -1,9 +1,9 @@
 // components/StoreItem.tsx
-
 import { Button } from '@/lib/components/ui/button';
 import { Badge } from '@/lib/components/ui/badge';
 import { Eye, EyeOff, Trash2 } from 'lucide-react';
 import { Store } from '@/features/stores/types/store';
+import { useMapStore } from '@/features/map/store/mapStore';
 
 interface StoreItemProps {
     store: Store;
@@ -20,17 +20,33 @@ export function StoreItem({
                               onDelete,
                               onClick,
                           }: StoreItemProps) {
+    // ✅ 지도 이동 함수 가져오기
+    const { moveToLocation } = useMapStore();
+
+    // ✅ 상가 클릭 핸들러 (지도 이동 포함)
+    const handleStoreClick = () => {
+        console.log('🏪 상가 클릭:', store.id);
+
+        // 기존 클릭 로직
+        onClick(store.id);
+
+        // ✅ 지도 이동 추가
+        if (store.lat && store.lng) {
+            moveToLocation(store.lat, store.lng, 4);
+        }
+    };
+
     return (
         <div
             data-store-id={store.id}
             className={`p-2 border rounded hover:bg-gray-50 transition-all cursor-pointer ${
                 isHighlighted
-                    ? 'ring-2 ring-blue-500 bg-blue-50 transform scale-105'
+                    ? 'ring-2 ring-blue-500 bg-blue-50'
                     : ''
             } ${
                 store.hidden ? 'opacity-50 bg-gray-50' : ''
             }`}
-            onClick={() => onClick(store.id)}
+            onClick={handleStoreClick} // ✅ 수정된 핸들러 사용
         >
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -42,8 +58,8 @@ export function StoreItem({
                     <span className={`font-medium text-sm ${
                         store.hidden ? 'text-gray-500' : 'text-gray-900'
                     }`}>
-            {store.displayName || `${store.storeName} ${store.branchName || ''}`.trim()}
-          </span>
+                        {store.displayName || `${store.storeName} ${store.branchName || ''}`.trim()}
+                    </span>
                 </div>
                 <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                     {/* 눈 모양 버튼 - 숨기기/보이기만 */}

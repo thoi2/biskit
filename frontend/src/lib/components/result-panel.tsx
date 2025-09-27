@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { FavoritesSection } from './FavoritesSection';
+import { FavoritesSection } from '../../features/ai/components/FavoritesSection';
 import { StoreListSection } from '../../features/stores/components/StoreListSection';
 import { RecommendationListSection } from '../../features/ai/components/RecommendationListSection';
 

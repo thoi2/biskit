@@ -33,12 +33,12 @@ export function AreaRecommendationPanel() {
         activeTab,
         map,
         isDrawingMode,
-        isDrawingActive, // ✅ 추가
+        isDrawingActive,
         drawingType,
         setDrawingType,
-        setActiveTab, // ✅ 추가
-        addRecommendationMarker, // ✅ 추가
-        clearRecommendationMarkers // ✅ 추가
+        setActiveTab,
+        addRecommendationMarker,
+        clearRecommendationMarkers
     } = useMapStore();
     const { userIndustries, fetchUserIndustries } = useIndustryStore();
     const { stores } = useStoreStore();
@@ -63,7 +63,7 @@ export function AreaRecommendationPanel() {
         resetAnalysis
     } = useAreaAnalysis(drawnArea, areaCategory, areaInfo);
 
-    // ✅ 분석 완료 시 결과 처리
+    // ✅ 분석 완료 시 결과 처리 (수정)
     useEffect(() => {
         if (analysisResult?.success && analysisResult.recommendations) {
             console.log('🎯 범위 분석 완료 - 결과 처리 시작');
@@ -74,14 +74,14 @@ export function AreaRecommendationPanel() {
             // 새로운 추천 마커 추가
             analysisResult.recommendations.forEach((rec, index) => {
                 addRecommendationMarker({
-                    id: rec.id,
+                    id: rec.id || `range-${index}`, // ✅ id가 없으면 생성
                     lat: rec.lat,
                     lng: rec.lng,
                     type: 'recommendation',
-                    title: rec.title,
+                    title: rec.category || `추천 입지 ${index + 1}`, // ✅ title 생성
                     category: rec.category,
-                    survivalRate: rec.score,
-                    buildingId: index + 1,
+                    survivalRate: Array.isArray(rec.survivalRate) ? rec.survivalRate[0] || rec.score : rec.score, // ✅ survivalRate 처리
+                    buildingId: rec.buildingId || (index + 1000), // ✅ buildingId 생성
                     isAreaResult: true // ✅ 범위 분석 결과임을 표시
                 });
             });
@@ -274,7 +274,7 @@ export function AreaRecommendationPanel() {
                         areaCategory={areaCategory}
                         areaInfo={areaInfo}
                         isAnalyzing={isAreaAnalyzing}
-                        onAnalyze={handleStartAnalysis} // ✅ 개선된 핸들러 사용
+                        onAnalyze={handleStartAnalysis}
                     />
 
                     {/* ✅ 분석 결과 간단 표시 */}
