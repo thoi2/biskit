@@ -60,7 +60,11 @@ public class RecommendService {
         // category table에 없는건 skip
         Map<String, Integer> nameToId = categoryPort.getIdsByNames(byCat.keySet());
 
-        log.info("e"+nameToId);
+        log.info("AI-CATEGORIES :: {}", byCat.keySet());
+        log.info("DB-MATCHED-CATEGORIES :: {}", nameToId.keySet());
+        if (nameToId.isEmpty()) {
+            log.warn("No matching categories found between AI response and database. Please check if category names are consistent.");
+        }
         List<RecommendResponse.CategoryResult> resultList = new ArrayList<>();
         Set<Integer> cidSet = new LinkedHashSet<>();
         byCat.forEach((name, value) -> {
