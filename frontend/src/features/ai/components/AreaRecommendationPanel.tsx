@@ -3,20 +3,39 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/lib/components/ui/card';
+import { Button } from '@/lib/components/ui/button';
+import { Badge } from '@/lib/components/ui/badge';
 import { Label } from '@/lib/components/ui/label';
-import { Square, AlertTriangle } from 'lucide-react';
+import {
+    Square,
+    AlertTriangle,
+    RefreshCw,
+    CheckCircle,
+    Zap,
+    Target,
+    ArrowRight,
+    Plus,
+    RotateCcw,
+    Layers,
+    StopCircle,
+    Settings,
+    Search
+} from 'lucide-react';
 import { useMapStore } from '@/features/map/store/mapStore';
 import { useIndustryStore } from '@/features/survey/store/industryStore';
 import { useStoreStore } from '@/features/stores/store/storesStore';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import { useRecommendationForm } from '../hooks/useRecommendationForm'; // ✅ 통합 form 사용
+
+// ✅ 기존 컴포넌트들
 import DrawingToolSelector from './drawing/DrawingToolSelector';
 import AreaLimitsInfo from './drawing/AreaLimitsInfo';
 import DrawingControls from './drawing/DrawingControls';
 import AreaInfoDisplay from './drawing/AreaInfoDisplay';
 import AnalysisButton from './AnalysisButton';
+
 import IndustrySelectModal from '@/features/survey/components/IndustrySelectModal';
 import { useAreaDrawing } from '../hooks/drawing/useAreaDrawing';
-import { useAreaAnalysis } from '@/features/ai/hooks/useAreaAnalysis';
 import storeCategories from '@/lib/data/store_categories.json';
 
 interface CategoryData {
@@ -37,62 +56,30 @@ export function AreaRecommendationPanel() {
         drawingType,
         setDrawingType,
         setActiveTab,
-        addRecommendationMarker,
-        clearRecommendationMarkers
+        setIsDrawingMode,
+        setIsDrawingActive
     } = useMapStore();
+
     const { userIndustries, fetchUserIndustries } = useIndustryStore();
     const { stores } = useStoreStore();
     const { user } = useAuth();
 
+    // ✅ useRecommendationForm 통합 사용
+    const { category, setCategory, isLoading, handleRangeSubmit } = useRecommendationForm();
+
     // 상태 관리
-    const [areaCategory, setAreaCategory] = useState('');
     const [showAreaIndustryModal, setShowAreaIndustryModal] = useState(false);
 
-    // ✅ 커스텀 훅 사용 (반응성 개선)
+    // ✅ useAreaDrawing 사용
     const {
         drawnArea,
         drawnOverlay,
         areaInfo,
-        clearDrawnArea
-    } = useAreaDrawing(areaCategory);
-
-    const {
-        isAreaAnalyzing,
-        analysisResult,
-        handleAreaAnalysis,
-        resetAnalysis
-    } = useAreaAnalysis(drawnArea, areaCategory, areaInfo);
-
-    // ✅ 분석 완료 시 결과 처리 (수정)
-    useEffect(() => {
-        if (analysisResult?.success && analysisResult.recommendations) {
-            console.log('🎯 범위 분석 완료 - 결과 처리 시작');
-
-            // 기존 추천 마커 제거
-            clearRecommendationMarkers();
-
-            // 새로운 추천 마커 추가
-            analysisResult.recommendations.forEach((rec, index) => {
-                addRecommendationMarker({
-                    id: rec.id || `range-${index}`, // ✅ id가 없으면 생성
-                    lat: rec.lat,
-                    lng: rec.lng,
-                    type: 'recommendation',
-                    title: rec.category || `추천 입지 ${index + 1}`, // ✅ title 생성
-                    category: rec.category,
-                    survivalRate: Array.isArray(rec.survivalRate) ? rec.survivalRate[0] || rec.score : rec.score, // ✅ survivalRate 처리
-                    buildingId: rec.buildingId || (index + 1000), // ✅ buildingId 생성
-                    isAreaResult: true // ✅ 범위 분석 결과임을 표시
-                });
-            });
-
-            // 결과 탭으로 이동
-            setTimeout(() => {
-                setActiveTab('result');
-                console.log('📍 결과 탭으로 이동 완료');
-            }, 500);
-        }
-    }, [analysisResult, clearRecommendationMarkers, addRecommendationMarker, setActiveTab]);
+        clearDrawnArea,
+        canUseAreaRecommendation,
+        hasStoreData,
+        isValidZoom
+    } = useAreaDrawing(category);
 
     // 사용자 업종 정보 로드
     useEffect(() => {
@@ -132,46 +119,61 @@ export function AreaRecommendationPanel() {
         }>;
     }, [user, userIndustries]);
 
-    // 범위 분석 조건 체크
-    const hasStoreData = stores.length > 0;
-    const isValidZoom = map && map.getLevel() <= 2;
-    const canUseAreaRecommendation = hasStoreData && isValidZoom && activeTab === 'recommend';
+    // ✅ 완전 초기화
+    const handleCompleteReset = () => {
+        console.log('🔄 범위 분석 완전 초기화');
+        setCategory('');
+        clearDrawnArea();
+        setIsDrawingMode(false);
+        setIsDrawingActive(false);
+        setDrawingType('rectangle');
+    };
 
+    // ✅ 드로잉 모드 강제 종료
+    const handleForceStopDrawing = () => {
+        console.log('⛔ 드로잉 모드 강제 종료');
+        setIsDrawingMode(false);
+        setIsDrawingActive(false);
+    };
+
+    // ✅ 핸들러 함수들
     const handleAreaIndustrySelect = (categoryData: CategoryData) => {
-        setAreaCategory(categoryData.상권업종소분류명);
+        setCategory(categoryData.상권업종소분류명);
         setShowAreaIndustryModal(false);
-        console.log('✅ 범위 분석 업종 선택:', categoryData.상권업종소분류명);
     };
 
-    const handleClearAreaCategory = () => {
-        setAreaCategory('');
-        resetAnalysis();
-        console.log('🔄 범위 분석 업종 선택 해제');
+    const handleClearCategory = () => {
+        setCategory('');
     };
 
-    // ✅ 분석 실행 핸들러 (개선)
+    // ✅ 수정된 분석 시작 함수 (인자 1개만 전달)
     const handleStartAnalysis = async () => {
-        if (!drawnArea || !areaCategory || !areaInfo?.isValid) {
+        if (!areaInfo?.isValid || !category) {
             console.warn('⚠️ 분석 조건 미충족');
             return;
         }
 
-        console.log('🚀 범위 분석 시작');
-        await handleAreaAnalysis();
+        console.log('🚀 범위 분석 시작', {
+            category,
+            storeCount: areaInfo.storeCount,
+            isValid: areaInfo.isValid
+        });
+
+        // ✅ handleRangeSubmit은 areaInfo만 받음
+        await handleRangeSubmit(areaInfo);
     };
 
-    // ✅ 실시간 상태 디스플레이 (디버깅용)
-    console.log('🔄 AreaRecommendationPanel 상태:', {
-        activeTab,
-        isDrawingMode,
-        isDrawingActive,
-        drawingType,
-        areaCategory,
-        hasDrawnArea: !!drawnArea,
-        hasAreaInfo: !!areaInfo,
-        isAreaAnalyzing,
-        hasAnalysisResult: !!analysisResult
-    });
+    // ✅ 현재 상태 판단
+    const getCurrentStatus = () => {
+        if (!hasStoreData) return 'no_data';
+        if (!isValidZoom) return 'need_zoom';
+        if (isLoading) return 'analyzing';
+        if (isDrawingMode || isDrawingActive) return 'drawing';
+        if (drawnArea && category && areaInfo?.isValid) return 'ready';
+        return 'setup';
+    };
+
+    const currentStatus = getCurrentStatus();
 
     return (
         <>
@@ -180,130 +182,194 @@ export function AreaRecommendationPanel() {
                     <CardTitle className="text-sm flex items-center gap-2">
                         <Square className="w-4 h-4" />
                         범위 추천 분석
-                        {/* ✅ 상태 표시 */}
-                        {isDrawingMode && (
-                            <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">
-                                그리는 중
-                            </span>
-                        )}
-                        {drawnArea && (
-                            <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded">
-                                영역 완료
-                            </span>
-                        )}
+                        <div className="ml-auto">
+                            {currentStatus === 'drawing' && (
+                                <Badge className="bg-blue-600 text-white">그리는 중</Badge>
+                            )}
+                            {currentStatus === 'analyzing' && (
+                                <Badge className="bg-purple-600 text-white animate-pulse">분석 중</Badge>
+                            )}
+                            {currentStatus === 'ready' && (
+                                <Badge className="bg-green-600 text-white">준비완료</Badge>
+                            )}
+                        </div>
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {/* 사용 조건 체크 */}
-                    {!hasStoreData && (
+
+                    {/* ✅ 드로잉 상태 긴급 리셋 */}
+                    {(isDrawingMode || isDrawingActive) && !drawnArea && (
                         <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                            <div className="flex items-center gap-2 text-yellow-700">
-                                <AlertTriangle className="w-4 h-4" />
-                                <span className="text-sm">상가 데이터를 먼저 로딩해주세요</span>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <AlertTriangle className="w-4 h-4 text-yellow-600" />
+                                    <span className="text-sm text-yellow-700">
+                                        드로잉 모드가 활성화되어 있습니다
+                                    </span>
+                                </div>
+                                <div className="flex gap-1">
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={handleForceStopDrawing}
+                                        className="border-yellow-300 text-yellow-600 hover:bg-yellow-50"
+                                    >
+                                        <StopCircle className="w-3 h-3 mr-1" />
+                                        중지
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={handleCompleteReset}
+                                        className="border-red-300 text-red-600 hover:bg-red-50"
+                                    >
+                                        <RotateCcw className="w-3 h-3 mr-1" />
+                                        초기화
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 조건 체크 */}
+                    {!hasStoreData && (
+                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="flex items-center gap-3">
+                                <Layers className="w-5 h-5 text-blue-600" />
+                                <div>
+                                    <h4 className="font-medium text-blue-800">상가 데이터 로딩 필요</h4>
+                                    <p className="text-sm text-blue-600 mt-1">
+                                        지도에서 &quot;상가 데이터 로딩&quot; 버튼을 클릭하세요
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     )}
 
                     {!isValidZoom && hasStoreData && (
-                        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                            <div className="flex items-center gap-2 text-yellow-700">
-                                <AlertTriangle className="w-4 h-4" />
-                                <span className="text-sm">지도를 더 확대해주세요 (축적 2레벨 이하)</span>
+                        <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                            <div className="flex items-center gap-3">
+                                <Target className="w-5 h-5 text-orange-600" />
+                                <div>
+                                    <h4 className="font-medium text-orange-800">지도를 더 확대하세요</h4>
+                                    <p className="text-sm text-orange-600 mt-1">
+                                        레벨 2 이하로 확대해주세요 (마우스 휠 또는 + 버튼)
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     )}
 
-                    <DrawingToolSelector
-                        drawingType={drawingType}
-                        setDrawingType={setDrawingType}
-                        canUseAreaRecommendation={canUseAreaRecommendation}
-                    />
+                    {/* 분석 중 */}
+                    {isLoading && (
+                        <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg text-center">
+                            <RefreshCw className="w-6 h-6 text-purple-600 mx-auto mb-3 animate-spin" />
+                            <h4 className="font-medium text-purple-800 mb-2">AI 분석 중...</h4>
+                            <p className="text-sm text-purple-600">
+                                {category} 업종의 최적 입지를 찾고 있습니다
+                            </p>
+                        </div>
+                    )}
 
-                    <AreaLimitsInfo />
+                    {/* 일반 설정 */}
+                    {canUseAreaRecommendation && !isLoading && (
+                        <>
+                            {/* ✅ 업종 선택 UI */}
+                            <div>
+                                <Label className="text-xs mb-2 block">
+                                    분석할 업종 <span className="text-red-500">*</span>
+                                </Label>
 
-                    {/* 업종 선택 */}
-                    <div>
-                        <Label className="text-xs mb-2 block">
-                            분석할 업종 <span className="text-red-500">*</span>
-                        </Label>
-                        <button
-                            onClick={() => setShowAreaIndustryModal(true)}
-                            disabled={!canUseAreaRecommendation || isAreaAnalyzing}
-                            className={`w-full p-2 text-left border rounded-lg hover:border-gray-400 disabled:opacity-50 transition-colors ${
-                                !areaCategory ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                            }`}
+                                <button
+                                    onClick={() => setShowAreaIndustryModal(true)}
+                                    disabled={isLoading}
+                                    className="w-full p-3 text-left border border-gray-300 rounded-lg hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Search className="w-4 h-4 text-gray-400" />
+                                            <span className={category ? 'text-gray-800' : 'text-gray-500'}>
+                                                {category || '업종을 선택해주세요 (필수)'}
+                                            </span>
+                                        </div>
+                                        <div className="text-gray-400 text-sm">선택</div>
+                                    </div>
+                                </button>
+
+                                {/* 선택된 업종이 있으면 "선택 해제" 버튼 표시 */}
+                                {category && (
+                                    <button
+                                        onClick={handleClearCategory}
+                                        disabled={isLoading}
+                                        className="mt-2 text-xs text-gray-500 hover:text-gray-700 underline"
+                                    >
+                                        선택 해제
+                                    </button>
+                                )}
+
+                                {/* 내 추천 업종이 있으면 미리보기 표시 */}
+                                {myRecommendationsForModal.length > 0 && (
+                                    <div className="mt-2">
+                                        <p className="text-xs text-purple-600 mb-1">💡 내 추천 업종이 우선 표시됩니다</p>
+                                        <div className="flex gap-1 flex-wrap">
+                                            {myRecommendationsForModal.slice(0, 3).map((rec, idx) => (
+                                                <span key={rec.industryCode} className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
+                                                    {rec.industryName}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <DrawingToolSelector
+                                drawingType={drawingType}
+                                setDrawingType={setDrawingType}
+                                canUseAreaRecommendation={canUseAreaRecommendation}
+                            />
+
+                            <AreaLimitsInfo />
+
+                            <DrawingControls
+                                canUseAreaRecommendation={canUseAreaRecommendation}
+                                isDrawingMode={isDrawingMode}
+                                drawingType={drawingType}
+                                areaCategory={category}
+                            />
+
+                            <AreaInfoDisplay
+                                drawnArea={drawnArea}
+                                areaInfo={areaInfo}
+                                drawingType={drawingType}
+                                onClear={clearDrawnArea}
+                            />
+
+                            <AnalysisButton
+                                drawnArea={drawnArea}
+                                areaCategory={category}
+                                areaInfo={areaInfo}
+                                isAnalyzing={isLoading}
+                                onAnalyze={handleStartAnalysis}
+                            />
+                        </>
+                    )}
+
+                    {/* 완전 초기화 */}
+                    <div className="pt-2 border-t border-gray-200">
+                        <Button
+                            onClick={handleCompleteReset}
+                            variant="outline"
+                            size="sm"
+                            className="w-full border-gray-300 text-gray-500 hover:bg-gray-50"
                         >
-                            <span className={`text-sm ${!areaCategory ? 'text-red-500' : 'text-gray-800'}`}>
-                                {areaCategory || '업종을 반드시 선택해주세요'}
-                            </span>
-                        </button>
-
-                        {areaCategory && (
-                            <button
-                                onClick={handleClearAreaCategory}
-                                disabled={isAreaAnalyzing}
-                                className="mt-1 text-xs text-gray-500 hover:text-gray-700 underline disabled:opacity-50"
-                            >
-                                선택 해제
-                            </button>
-                        )}
-
-                        {!areaCategory && (
-                            <p className="text-xs text-red-500 mt-1">
-                                ⚠️ 범위 추천 분석에는 업종 선택이 필수입니다
-                            </p>
-                        )}
+                            <Settings className="w-3 h-3 mr-1" />
+                            전체 초기화
+                        </Button>
                     </div>
-
-                    <DrawingControls
-                        canUseAreaRecommendation={canUseAreaRecommendation}
-                        isDrawingMode={isDrawingMode}
-                        drawingType={drawingType}
-                        areaCategory={areaCategory}
-                    />
-
-                    <AreaInfoDisplay
-                        drawnArea={drawnArea}
-                        areaInfo={areaInfo}
-                        drawingType={drawingType}
-                        onClear={clearDrawnArea}
-                    />
-
-                    <AnalysisButton
-                        drawnArea={drawnArea}
-                        areaCategory={areaCategory}
-                        areaInfo={areaInfo}
-                        isAnalyzing={isAreaAnalyzing}
-                        onAnalyze={handleStartAnalysis}
-                    />
-
-                    {/* ✅ 분석 결과 간단 표시 */}
-                    {analysisResult?.success && (
-                        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                            <div className="flex items-center gap-2 text-green-700">
-                                <span className="text-sm font-medium">✅ 분석 완료!</span>
-                            </div>
-                            <p className="text-xs text-green-600 mt-1">
-                                {analysisResult.recommendations?.length}개의 추천 입지를 찾았습니다.
-                                결과 탭에서 확인하세요.
-                            </p>
-                        </div>
-                    )}
-
-                    {analysisResult?.error && (
-                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                            <div className="flex items-center gap-2 text-red-700">
-                                <AlertTriangle className="w-4 h-4" />
-                                <span className="text-sm">분석 실패</span>
-                            </div>
-                            <p className="text-xs text-red-600 mt-1">
-                                {analysisResult.error}
-                            </p>
-                        </div>
-                    )}
                 </CardContent>
             </Card>
 
+            {/* ✅ 업종 선택 모달 */}
             <IndustrySelectModal
                 isOpen={showAreaIndustryModal}
                 onClose={() => setShowAreaIndustryModal(false)}

@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useMapStore } from '@/features/map/store/mapStore';
 import { useRecommendationStore } from '@/features/ai/store';
-import { getSingleRecommendation, getSingleIndustryRecommendation } from '@/features/ai/api';
+import { getSingleRecommendation, getSingleIndustryRecommendation, getRangeRecommendation } from '@/features/ai/api';
 
 // 🎯 좌표 포맷팅 유틸리티 함수
 const formatCoordinateForDB = (coord: number): number => {
@@ -24,6 +24,7 @@ export function useRecommendationForm() {
     highlightMarker
   } = useRecommendationStore();
 
+  // ✅ 기존 단일 분석 (handleSubmit)
   const handleSubmit = useCallback(async () => {
     if (!coordinates.lat || !coordinates.lng) {
       alert('분석할 위치를 선택해주세요.');
@@ -52,11 +53,11 @@ export function useRecommendationForm() {
       let apiResponse: any;
 
       if (category && category.trim()) {
-        // 🎯 단일 업종 분석 API - ✅ 필드명 수정
+        // 🎯 단일 업종 분석 API
         const industryRequest = {
           lat: formattedLat,
           lng: formattedLng,
-          category: category.trim() // ✅ categoryName → category
+          category: category.trim()
         };
 
         console.log('🎯 단일 업종 분석 요청:', industryRequest);
@@ -179,10 +180,184 @@ export function useRecommendationForm() {
     setHighlightedRecommendation
   ]);
 
+  // ✅ 새로운 범위 분석 함수 (상가 좌표를 polygon에 전송)
+  const handleRangeSubmit = useCallback(async (areaInfo: any) => {
+    if (!areaInfo) {
+      alert('분석할 영역을 그려주세요.');
+      return;
+    }
+
+    if (!category || !category.trim()) {
+      alert('분석할 업종을 선택해주세요.');
+      return;
+    }
+
+    if (!areaInfo?.isValid) {
+      alert('유효하지 않은 영역입니다.');
+      return;
+    }
+
+    // ✅ 상가 데이터 확인
+    if (!areaInfo?.stores || areaInfo.stores.length === 0) {
+      alert('선택한 영역에 상가가 없습니다.');
+      return;
+    }
+
+    console.log('🚀 [범위 분석] 시작:', {
+      category: category,
+      영역내상가: areaInfo.stores.length + '개'
+    });
+
+    startRequest();
+
+    try {
+      // ✅ 영역 내 상가들의 좌표를 polygon에 넣어서 전송
+      const storeCoordinates = areaInfo.stores.map((store: any) => {
+        const formattedLat = formatCoordinateForDB(store.lat);
+        const formattedLng = formatCoordinateForDB(store.lng);
+
+        if (formattedLat < -90 || formattedLat > 90) {
+          throw new Error(`위도는 -90.0 ~ 90.0 범위여야 합니다: ${formattedLat}`);
+        }
+        if (formattedLng < -180 || formattedLng > 180) {
+          throw new Error(`경도는 -180.0 ~ 180.0 범위여야 합니다: ${formattedLng}`);
+        }
+
+        return {
+          lat: formattedLat,
+          lng: formattedLng
+        };
+      });
+
+      const rangeRequest = {
+        // ✅ polygon에 상가들의 좌표만 넣음
+        polygon: storeCoordinates,
+        category: category.trim()
+      };
+
+      console.log('📤 [범위 분석] 실제 전송 데이터:', {
+        업종: rangeRequest.category,
+        상가좌표개수: rangeRequest.polygon.length,
+        첫3개샘플: rangeRequest.polygon.slice(0, 3)
+      });
+
+      const apiResponse = await getRangeRecommendation(rangeRequest);
+      console.log('📥 [범위 분석] API 응답:', apiResponse);
+
+      // ✅ API 응답 파싱
+      let items: any[] = [];
+      const responseData = apiResponse as any;
+
+      if (responseData?.body?.items && Array.isArray(responseData.body.items)) {
+        items = responseData.body.items;
+        console.log('📥 [범위 분석] body.items 구조 감지, items 개수:', items.length);
+      } else if (responseData?.body && Array.isArray(responseData.body)) {
+        items = responseData.body;
+        console.log('📥 [범위 분석] body 배열 구조 감지, items 개수:', items.length);
+      } else if (Array.isArray(responseData)) {
+        items = responseData;
+        console.log('📥 [범위 분석] 직접 배열 구조 감지, items 개수:', items.length);
+      } else {
+        throw new Error('범위 분석 응답 구조를 인식할 수 없습니다.');
+      }
+
+      console.log(`✅ [범위 분석] ${items.length}개 결과 파싱 완료`);
+
+      if (items.length === 0) {
+        alert('해당 조건에 맞는 추천 입지를 찾을 수 없습니다.');
+        return;
+      }
+
+      // ✅ 각 item을 addSingleResult 형태로 변환해서 저장
+      items.forEach((item: any) => {
+        console.log(`📝 [범위→단일] 변환 중:`, item);
+
+        // ✅ addSingleResult 호환 형태로 변환
+        const singleResult = {
+          building: {
+            building_id: item.building_id || item.buildingId,
+            lat: item.lat,
+            lng: item.lng
+          },
+          result: [{
+            category: item.category,
+            survivalRate: item.survival_rate || item.survivalRate // ✅ 필드명 호환성
+          }],
+          meta: {
+            last_at: new Date().toISOString()
+          }
+        };
+
+        console.log('🔄 [범위→단일] 변환 완료:', singleResult);
+
+        // ✅ 기존 addSingleResult 로직 사용 (중복 체크 + 병합 자동)
+        addSingleResult(singleResult as any);
+        console.log(`✅ [범위→단일] 저장 완료: 건물 ${singleResult.building.building_id}`);
+      });
+
+      // ✅ 기존과 동일한 후처리
+      setTimeout(() => {
+        console.log('🚀 [범위 분석] 완료 후 처리');
+
+        // 결과 탭으로 이동
+        setActiveTab('result');
+        console.log('📋 [범위 분석] 결과 탭 이동');
+
+        // 첫 번째 결과 하이라이트
+        if (items.length > 0) {
+          const firstItem = items[0];
+          const buildingId = firstItem.building_id || firstItem.buildingId;
+
+          setTimeout(() => {
+            setHighlightedRecommendation(String(buildingId));
+            highlightMarker(buildingId);
+            console.log('✨ [범위 분석] 하이라이트:', buildingId);
+          }, 300);
+        }
+
+        // 성공 알림
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+          new Notification('✅ 범위 분석 완료!', {
+            body: `${category} 업종 - ${items.length}개 추천 입지`,
+            icon: '/favicon.ico',
+            tag: 'range-analysis'
+          });
+        }
+      }, 200);
+
+      return items;
+
+    } catch (error: any) {
+      console.error('❌ [범위 분석] 실패:', error);
+
+      let errorMessage = '범위 분석 중 오류가 발생했습니다.';
+
+      if (error.response?.status === 400) {
+        errorMessage = error.response?.data?.message || '잘못된 요청입니다.';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      setRequestError(errorMessage);
+      alert(`❌ 범위 분석 실패\n\n${errorMessage}`);
+    }
+  }, [
+    category,
+    startRequest,
+    setRequestError,
+    addSingleResult,
+    setActiveTab,
+    setHighlightedRecommendation,
+    highlightMarker
+  ]);
+
   return {
     category,
     setCategory,
     isLoading,
-    handleSubmit
+    handleSubmit,        // ✅ 기존 단일 분석
+    handleRangeSubmit    // ✅ 새로운 범위 분석
   };
 }
