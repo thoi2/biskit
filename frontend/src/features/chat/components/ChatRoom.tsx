@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { useChatRoom } from '../hooks/useChatRoom';
 import { chatApi } from '../api/chatApi';
 import { Room } from '../types/chat';
 import { Button } from '@/lib/components/ui/button';
-import { ArrowLeft, Users, Settings } from 'lucide-react';
+import { ArrowLeft, Users } from 'lucide-react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useGlobalWebSocket } from '../contexts/WebSocketContext';
 
@@ -24,53 +24,26 @@ export function ChatRoom({
   onBackClick,
   preloadedRoomInfo,
 }: ChatRoomProps) {
-  console.log('🔍 ChatRoom 컴포넌트 시작');
-  console.log('🔍 roomId:', roomId);
-  console.log('🔍 preloadedRoomInfo:', preloadedRoomInfo);
-  console.log('🔍 preloadedRoomInfo type:', typeof preloadedRoomInfo);
-  console.log('🔍 preloadedRoomInfo null check:', preloadedRoomInfo === null);
-  console.log('🔍 preloadedRoomInfo undefined check:', preloadedRoomInfo === undefined);
-
   const [roomInfo, setRoomInfo] = useState<Room | null>(
     preloadedRoomInfo || null,
   );
   const [isLoadingRoom, setIsLoadingRoom] = useState(false);
   const { user } = useAuth();
-  const { wsLeaveRoom } = useGlobalWebSocket();
-
-  console.log('🔍 초기 roomInfo 상태:', roomInfo);
-  console.log('🔍 초기 isLoadingRoom 상태:', isLoadingRoom);
+  const { leaveRoom: wsLeaveRoom, connectionStatus: { isConnected } } = useGlobalWebSocket();
 
   // useAuth에서 사용자 정보 가져오기
   const currentUserId = user?.userId;
-  const currentUsername = user?.username;
-
-  console.log('=== ChatRoom useAuth ===');
-  console.log('user:', user);
-  console.log('currentUserId:', currentUserId);
-  console.log('currentUsername:', currentUsername);
 
   const {
     messages,
     isLoadingMessages,
     hasMoreMessages,
-    isConnected,
     isConnecting,
     sendMessage,
     loadMoreMessages,
   } = useChatRoom({
     roomId,
     currentUserId,
-    currentUsername,
-  });
-
-  console.log('🏠 ChatRoom - 상태:', {
-    messagesCount: messages?.length || 0,
-    roomId,
-    isConnected,
-    isConnecting,
-    roomInfo: roomInfo,
-    isLoadingRoom,
   });
 
   // 방 정보 로드 제거 - 중복 입장 방지를 위해 WebSocket으로만 처리
@@ -95,15 +68,7 @@ export function ChatRoom({
     }
   };
 
-  console.log('🔍 렌더링 직전 상태 체크:');
-  console.log('🔍 isLoadingRoom:', isLoadingRoom);
-  console.log('🔍 roomInfo:', roomInfo);
-  console.log('🔍 roomInfo null 체크:', roomInfo === null);
-  console.log('🔍 roomInfo undefined 체크:', roomInfo === undefined);
-  console.log('🔍 !roomInfo 체크:', !roomInfo);
-
   if (isLoadingRoom) {
-    console.log('🔍 로딩 중 화면 렌더링');
     return (
       <div className="h-full flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -114,7 +79,6 @@ export function ChatRoom({
   // roomInfo가 없어도 채팅은 가능하도록 처리
   // 단, roomId가 없으면 에러
   if (!roomId) {
-    console.log('🔍 roomId 없음 - 에러 화면 렌더링');
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
@@ -126,8 +90,6 @@ export function ChatRoom({
       </div>
     );
   }
-
-  console.log('🔍 정상 렌더링 - roomInfo 존재:', roomInfo);
 
   return (
     <div className="h-full flex flex-col bg-white">
