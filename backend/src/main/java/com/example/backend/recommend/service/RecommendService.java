@@ -11,21 +11,17 @@ import com.example.backend.recommend.port.InOutPort;
 import com.example.backend.search.port.LoginSearchPort;
 import com.example.backend.search.port.SearchCategoryPort;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.example.backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.ArrayList;
-import java.util.Set;
-import java.util.LinkedHashSet;
+import java.util.*;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 @Service
 @RequiredArgsConstructor
 public class RecommendService {
@@ -37,6 +33,7 @@ public class RecommendService {
     private final CategoryPort categoryPort;
     private final SearchCategoryPort searchCategoryPort;
     private final LoginSearchPort loginSearchPort;
+    private final UserRepository userRepository; // UserRepository 주입
 
     private static final Logger log = LoggerFactory.getLogger(RecommendService.class);
     /**
@@ -81,8 +78,7 @@ public class RecommendService {
                             .survivalRate(value)
                             .build()
             );
-        });
-        if(uid != null) {
+        if (uid != null && userRepository.existsById(uid)) {
             loginSearchPort.upsertubid(uid, bld.id());
             searchCategoryPort.upsertubcS(uid, bld.id(), cidSet);
         }
@@ -142,7 +138,7 @@ public class RecommendService {
         );
 
         Set<Integer> cidSet = Set.of(categoryId);
-        if(uid != null) {
+        if (uid != null && userRepository.existsById(uid)) {
             loginSearchPort.upsertubid(uid, bld.id());
             searchCategoryPort.upsertubcS(uid, bld.id(), cidSet);
         }
