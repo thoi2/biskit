@@ -1,5 +1,7 @@
 package com.example.backend.search.service;
 
+import com.example.backend.common.exception.ErrorCode;
+import com.example.backend.common.exception.BusinessException;
 import com.example.backend.search.dto.*;
 import com.example.backend.search.port.LoginSearchPort;
 import com.example.backend.search.port.SearchCategoryPort;
@@ -72,38 +74,77 @@ public class ResultService {
 
             var cids = BCL.getOrDefault(bid, List.of());
             var rows = inOutRows.getOrDefault(bid, List.of());
-            Map<Integer, Double> resultByCid = rows.stream()
+
+            Map<Integer, List<Double>> resultByCid = rows.stream()
                     .collect(Collectors.toMap(
                             InOutPort.InOutResult::categoryId,
                             InOutPort.InOutResult::result,
                             (a, b) -> a
                     ));
 
-            List<ResultGetResponse.Category> categories = new ArrayList<>(cids.size());
-            for (int cid : cids) {
-                String name = cidToName.get(cid);         // 없으면 null 허용
-                Double survival = resultByCid.get(cid);   // 없으면 null
-                categories.add(ResultGetResponse.Category.builder()
-                        .category(name)
-                        .survivalRate(survival)
-                        .build());
-            }
+            // ✅ 내가 검색한 모든 카테고리를 점수순으로 정렬 (제한 없음)
+            List<ResultGetResponse.Category> categories = cids.stream()
+                    .map(cid -> {
+                        String name = cidToName.get(cid);
+                        List<Double> survivalRates = resultByCid.getOrDefault(cid, List.of());
+
+                        // 평균 점수 계산 (5년차 우선, 없으면 전체 평균)
+                        double avgScore = 0.0;
+                        if (!survivalRates.isEmpty()) {
+                            if (survivalRates.size() >= 5) {
+                                // 5년차 생존율 우선 사용 (인덱스 4)
+                                avgScore = survivalRates.get(4);
+                            } else {
+                                // 5년차가 없으면 전체 평균
+                                avgScore = survivalRates.stream()
+                                        .mapToDouble(Double::doubleValue)
+                                        .average()
+                                        .orElse(0.0);
+                            }
+                        }
+
+                        return new ScoredCategory(
+                                ResultGetResponse.Category.builder()
+                                        .category(name)
+                                        .survivalRate(survivalRates)
+                                        .build(),
+                                avgScore
+                        );
+                    })
+                    .sorted((a, b) -> Double.compare(b.score, a.score)) // ✅ 점수 내림차순 정렬
+                    // ✅ .limit() 제거 - 내 검색기록은 모두 표시
+                    .map(scored -> scored.category)
+                    .collect(Collectors.toList());
 
             items.add(ResultGetResponse.Item.builder()
                     .buildingId(bid)
                     .lat(lat)
                     .lng(lng)
                     .favorite(favorite)
-                    .categories(categories)
+                    .categories(categories) // ✅ 정렬된 모든 카테고리
                     .build());
         }
 
-        return ResultGetResponse.builder().items(items).build();
+        // ✅ 전체 아이템도 최근 검색 순으로 정렬 (BFL 순서 유지)
+        Map<Integer, ResultGetResponse.Item> itemByBid = items.stream()
+                .collect(Collectors.toMap(
+                        ResultGetResponse.Item::getBuildingId,
+                        item -> item,
+                        (a, b) -> a
+                ));
+
+        List<ResultGetResponse.Item> sortedItems = BFL.stream()
+                .map(fav -> itemByBid.get(fav.getBuildingId()))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        return ResultGetResponse.builder().items(sortedItems).build();
     }
 
     @Transactional
     public ResultDeleteResponse deleteBuilding(Long userId, int buildingId) {
-
+        if(loginSearchPort.isFavorite(userId,buildingId))
+            throw new BusinessException(ErrorCode.COMMON_INVALID_REQUEST,"찜 상태는 삭제할 수 없습니다");
         int affected = loginSearchPort.delete(userId, buildingId);
 
         return ResultDeleteResponse.builder()
@@ -114,7 +155,7 @@ public class ResultService {
 
     @Transactional
     public ResultDeleteCategoriesResponse deleteCategories(Long userId, int buildingId, ResultDeleteCategoriesRequest req) {
-        List<String> rawNames = (req == null ? Collections.emptyList() : req.getCategoryNames());
+        List<String> rawNames = (req == null ? Collections.emptyList() : req.getCategories());
 
         List<String> names = rawNames == null ? Collections.emptyList()
                 : rawNames.stream()
@@ -155,4 +196,8 @@ public class ResultService {
                 .build();
     }
 
+    /**
+     * ✅ 점수 계산용 헬퍼 레코드
+     */
+    private record ScoredCategory(ResultGetResponse.Category category, double score) {}
 }

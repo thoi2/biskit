@@ -8,5 +8,5 @@ import java.util.List;
 public class ResultDeleteCategoriesRequest {
 
     @NotEmpty
-    private List<String> categoryNames;
+    private List<String> categories;
 }

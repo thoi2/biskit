@@ -2,16 +2,13 @@ package com.example.backend.recommend.controller;
 
 import com.example.backend.common.response.ApiResponse;
 import com.example.backend.common.security.authentication.jwt.JwtUserInfo;
-import com.example.backend.recommend.dto.RecommendResponse;
-import com.example.backend.recommend.dto.SingleIndustryRequest;
-import com.example.backend.recommend.dto.SingleRequest;
+import com.example.backend.recommend.dto.*;
 import com.example.backend.recommend.service.RecommendService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
 
 @RestController
 @RequiredArgsConstructor
@@ -49,5 +46,20 @@ public class RecommendController {
         }
         RecommendResponse res = recommendService.generateSingleIndustry(req, uid);
         return ApiResponse.of(res);
+    }
+    @PostMapping("/range")
+    public ApiResponse<RangeResponse> getRange(
+            @Valid @RequestBody RangeRequest req,
+            @AuthenticationPrincipal JwtUserInfo userInfo
+    ) {
+        Long uid;
+        try {
+            String userId = userInfo.userId();
+            uid = Long.valueOf(userId);
+        } catch (Exception e) {
+            uid = null;
+        }
+        RangeResponse body = recommendService.getRange(req, uid);
+        return ApiResponse.of(body);
     }
 }

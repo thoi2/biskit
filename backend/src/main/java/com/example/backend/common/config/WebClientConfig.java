@@ -1,25 +1,22 @@
 package com.example.backend.common.config;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 
+/**
+ * WebClient 및 RestTemplate 설정 클래스
+ * OAuth2 제공자와의 HTTP 통신을 위한 WebClient Bean과
+ * AI API 호출을 위한 RestTemplate Bean을 정의합니다.
+ */
 @Configuration
-@Slf4j
-public class HttpClientConfig {
-
-    @Value("${ai.gms.api-key}")
-    private String gmsApiKey;
-
-    @Value("${ai.gms.base-url}")
-    private String gmsBaseUrl;
+public class WebClientConfig {
 
     /**
      * OAuth2 제공자와의 HTTP 통신을 위한 WebClient Bean
+     *
      * @return 설정된 WebClient 인스턴스
      */
     @Bean
@@ -30,21 +27,9 @@ public class HttpClientConfig {
     }
 
     /**
-     * GMS AI 서비스와의 통신을 위한 WebClient Bean
-     * @return AI API용 WebClient 인스턴스
-     */
-    @Bean
-    public WebClient aiWebClient() {
-        return WebClient.builder()
-                .baseUrl(gmsBaseUrl)
-                .defaultHeader("Authorization", "Bearer " + gmsApiKey)
-                .defaultHeader("Content-Type", "application/json")
-                .build();
-    }
-
-    /**
-     * AI API 호출을 위한 RestTemplate Bean
-     * AI API는 응답 시간이 길 수 있으므로 넉넉한 타임아웃 설정
+     * 🎯 AI API 호출을 위한 RestTemplate Bean 추가
+     * @Async와 함께 사용하여 Spring Security와 완벽 호환
+     *
      * @return 타임아웃이 설정된 RestTemplate 인스턴스
      */
     @Bean

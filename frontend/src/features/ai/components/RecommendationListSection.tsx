@@ -9,21 +9,19 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useRecommendMutations } from '@/features/ai/hooks/useRecommendMutation';
 import { useUserResults } from '@/features/ai/hooks/useUserResults';
 
-import {RecommendationItem} from './RecommendationItem';
-import {RecommendationEmptyState} from './RecommendationEmptyState';
-import { useRecommendationStore, SingleBuildingRecommendationResponse } from '@/features/ai/store';
-
-// ✅ 확장된 타입 정의 - isVisible 속성 추가
-interface ExtendedRecommendationResponse extends SingleBuildingRecommendationResponse {
-    isVisible: boolean;
-}
+import { BuildingRecommendationItem } from './BuildingRecommendationItem';
+import { RecommendationEmptyState } from './RecommendationEmptyState';
+import { useRecommendationStore } from '@/features/ai/store';
 
 export function RecommendationListSection() {
     const {
-        recommendationResults,
-        recommendationMarkers,
-        mergeWithCurrentResults,
-        toggleRecommendationVisibility
+        buildings,
+        mergeWithBackendResults,
+        updateBuildingFavorite,
+        deleteBuilding,
+        deleteCategoryFromBuilding,
+        toggleBuildingVisibility,
+        moveBuildingToTop
     } = useRecommendationStore();
 
     const {
@@ -39,65 +37,17 @@ export function RecommendationListSection() {
 
     // UI 상태
     const [isExpanded, setIsExpanded] = useState(true);
-    const [favoriteState, setFavoriteState] = useState<Record<number, boolean>>({});
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    // DB 데이터 동기화 (백엔드 결과를 AI 스토어로 변환)
+    // DB 데이터 동기화
     useEffect(() => {
         if (userResults?.body?.items && user) {
             console.log('🔄 [RecommendationListSection] DB 결과 로드:', userResults.body.items.length);
-
-            // ✅ 백엔드 데이터 변환 - 타입 에러 해결
-            const backendResults = (userResults.body.items as any[])
-                .filter((item: any) => item?.buildingId && item?.lat && item?.lng && item?.categories?.length > 0)
-                .map((item: any) => ({
-                    building: {
-                        building_id: item.buildingId,
-                        lat: parseFloat(String(item.lat)), // ✅ String() 변환 후 parseFloat
-                        lng: parseFloat(String(item.lng))  // ✅ String() 변환 후 parseFloat
-                    },
-                    result: item.categories.map((cat: any) => ({
-                        category: cat.category,
-                        survivalRate: cat.survivalRate
-                    })),
-                    meta: {
-                        source: 'DB',
-                        version: 'v1',
-                        last_at: new Date().toISOString() // ✅ last_at으로 수정
-                    }
-                })) as SingleBuildingRecommendationResponse[]; // ✅ 마지막에 타입 캐스팅
-
-            console.log('✅ [RecommendationListSection] 변환 완료:', {
-                originalCount: userResults.body.items.length,
-                convertedCount: backendResults.length,
-                samples: backendResults.slice(0, 2).map(r => ({
-                    buildingId: r.building.building_id,
-                    lat: r.building.lat,
-                    lng: r.building.lng,
-                    categories: r.result.length
-                }))
-            });
-
-            if (backendResults.length > 0) {
-                mergeWithCurrentResults(backendResults);
-            }
+            mergeWithBackendResults(userResults.body.items);
         }
-    }, [userResults, user, mergeWithCurrentResults]);
+    }, [userResults, user, mergeWithBackendResults]);
 
-    // 좋아요 상태 초기화
-    useEffect(() => {
-        if (userResults?.body?.items) {
-            const initialFavorites: Record<number, boolean> = {};
-            (userResults.body.items as any[]).forEach((item: any) => {
-                if (item?.buildingId && item?.favorite) {
-                    initialFavorites[item.buildingId] = true;
-                }
-            });
-            setFavoriteState(initialFavorites);
-        }
-    }, [userResults]);
-
-    // 하이라이트된 추천으로 스크롤
+    // 하이라이트된 건물로 스크롤
     useEffect(() => {
         if (highlightedRecommendationId && scrollRef.current && activeTab === 'result') {
             const el = scrollRef.current.querySelector(`[data-building-id="${highlightedRecommendationId}"]`);
@@ -113,35 +63,17 @@ export function RecommendationListSection() {
     }, [highlightedRecommendationId, activeTab, isExpanded]);
 
     // 핸들러들
-    // 통합 하이라이트를 사용한 클릭 핸들러
-    // 기존 handleRecommendationClick 복구
-    const handleRecommendationClick = (buildingId: number) => {
-        console.log('🎯 [RecommendationListSection] handleRecommendationClick:', buildingId);
-
+    const handleBuildingClick = (buildingId: number) => {
         const currentHighlighted = highlightedRecommendationId;
         const newId = String(buildingId);
 
         if (currentHighlighted === newId) {
-            // 토글: 같은 추천 클릭 시 해제
             setHighlightedRecommendation(null);
             setHighlightedStore(null);
         } else {
-            // 새로운 추천 설정
             setHighlightedRecommendation(newId);
             setHighlightedStore(null);
         }
-    };
-
-
-    const handleToggleVisibility = (buildingId: number, isVisible: boolean) => {
-        console.log('🔄 [RecommendationListSection] handleToggleVisibility:', {
-            buildingId,
-            currentVisible: isVisible,
-            willToggle: !isVisible
-        });
-
-        // AI 스토어만 업데이트
-        toggleRecommendationVisibility(buildingId);
     };
 
     const handleToggleFavorite = (buildingId: number, isFavorite: boolean) => {
@@ -151,38 +83,53 @@ export function RecommendationListSection() {
         }
 
         if (isFavorite) {
-            deleteLikeMutation.mutate(buildingId.toString(), { // ✅ toString() 사용
-                onSuccess: (data) => {
-                    console.log('좋아요 삭제 성공:', data);
-                    setFavoriteState(prev => ({ ...prev, [buildingId]: false }));
+            deleteLikeMutation.mutate(buildingId.toString(), {
+                onSuccess: () => {
+                    updateBuildingFavorite(buildingId, false);
                 }
             });
         } else {
-            addLikeMutation.mutate(buildingId.toString(), { // ✅ toString() 사용
-                onSuccess: (data) => {
-                    console.log('좋아요 추가 성공:', data);
-                    setFavoriteState(prev => ({ ...prev, [buildingId]: true }));
+            addLikeMutation.mutate(buildingId.toString(), {
+                onSuccess: () => {
+                    updateBuildingFavorite(buildingId, true);
                 }
             });
         }
     };
 
-    const handleDelete = (buildingId: number) => {
+    const handleBuildingDelete = (buildingId: number) => {
         if (!user) {
             alert('로그인이 필요합니다.');
             return;
         }
 
-        if (window.confirm('이 추천을 삭제하시겠습니까?')) {
-            deleteResultMutation.mutate(buildingId.toString(), { // ✅ toString() 사용
-                onSuccess: (data) => {
-                    console.log('삭제 성공:', data);
-                    const { deleteRecommendation } = useRecommendationStore.getState();
-                    deleteRecommendation(buildingId);
+        if (window.confirm('이 건물의 모든 추천을 삭제하시겠습니까?')) {
+            deleteResultMutation.mutate(buildingId.toString(), {
+                onSuccess: () => {
+                    deleteBuilding(buildingId);
                     refetchUserData();
                 }
             });
         }
+    };
+
+    const handleCategoryDelete = (buildingId: number, categoryId: number) => {
+        if (!user) return;
+
+        if (window.confirm('이 업종만 삭제하시겠습니까?')) {
+            // TODO: 카테고리별 삭제 API 필요
+            deleteCategoryFromBuilding(buildingId, categoryId);
+        }
+    };
+
+    const handleToggleVisibility = (buildingId: number, isVisible: boolean) => {
+        toggleBuildingVisibility(buildingId);
+    };
+
+    const handleDetailView = (buildingId: number, category: string, rank?: number) => {
+        console.log('🔍 GMS 상세보기:', { buildingId, category, rank });
+        // TODO: GMS API 연결
+        alert(`GMS 상세보기\n\n건물 ID: ${buildingId}\n업종: ${category}\n순위: ${rank || 'N/A'}위`);
     };
 
     const handleRefresh = () => {
@@ -191,23 +138,18 @@ export function RecommendationListSection() {
         }
     };
 
-    // ✅ 마커 상태를 반영한 displayResults - 타입 안전하게 처리
-    const displayResults = useMemo((): ExtendedRecommendationResponse[] => {
-        console.log('📊 [RecommendationListSection] 표시할 결과:', recommendationResults.length);
-        return recommendationResults
-            .filter((rec: SingleBuildingRecommendationResponse) => rec?.building?.building_id)
-            .map(rec => {
-                const marker = recommendationMarkers.find(m => m.buildingId === rec.building.building_id);
+    // 통계 계산
+    const statistics = useMemo(() => {
+        const singleCount = buildings.filter(b => b.source === 'single').length;
+        const rangeCount = buildings.filter(b => b.source === 'range').length;
+        const dbCount = buildings.filter(b => b.source === 'db').length;
+        const totalCategories = buildings.reduce((sum, b) => sum + b.categories.length, 0);
 
-                return {
-                    ...rec,
-                    isVisible: !marker?.hidden // 마커의 hidden 상태 반영
-                } as ExtendedRecommendationResponse;
-            });
-    }, [recommendationResults, recommendationMarkers]); // ✅ recommendationMarkers 의존성 추가
+        return { singleCount, rangeCount, dbCount, totalCategories };
+    }, [buildings]);
 
     // EmptyState
-    if (displayResults.length === 0 && !isLoadingUserData) {
+    if (buildings.length === 0 && !isLoadingUserData) {
         return (
             <div className="border rounded-lg bg-white overflow-hidden">
                 <div className="flex items-center justify-between px-3 py-2">
@@ -235,13 +177,29 @@ export function RecommendationListSection() {
                 <div className="flex items-center gap-2">
                     <Heart className="w-4 h-4 text-orange-600" />
                     <span className="font-medium text-sm text-orange-700">AI 추천</span>
-                    <Badge variant="outline" className="text-xs h-5">{displayResults.length}</Badge>
-                    {user && (
-                        <Badge variant="outline" className="text-xs h-5 bg-purple-50 text-purple-600">백엔드</Badge>
+                    <Badge variant="outline" className="text-xs h-5">{buildings.length}</Badge>
+
+                    {/* ✅ 소스별 뱃지 */}
+                    {statistics.singleCount > 0 && (
+                        <Badge variant="outline" className="text-xs h-5 bg-blue-50 text-blue-600">
+                            단일 {statistics.singleCount}
+                        </Badge>
                     )}
-                    {!user && displayResults.length > 0 && (
-                        <Badge variant="outline" className="text-xs h-5 bg-yellow-50 text-yellow-600">로컬</Badge>
+                    {statistics.rangeCount > 0 && (
+                        <Badge variant="outline" className="text-xs h-5 bg-green-50 text-green-600">
+                            범위 {statistics.rangeCount}
+                        </Badge>
                     )}
+                    {statistics.dbCount > 0 && (
+                        <Badge variant="outline" className="text-xs h-5 bg-purple-50 text-purple-600">
+                            DB {statistics.dbCount}
+                        </Badge>
+                    )}
+
+                    <Badge variant="outline" className="text-xs h-5 bg-gray-50 text-gray-600">
+                        {statistics.totalCategories}개 업종
+                    </Badge>
+
                     {isLoadingUserData && (
                         <div className="w-3 h-3 border border-orange-300 border-t-transparent rounded-full animate-spin"></div>
                     )}
@@ -260,39 +218,34 @@ export function RecommendationListSection() {
                 </div>
             </div>
 
-            <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'}`}>
+            <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}>
                 {isExpanded && (
                     <div className="px-2 pb-2 border-t">
-                        <div ref={scrollRef} className="space-y-1 mt-2 max-h-[350px] overflow-y-auto">
-                            {displayResults.map((rec: ExtendedRecommendationResponse) => {
-                                if (!rec?.building?.building_id) {
-                                    console.warn('⚠️ [RecommendationListSection] 잘못된 추천 데이터:', rec);
-                                    return null;
-                                }
+                        <div ref={scrollRef} className="space-y-2 mt-2 max-h-[550px] overflow-y-auto">
 
-                                console.log('🎯 [RecommendationItem 렌더링]', {
-                                    buildingId: rec.building.building_id,
-                                    isVisible: rec.isVisible,
-                                    isFavorite: favoriteState[rec.building.building_id] ?? false
-                                });
+                            {/* ✅ 건물별 추천 아이템들 */}
+                            {buildings.map((building) => (
+                                <BuildingRecommendationItem
+                                    key={building.building.building_id}
+                                    building={building.building}
+                                    categories={building.categories}
+                                    isFavorite={building.isFavorite || false}
+                                    isHighlighted={String(building.building.building_id) === highlightedRecommendationId}
+                                    isVisible={building.isVisible || false}
+                                    user={user}
+                                    onToggleFavorite={handleToggleFavorite}
+                                    onDelete={handleBuildingDelete}
+                                    onCategoryDelete={handleCategoryDelete}
+                                    onClick={handleBuildingClick}
+                                    onToggleVisibility={handleToggleVisibility}
+                                    onDetailView={handleDetailView}
+                                    onMoveToTop={moveBuildingToTop}
+                                />
+                            ))}
 
-                                return (
-                                    <RecommendationItem
-                                        key={rec.building.building_id}
-                                        recommendation={rec}
-                                        isHighlighted={String(rec.building.building_id) === highlightedRecommendationId}
-                                        user={user}
-                                        onToggleFavorite={handleToggleFavorite}
-                                        onDelete={handleDelete}
-                                        onClick={handleRecommendationClick}
-                                        onToggleVisibility={handleToggleVisibility}
-                                        isVisible={rec.isVisible} // ✅ 타입 안전하게 사용
-                                        isFavorite={favoriteState[rec.building.building_id] ?? false}
-                                    />
-                                );
-                            }).filter(Boolean)}
                         </div>
-                        {!user && displayResults.length > 0 && (
+
+                        {!user && buildings.length > 0 && (
                             <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700">
                                 로그인하면 더 많은 기능을 사용할 수 있습니다.
                             </div>

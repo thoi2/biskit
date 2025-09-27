@@ -3,16 +3,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMapStore } from '../store/mapStore';
-import { useStoreStore } from '../../stores/store/storesStore';
-import { useRecommendationStore } from '../../ai/store';
 import { useBiskitData } from '../../stores/hooks/useBiskitData';
 import { MapBounds, MapMarkerItem } from '../types';
 import { MapControls } from './MapControls';
-import { MarkerPopup } from './markers/MarkerPopup';
-import { ClusterPopup } from './ClusterPopup';
 import { LoadingAndError } from './LoadingAndError';
 import { LocationSelector } from './LocationSelector';
-import { UnifiedMarkers } from './markers/UnifiedMarkers';
+import { SeparatedMarkers } from './SeparatedMarkers';
 
 declare global {
   interface Window {
@@ -23,27 +19,24 @@ declare global {
 }
 
 export function KakaoMap() {
-  const { stores } = useStoreStore();
-  const { recommendationMarkers } = useRecommendationStore();
-
+  // ✅ 사용하지 않는 변수들 제거
   const {
     isSearching,
     selectedCategories,
     setMapBounds,
-    setActiveTab,
     setCoordinates,
     setMap,
     activeTab,
     isDrawingMode,
+    isDrawingActive,
     setRecommendPin,
-    map, // ✅ useMapStore의 map 사용
+    map,
   } = useMapStore();
 
   const { handlers } = useBiskitData(null);
 
   const mapRef = useRef<HTMLDivElement>(null);
   const [selectedItem, setSelectedItem] = useState<MapMarkerItem | null>(null);
-  const [selectedCluster, setSelectedCluster] = useState<MapMarkerItem[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [currentLevel, setCurrentLevel] = useState<number>(3);
@@ -111,7 +104,7 @@ export function KakaoMap() {
           { offset: new window.kakao.maps.Point(20, 50) }
       ),
       title: '분석 위치 선택',
-      zIndex: 400 // ✅ 추천 핀은 가장 위에
+      zIndex: 400
     });
 
     window.kakao.maps.event.addListener(marker, 'click', () => {
@@ -205,7 +198,7 @@ export function KakaoMap() {
 
         const kakaoMap = new window.kakao.maps.Map(container, options);
 
-        // ✅ 전역에 저장하여 디버깅 및 접근성 향상
+        // 전역에 저장하여 디버깅 및 접근성 향상
         window.__debugMap = kakaoMap;
         window.currentKakaoMap = kakaoMap;
 
@@ -215,7 +208,7 @@ export function KakaoMap() {
           center: kakaoMap.getCenter()
         });
 
-        setMap(kakaoMap); // ✅ useMapStore에 저장
+        setMap(kakaoMap);
 
         setTimeout(() => {
           kakaoMap.relayout();
@@ -226,63 +219,94 @@ export function KakaoMap() {
     initializeMap();
   }, [isLoading, loadError, setMap]);
 
-  // 지도 커서 변경 효과
-  useEffect(() => {
-    if (!map) return;
-    const mapContainer = map.getNode();
-    if (isDrawingMode) {
-      mapContainer.style.cursor = 'crosshair';
-    } else if (activeTab === 'recommend') {
-      mapContainer.style.cursor = 'crosshair';
-    } else {
-      mapContainer.style.cursor = 'grab';
-    }
-  }, [map, isDrawingMode, activeTab]);
-
-  // 이벤트 리스너
+  // ✅ 이벤트 리스너 등록 (드로잉 모드 고려)
   useEffect(() => {
     if (!map) return;
 
-    const handleZoomChanged = () => setCurrentLevel(map.getLevel());
+    console.log('🎧 이벤트 리스너 등록 시작', {
+      isDrawingMode,
+      isDrawingActive,
+      activeTab
+    });
+
+    const handleZoomChanged = () => {
+      const newLevel = map.getLevel();
+      setCurrentLevel(newLevel);
+      console.log('🔍 줌 레벨 변경:', newLevel);
+    };
 
     const handleMapClick = (mouseEvent: any) => {
+      // ✅ 현재 상태 확인
+      const currentState = useMapStore.getState();
+
+      // 드로잉이 실제로 진행 중일 때만 차단
+      if (currentState.isDrawingActive) {
+        console.log('🚫 드로잉 진행 중 - 지도 클릭 차단');
+        if (mouseEvent.stop) mouseEvent.stop();
+        return false;
+      }
+
       const latlng = mouseEvent.latLng;
       const lat = latlng.getLat();
       const lng = latlng.getLng();
 
-      if (activeTab === 'recommend') {
+      console.log('🗺️ 지도 클릭:', {
+        lat,
+        lng,
+        activeTab: currentState.activeTab,
+        isDrawingMode: currentState.isDrawingMode,
+        isDrawingActive: currentState.isDrawingActive
+      });
+
+      // ✅ 추천 탭에서 핀 생성
+      if (currentState.activeTab === 'recommend') {
+        console.log('📍 추천 핀 생성 시작');
         setCoordinates({ lat, lng });
         const newPin = createRecommendPin(lat, lng);
         setRecommendPin(newPin);
+        console.log('✅ 추천 핀 생성 완료');
       }
 
+      // 기존 로직 실행
       handlers.handleMapClick(lat, lng);
       setSelectedItem(null);
-      setSelectedCluster(null);
     };
 
+    // ✅ 줌 이벤트는 항상 등록
     window.kakao.maps.event.addListener(map, 'zoom_changed', handleZoomChanged);
-    window.kakao.maps.event.addListener(map, 'click', handleMapClick);
+
+    // ✅ 클릭 이벤트는 드로잉 모드가 아닐 때만 등록
+    if (!isDrawingMode) {
+      console.log('✅ 지도 클릭 이벤트 등록');
+      window.kakao.maps.event.addListener(map, 'click', handleMapClick);
+    } else {
+      console.log('⏭️ 드로잉 모드 - 지도 클릭 이벤트 스킵');
+    }
+
     setCurrentLevel(map.getLevel());
 
     return () => {
+      console.log('🧹 이벤트 리스너 정리');
       if (map && window.kakao?.maps) {
         try {
           window.kakao.maps.event.removeListener(map, 'zoom_changed', handleZoomChanged);
           window.kakao.maps.event.removeListener(map, 'click', handleMapClick);
-        } catch {
-          console.warn('이벤트 리스너 제거 중 오류');
+        } catch (e) {
+          console.warn('이벤트 리스너 제거 중 오류:', e);
         }
       }
     };
-  }, [map, handlers.handleMapClick, setCoordinates, activeTab, createRecommendPin, setRecommendPin]);
+  }, [map, isDrawingMode, isDrawingActive, activeTab, createRecommendPin, setCoordinates, setRecommendPin, handlers, setSelectedItem]);
 
   // 지도 크기 변화 감지
   useEffect(() => {
     if (!map || !mapRef.current) return;
 
     const resizeObserver = new ResizeObserver(() => {
-      setTimeout(() => map.relayout(), 200);
+      setTimeout(() => {
+        console.log('📐 지도 크기 변경 - relayout 실행');
+        map.relayout();
+      }, 200);
     });
 
     resizeObserver.observe(mapRef.current);
@@ -303,7 +327,10 @@ export function KakaoMap() {
   const handleSearchButtonClick = useCallback(() => {
     if (!isSearchAvailable) return;
     const bounds = getCurrentBounds();
-    if (bounds) setMapBounds(bounds);
+    if (bounds) {
+      console.log('🔍 상가 검색 실행:', bounds);
+      setMapBounds(bounds);
+    }
   }, [isSearchAvailable, getCurrentBounds, setMapBounds]);
 
   const getSearchButtonInfo = useCallback((level: number) => {
@@ -334,7 +361,7 @@ export function KakaoMap() {
         <div ref={mapRef} className="w-full h-full rounded-lg overflow-hidden" />
 
         {/* ✅ 통합 마커 시스템 */}
-        <UnifiedMarkers map={map} selectedCategories={selectedCategories} />
+        <SeparatedMarkers map={map} selectedCategories={selectedCategories} />
 
         {/* 추천 탭 안내 */}
         {activeTab === 'recommend' && (
@@ -343,6 +370,13 @@ export function KakaoMap() {
             </div>
         )}
 
+        {/* 드로잉 모드 안내 */}
+        {isDrawingMode && (
+            <div className="absolute top-4 right-4 bg-purple-500 text-white px-3 py-2 rounded-lg shadow-lg text-sm font-medium z-10">
+              ✏️ 드로잉 모드 활성화
+              {isDrawingActive && <span className="ml-2">- 그리는 중...</span>}
+            </div>
+        )}
 
         {/* 지도 컨트롤들 */}
         <MapControls
@@ -356,26 +390,41 @@ export function KakaoMap() {
 
         <LocationSelector onLocationSelect={() => {}} />
 
-        {/* 팝업들 */}
-        {selectedItem && !selectedCluster && (
-            <MarkerPopup
-                item={selectedItem}
-                onClose={() => setSelectedItem(null)}
-                getMarkerColorClass={() => 'bg-blue-500'}
-            />
-        )}
-
-        {selectedCluster && (
-            <ClusterPopup
-                items={selectedCluster}
-                onClose={() => setSelectedCluster(null)}
-                onItemClick={(item) => setSelectedItem(item)}
-                onViewAllClick={() => {
-                  setActiveTab('result');
-                  setSelectedCluster(null);
-                }}
-                getMarkerColorClass={() => 'bg-orange-500'}
-            />
+        {/* ✅ selectedItem 팝업 (사용 시에만 표시) */}
+        {selectedItem && (
+            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-white rounded-lg shadow-xl border p-4 z-20 min-w-64">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <h3 className="font-semibold text-gray-900">{selectedItem.name}</h3>
+                  {selectedItem.category && (
+                      <p className="text-sm text-gray-600">{selectedItem.category}</p>
+                  )}
+                </div>
+                <button
+                    onClick={() => setSelectedItem(null)}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="space-y-2">
+                {selectedItem.address && (
+                    <p className="text-sm text-gray-600">{selectedItem.address}</p>
+                )}
+                <div className="flex items-center gap-2">
+              <span className={`px-2 py-1 rounded text-xs font-medium text-white ${
+                  selectedItem.type === 'store' ? 'bg-green-500' : 'bg-blue-500'
+              }`}>
+                {selectedItem.type === 'store' ? '상가' : 'AI추천'}
+              </span>
+                  {selectedItem.closureProbability && (
+                      <span className="px-2 py-1 rounded text-xs font-medium text-white bg-orange-500">
+                  {selectedItem.closureProbability}%
+                </span>
+                  )}
+                </div>
+              </div>
+            </div>
         )}
       </div>
   );

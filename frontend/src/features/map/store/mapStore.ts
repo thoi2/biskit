@@ -1,3 +1,4 @@
+// src/features/map/store/mapStore.ts
 import { create } from 'zustand';
 import { MapBounds } from '../types';
 
@@ -42,6 +43,7 @@ interface MapState {
 
   // 드로잉 상태 (다각형 추가)
   isDrawingMode: boolean;
+  isDrawingActive: boolean; // ✅ 추가
   drawingType: 'rectangle' | 'circle' | 'polygon';
 
   // 추천 탭 핀 상태
@@ -69,6 +71,7 @@ interface MapActions {
 
   // 드로잉 액션
   setIsDrawingMode: (isDrawing: boolean) => void;
+  setIsDrawingActive: (active: boolean) => void; // ✅ 추가
   setDrawingType: (type: 'rectangle' | 'circle' | 'polygon') => void;
 
   // 추천 핀 액션
@@ -101,6 +104,7 @@ export const useMapStore = create<MapState & MapActions>()((set, get) => ({
 
   // 드로잉 초기 상태
   isDrawingMode: false,
+  isDrawingActive: false, // ✅ 추가
   drawingType: 'rectangle',
 
   // 추천 핀 초기 상태
@@ -179,6 +183,7 @@ export const useMapStore = create<MapState & MapActions>()((set, get) => ({
 
   // 드로잉 액션들
   setIsDrawingMode: isDrawing => set({ isDrawingMode: isDrawing }),
+  setIsDrawingActive: active => set({ isDrawingActive: active }), // ✅ 추가
   setDrawingType: type => set({ drawingType: type }),
 
   // 추천 핀 액션
@@ -217,6 +222,7 @@ export const useMapStore = create<MapState & MapActions>()((set, get) => ({
           coordinates: { lat: null, lng: null },
           map: null,
           isDrawingMode: false,
+          isDrawingActive: false, // ✅ 추가
           drawingType: 'rectangle',
           recommendPin: null,
           recommendationMarkers: [],

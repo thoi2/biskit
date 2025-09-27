@@ -35,6 +35,12 @@ export function useDrawingEventHandler({
     const attachEvents = useCallback((drawingManager: any) => {
         if (!drawingManager) return;
 
+        // ✅ window 객체 안전성 체크 추가
+        if (typeof window === 'undefined' || !window.kakao?.maps?.event) {
+            console.error('🚫 Kakao Maps Event API가 준비되지 않음');
+            return;
+        }
+
         // 🎯 드로잉 완료 이벤트
         window.kakao.maps.event.addListener(drawingManager, 'drawend', (mouseEvent: any) => {
             console.log('🎉 드로잉 이벤트 발생!', mouseEvent);

@@ -1,3 +1,4 @@
+// src/features/ai/components/drawing/AreaInfoDisplay.tsx
 'use client';
 
 import { Button } from '@/lib/components/ui/button';
@@ -30,6 +31,20 @@ export default function AreaInfoDisplay({
                                         }: Props) {
     if (!drawnArea || !areaInfo) return null;
 
+    // ✅ 면적 단위 개선
+    const formatArea = (areaSquareMeters: number) => {
+        if (areaSquareMeters === 0) return '0㎡';
+
+        if (areaSquareMeters < 1000) {
+            return `${areaSquareMeters.toFixed(1)}㎡`;
+        } else if (areaSquareMeters < 10000) {
+            return `${areaSquareMeters.toFixed(0)}㎡`;
+        } else {
+            const hectares = areaSquareMeters / 10000;
+            return `${hectares.toFixed(2)}ha`;
+        }
+    };
+
     return (
         <>
             {/* 선택된 영역 정보 */}
@@ -61,8 +76,10 @@ export default function AreaInfoDisplay({
                 <div className={`text-xs ${
                     areaInfo.isValid ? 'text-green-600' : 'text-red-600'
                 }`}>
-                    <p>• 영역 면적: {(areaInfo.area / 10000).toFixed(2)}ha</p>
-                    <p>• 분석 대상 상가: {areaInfo.storeCount}개</p>
+                    {/* ✅ 면적 표시 개선 */}
+                    <p>• 영역 면적: <strong>{formatArea(areaInfo.area)}</strong></p>
+                    {/* ✅ 상가 표시 수정 */}
+                    <p>• 영역 내 전체 상가: <strong>{areaInfo.storeCount}개</strong></p>
                     <p>• 영역 타입: {drawingType === 'rectangle' ? '사각형' :
                         drawingType === 'circle' ? '원형' : '다각형'}</p>
                     {!areaInfo.isValid && areaInfo.errorMessage && (
@@ -74,7 +91,7 @@ export default function AreaInfoDisplay({
             {/* 영역이 유효하지 않을 때 안내 */}
             {!areaInfo.isValid && (
                 <div className="p-2 bg-red-50 rounded-lg text-xs text-red-600 border border-red-200">
-                    ⚠️ 영역을 다시 선택해주세요. 위 조건을 확인하세요.
+                    ⚠️ 영역을 다시 선택해주세요. 더 많은 상가가 포함되도록 영역을 조정하거나 확대해보세요.
                 </div>
             )}
         </>

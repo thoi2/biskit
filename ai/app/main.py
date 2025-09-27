@@ -1,61 +1,133 @@
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
-from app.api.routes import router as api_router
-from app.services.loaders import ART
-from app.schemas.common import ErrorResponse, ErrorBody, ErrorContent
-from datetime import datetime
+import os
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from .core.settings import settings
+from .schemas.single import SingleRequest, LocationNumRequest, JobRequest
+from .core.utils import now_iso_kst, log
+from .core.data_io import init_context
+from .core.model import load_model
+from .core.location import analyze_all_categories_and_rank
+from .core.job import analyze_single_category
+from .core.gms import get_llm_explanation_for_category
 
-app = FastAPI(title="Survival-Quarter Recommender API", version="1.0")
+app = FastAPI(title="SurvivalReco API", version="1.0")
 
-@app.exception_handler(RequestValidationError)
-async def request_validation_exception_handler(request: Request, exc: RequestValidationError):
-    error_messages = []
-    for error in exc.errors():
-        field = ".".join(str(loc) for loc in error['loc'])
-        message = error['msg']
-        error_messages.append(f"Field '{field}': {message}")
-    
-    error_content = ErrorContent(
-        code="UNPROCESSABLE_ENTITY",
-        message=", ".join(error_messages)
-    )
-    error_body = ErrorBody(error=error_content)
-    error_response_model = ErrorResponse(
-        status=422,
-        body=error_body
-    )
-    return JSONResponse(
-        status_code=422,
-        content=error_response_model.dict(),
-    )
-
-@app.exception_handler(HTTPException)
-async def http_exception_handler(request: Request, exc: HTTPException):
-    error_code_map = {
-        500: "INTERNAL_SERVER_ERROR",
-        404: "NOT_FOUND",
-        400: "BAD_REQUEST",
-        422: "UNPROCESSABLE_ENTITY"
-    }
-    error_code = error_code_map.get(exc.status_code, "UNKNOWN_ERROR")
-
-    error_content = ErrorContent(
-        code=error_code,
-        message=exc.detail
-    )
-    error_body = ErrorBody(error=error_content)
-    error_response_model = ErrorResponse(
-        status=exc.status_code,
-        body=error_body
-    )
-    return JSONResponse(
-        status_code=exc.status_code,
-        content=error_response_model.dict(),
-    )
+# CORS(로컬 테스트 편의)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"],
+)
 
 @app.on_event("startup")
-def _startup():
-    ART.load_all()
+async def _startup():
+    log(f"startup: DATA_DIR={settings.DATA_DIR}")
+    ctx = init_context(settings.DATA_DIR)
+    
+    model_path = settings.MODEL_PATH
+    if not os.path.isabs(model_path):
+        model_path = os.path.join(settings.DATA_DIR, model_path)
+    
+    meta_path = settings.META_PATH
+    if not os.path.isabs(meta_path):
+        meta_path = os.path.join(settings.DATA_DIR, meta_path)
 
-app.include_router(api_router)
+    load_model(ctx, meta_path, model_path)
+    app.state.settings = settings
+    app.state.ctx = ctx
+    log("startup done")
+
+@app.post("/api/v1/ai/location")
+async def location_num(req: LocationNumRequest):
+    settings = app.state.settings
+    ctx = app.state.ctx
+    lat, lon = float(req.lat), float(req.lng)
+
+    try:
+        result = await analyze_all_categories_and_rank(ctx, settings, lat, lon)
+    except Exception as e:
+        return {
+            "success": False,
+            "status": 500,
+            "body": {
+                "error": {
+                    "code": "ANALYSIS_FAILED",
+                    "message": f"Analysis failed: {e}",
+                    "timestamp": now_iso_kst()
+                }
+            }
+        }
+
+    return {
+        "success": True,
+        "status": 200,
+        "body": {
+            "building_id": req.building_id,
+            "lat": lat,
+            "lng": lon,
+            "data": result
+        }
+    }
+
+@app.post("/api/v1/ai/job")
+async def job(req: JobRequest):
+    settings = app.state.settings
+    ctx = app.state.ctx
+    lat, lon = float(req.lat), float(req.lng)
+
+    try:
+        result = await analyze_single_category(ctx, settings, lat, lon, req.category)
+    except Exception as e:
+        return {
+            "success": False,
+            "status": 500,
+            "body": {
+                "error": {
+                    "code": "ANALYSIS_FAILED",
+                    "message": f"Analysis failed: {e}",
+                    "timestamp": now_iso_kst()
+                }
+            }
+        }
+
+    return {
+        "success": True,
+        "status": 200,
+        "body": {
+            "building_id": req.building_id,
+            "lat": lat,
+            "lng": lon,
+            "data": result
+        }
+    }
+
+@app.post("/api/v1/ai/gms")
+async def gms(req: JobRequest):
+    settings = app.state.settings
+    ctx = app.state.ctx
+    lat, lon = float(req.lat), float(req.lng)
+
+    try:
+        result = await get_llm_explanation_for_category(ctx, settings, lat, lon, req.category)
+    except Exception as e:
+        return {
+            "success": False,
+            "status": 500,
+            "body": {
+                "error": {
+                    "code": "ANALYSIS_FAILED",
+                    "message": f"Analysis failed: {e}",
+                    "timestamp": now_iso_kst()
+                }
+            }
+        }
+
+    return {
+        "success": True,
+        "status": 200,
+        "body": {
+            "building_id": req.building_id,
+            "lat": lat,
+            "lng": lon,
+            "explain": result["explain"]
+        }
+    }
