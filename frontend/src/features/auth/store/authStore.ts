@@ -22,6 +22,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     console.log('test');
     try {
       const user = await checkAuthStatusAPI();
+      console.log('AuthCheck API Response:', user);
       if (user && user.user) {
         set({ isLoggedIn: true });
         queryClient.setQueryData(['user', 'profile'], user);
