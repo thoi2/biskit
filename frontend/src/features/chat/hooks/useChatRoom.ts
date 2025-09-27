@@ -19,18 +19,7 @@ export const useChatRoom = ({
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [error, setError] = useState<ChatError | null>(null);
 
-  const handleNewMessage = useCallback((message: ChatMessage) => {
-    console.log('=== 새 메시지 수신 ===', message);
-    setMessages(prev => {
-      // 중복 메시지 방지 (messageId가 있는 경우에만)
-      if (message.messageId && prev.some(m => m.messageId === message.messageId)) {
-        console.log('중복 메시지 무시:', message.messageId);
-        return prev;
-      }
-      console.log('메시지 목록에 추가:', message.content);
-      return [...prev, message];
-    });
-  }, []);
+  // handleNewMessage 함수 제거 - useEffect 내에서 직접 정의하여 의존성 문제 해결
 
   const {
     connectionStatus: {
@@ -191,27 +180,7 @@ export const useChatRoom = ({
     [roomId, isConnected, wsSendMessage, currentUserId, currentUsername],
   );
 
-  // 방 입장
-  const joinRoom = useCallback(() => {
-    if (!isConnected) return;
-
-    // 방 메시지 구독
-    subscribe(`/topic/room.${roomId}`, handleNewMessage);
-
-    // 방 입장 알림
-    wsJoinRoom(roomId);
-  }, [roomId, isConnected, subscribe, wsJoinRoom, handleNewMessage]);
-
-  // 방 나가기
-  const leaveRoom = useCallback(() => {
-    if (!isConnected) return;
-
-    // 구독 해제
-    unsubscribe(`/topic/room.${roomId}`);
-
-    // 방 나가기 알림
-    wsLeaveRoom(roomId);
-  }, [roomId, isConnected, unsubscribe, wsLeaveRoom]);
+  // joinRoom, leaveRoom 함수 제거 - useEffect에서 직접 처리하여 중복 호출 방지
 
   // 초기 메시지 로드
   useEffect(() => {
@@ -223,20 +192,40 @@ export const useChatRoom = ({
     }
   }, [roomId]); // loadRecentMessages 제거
 
-  // 방 입장 및 나가기
+  // 방 입장 - roomId 변경 시에만 실행
   useEffect(() => {
-    if (roomId) {
-      console.log('🚪 방 입장:', roomId);
-      joinRoom();
-    }
+    if (!roomId) return;
+
+    console.log('🎯 새 방 설정:', roomId);
+
+    // isConnected 상태와 상관없이 일단 구독 설정 시도
+    const handleMessage = (message: ChatMessage) => {
+      console.log('=== 새 메시지 수신 ===', message);
+      setMessages(prev => {
+        if (message.messageId && prev.some(m => m.messageId === message.messageId)) {
+          console.log('중복 메시지 무시:', message.messageId);
+          return prev;
+        }
+        console.log('메시지 목록에 추가:', message.content);
+        return [...prev, message];
+      });
+    };
+
+    subscribe(`/topic/room.${roomId}`, handleMessage);
 
     return () => {
-      if (roomId) {
-        console.log('🚪 방 나가기:', roomId);
-        leaveRoom();
-      }
+      console.log('🚪 방 나가기 - 구독 해제:', roomId);
+      unsubscribe(`/topic/room.${roomId}`);
     };
-  }, [roomId, joinRoom, leaveRoom]);
+  }, [roomId]); // roomId만 의존성으로 - 함수 의존성 완전 제거
+
+  // WebSocket 연결 시 입장 알림
+  useEffect(() => {
+    if (roomId && isConnected) {
+      console.log('🚪 WebSocket 연결됨 - 방 입장 알림:', roomId);
+      wsJoinRoom(roomId);
+    }
+  }, [roomId, isConnected]); // 연결 상태 변경 시에만
 
   // 에러 초기화
   const clearError = useCallback(() => {
@@ -261,8 +250,6 @@ export const useChatRoom = ({
     reconnectAttempts,
     sendMessage,
     loadMoreMessages,
-    joinRoom,
-    leaveRoom,
     clearError,
   };
 };

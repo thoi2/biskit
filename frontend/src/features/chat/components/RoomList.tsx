@@ -90,12 +90,48 @@ export function RoomList({ onJoinRoom, onCreateRoom }: RoomListProps) {
     }
   };
 
-  const handleCategoryChange = (category: string) => {
+  const handleCategoryChange = async (category: string) => {
     setSelectedCategory(category);
     setRooms([]); // 기존 방 목록 초기화
     setNextCursor(null); // 커서 초기화
     setHasMore(false);
-    loadRooms(false); // 첫 페이지부터 다시 로드
+
+    // 카테고리 변경된 상태로 바로 API 호출
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      console.log('=== handleCategoryChange ===');
+      console.log('선택된 카테고리:', category);
+
+      const [publicRoomsResponse, myRoomsResponse] = await Promise.all([
+        chatApi.getPublicRooms(
+          category || undefined,
+          20,
+          undefined,
+        ),
+        chatApi.getUserRooms(),
+      ]);
+
+      console.log('카테고리 필터링 결과:', publicRoomsResponse);
+
+      const publicRoomsData = publicRoomsResponse.data || {
+        rooms: [],
+        nextCursor: null,
+        hasMore: false,
+      };
+      const myRooms = myRoomsResponse?.data?.body || [];
+
+      setRooms(publicRoomsData.body.rooms);
+      setUserRooms(myRooms);
+      setNextCursor(publicRoomsData.body.nextCursor || null);
+      setHasMore(publicRoomsData.body.hasMore);
+    } catch (err) {
+      console.error('카테고리 변경 중 방 목록 로드 실패:', err);
+      setError('방 목록을 불러오는데 실패했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const loadMoreRooms = () => {

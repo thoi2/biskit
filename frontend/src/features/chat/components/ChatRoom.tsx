@@ -9,6 +9,7 @@ import { Room } from '../types/chat';
 import { Button } from '@/lib/components/ui/button';
 import { ArrowLeft, Users, Settings } from 'lucide-react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import { useGlobalWebSocket } from '../contexts/WebSocketContext';
 
 interface ChatRoomProps {
   roomId: string;
@@ -33,8 +34,9 @@ export function ChatRoom({
   const [roomInfo, setRoomInfo] = useState<Room | null>(
     preloadedRoomInfo || null,
   );
-  const [isLoadingRoom, setIsLoadingRoom] = useState(!preloadedRoomInfo);
+  const [isLoadingRoom, setIsLoadingRoom] = useState(false);
   const { user } = useAuth();
+  const { wsLeaveRoom } = useGlobalWebSocket();
 
   console.log('🔍 초기 roomInfo 상태:', roomInfo);
   console.log('🔍 초기 isLoadingRoom 상태:', isLoadingRoom);
@@ -71,59 +73,25 @@ export function ChatRoom({
     isLoadingRoom,
   });
 
-  // 방 정보 로드 (preloaded가 없을 때만)
-  useEffect(() => {
-    console.log('🔍 useEffect 실행 - 방 정보 로드');
-    console.log('🔍 roomId:', roomId);
-    console.log('🔍 preloadedRoomInfo 체크:', preloadedRoomInfo);
-    console.log('🔍 조건 체크 - roomId && !preloadedRoomInfo:', roomId && !preloadedRoomInfo);
-
-    const loadRoomInfo = async () => {
-      try {
-        setIsLoadingRoom(true);
-        console.log('🔍 API 호출 시작 - 방 정보 로드:', roomId);
-        const response = await chatApi.getRoomInfo(roomId);
-        console.log('🔍 API 응답 원본:', response);
-        const room = response.data.body; // 실제 room 데이터는 body에 있음
-        console.log('🔍 추출된 방 정보:', room);
-        console.log('🔍 방 정보 타입:', typeof room);
-        setRoomInfo(room);
-        console.log('🔍 setRoomInfo 호출 완료');
-      } catch (error) {
-        console.error('🔍 방 정보 로드 실패:', error);
-        const fallbackRoom = {
-          roomId,
-          roomName: `방 ${roomId.slice(-8)}`,
-          creatorId: '',
-          creatorUsername: '',
-          maxParticipants: 0,
-          currentParticipants: 0,
-          createdAt: new Date().toISOString(),
-        };
-        console.log('🔍 fallback 룸 정보 설정:', fallbackRoom);
-        setRoomInfo(fallbackRoom);
-      } finally {
-        setIsLoadingRoom(false);
-        console.log('🔍 로딩 상태 false로 변경');
-      }
-    };
-
-    // preloadedRoomInfo가 없을 때만 API 호출
-    if (roomId && !preloadedRoomInfo) {
-      console.log('🔍 조건 만족 - API 호출 실행');
-      loadRoomInfo();
-    } else {
-      console.log('🔍 조건 불만족 - API 호출 스킵');
-    }
-  }, [roomId]);
+  // 방 정보 로드 제거 - 중복 입장 방지를 위해 WebSocket으로만 처리
+  // preloadedRoomInfo는 ChatMainModal에서 항상 제공되므로 추가 API 호출 불필요
 
   const handleLeaveRoom = async () => {
     try {
+      // 1. WebSocket으로 실시간 나가기 알림 (다른 사람들에게 알림)
+      if (isConnected) {
+        console.log('🚪 WebSocket 나가기 알림 전송:', roomId);
+        wsLeaveRoom(roomId);
+      }
+
+      // 2. REST API로 DB에서 참여자 제거
       const response = await chatApi.leaveRoom(roomId);
       console.log('방 나가기 성공:', response.data.body);
       onLeaveRoom?.();
     } catch (error) {
       console.error('방 나가기 실패:', error);
+      // 에러가 나도 일단 나가기 처리
+      onLeaveRoom?.();
     }
   };
 
@@ -143,8 +111,10 @@ export function ChatRoom({
     );
   }
 
-  if (!roomInfo) {
-    console.log('🔍 roomInfo 없음 - 에러 화면 렌더링');
+  // roomInfo가 없어도 채팅은 가능하도록 처리
+  // 단, roomId가 없으면 에러
+  if (!roomId) {
+    console.log('🔍 roomId 없음 - 에러 화면 렌더링');
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">

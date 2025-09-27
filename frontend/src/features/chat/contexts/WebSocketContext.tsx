@@ -2,8 +2,10 @@
 
 import React, {
   createContext,
+  useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -194,7 +196,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     console.log('Global WebSocket 연결 해제 완료');
   };
 
-  const subscribe = (destination: string, callback: (message: any) => void) => {
+  const subscribe = useCallback((destination: string, callback: (message: any) => void) => {
     if (!clientRef.current?.connected) {
       handleError({
         code: 'NOT_CONNECTED',
@@ -227,17 +229,17 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         details: error,
       });
     }
-  };
+  }, []);
 
-  const unsubscribe = (destination: string) => {
+  const unsubscribe = useCallback((destination: string) => {
     const subscription = subscriptionsRef.current.get(destination);
     if (subscription) {
       subscription.unsubscribe();
       subscriptionsRef.current.delete(destination);
     }
-  };
+  }, []);
 
-  const publish = (destination: string, body?: any) => {
+  const publish = useCallback((destination: string, body?: any) => {
     if (!clientRef.current?.connected) {
       handleError({
         code: 'NOT_CONNECTED',
@@ -260,19 +262,19 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       });
       return false;
     }
-  };
+  }, []);
 
-  const sendMessage = (roomId: string, messageRequest: any) => {
+  const sendMessage = useCallback((roomId: string, messageRequest: any) => {
     return publish(`/app/chat.sendMessage/${roomId}`, messageRequest);
-  };
+  }, [publish]);
 
-  const joinRoom = (roomId: string) => {
+  const joinRoom = useCallback((roomId: string) => {
     return publish(`/app/chat.joinRoom/${roomId}`);
-  };
+  }, [publish]);
 
-  const leaveRoom = (roomId: string) => {
+  const leaveRoom = useCallback((roomId: string) => {
     return publish(`/app/chat.leaveRoom/${roomId}`);
-  };
+  }, [publish]);
 
   // 로그인 상태 변경 시 연결/해제
   useEffect(() => {
@@ -287,7 +289,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     };
   }, [isLoggedIn]);
 
-  const contextValue: WebSocketContextType = {
+  const contextValue: WebSocketContextType = useMemo(() => ({
     connectionStatus,
     subscribe,
     unsubscribe,
@@ -295,7 +297,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     sendMessage,
     joinRoom,
     leaveRoom,
-  };
+  }), [connectionStatus, subscribe, unsubscribe, publish, sendMessage, joinRoom, leaveRoom]);
 
   return (
     <WebSocketContext.Provider value={contextValue}>

@@ -20,14 +20,23 @@ export const chatApi = {
         totalCount: number;
       };
     };
-  }> =>
-    apiClient.get('/chat/rooms/public', {
-      params: {
-        ...(bigCategory && { bigCategory }),
-        limit,
-        ...(cursor && { cursor }),
-      },
-    }),
+  }> => {
+    const params: Record<string, any> = { limit };
+
+    if (bigCategory) {
+      params.bigCategory = bigCategory;
+    }
+
+    if (cursor) {
+      params.cursor = cursor;
+    }
+
+    console.log('=== getPublicRooms API 호출 ===');
+    console.log('bigCategory:', bigCategory);
+    console.log('최종 params:', params);
+
+    return apiClient.get('/chat/rooms/public', { params });
+  },
 
   // 내가 참여한 채팅방 목록 조회
   getUserRooms: (): Promise<{ data: { body: Room[] } }> =>

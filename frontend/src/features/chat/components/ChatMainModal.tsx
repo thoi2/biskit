@@ -36,22 +36,36 @@ export function ChatMainModal({ isOpen, onClose }: ChatMainModalProps) {
   const handleJoinRoom = async (roomId: string) => {
     try {
       setIsLoadingRoom(true);
-      console.log('🏠 방 정보 미리 로드:', roomId);
+      console.log('🏠 채팅방 입장 시작:', roomId);
 
-      // 먼저 방 정보 API 호출
-      const response = await chatApi.getRoomInfo(roomId);
-      const room = response.data.body; // 실제 room 데이터는 body에 있음
-      console.log('🏠 방 정보 로드 완료:', room);
-      console.log('🏠 room.roomName:', room?.roomName);
-      console.log('🏠 room.bigCategory:', room?.bigCategory);
-
-      setRoomInfo(room);
+      // 1. 먼저 채팅방으로 이동 (웹소켓 연결이 먼저 되도록)
       setSelectedRoomId(roomId);
       setCurrentView('chatRoom');
-    } catch (error) {
-      console.error('방 정보 로드 실패:', error);
 
-      // 방 정보 로드 실패해도 일단 입장은 허용
+      // 2. 방 정보 조회 (백엔드에서 입장 로직 제거 후 안전)
+      try {
+        console.log('🏠 방 정보 로드 시도:', roomId);
+        const response = await chatApi.getRoomInfo(roomId);
+        const room = response.data.body;
+        console.log('🏠 방 정보 로드 완료:', room);
+        setRoomInfo(room);
+      } catch (error) {
+        console.warn('방 정보 로드 실패, fallback 사용:', error);
+        setRoomInfo({
+          roomId,
+          roomName: `방 ${roomId.slice(-8)}`,
+          creatorId: '',
+          creatorUsername: '',
+          maxParticipants: 0,
+          currentParticipants: 0,
+          createdAt: new Date().toISOString(),
+        });
+      }
+    } catch (error) {
+      console.error('채팅방 입장 실패:', error);
+      // 에러 발생 시에도 일단 입장 시도
+      setSelectedRoomId(roomId);
+      setCurrentView('chatRoom');
       setRoomInfo({
         roomId,
         roomName: `방 ${roomId.slice(-8)}`,
@@ -61,8 +75,6 @@ export function ChatMainModal({ isOpen, onClose }: ChatMainModalProps) {
         currentParticipants: 0,
         createdAt: new Date().toISOString(),
       });
-      setSelectedRoomId(roomId);
-      setCurrentView('chatRoom');
     } finally {
       setIsLoadingRoom(false);
     }

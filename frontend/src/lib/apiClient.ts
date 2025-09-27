@@ -23,7 +23,7 @@ apiClient.interceptors.response.use(
 
       try {
         // 토큰 갱신 API 호출
-        await apiClient.post('/oauth2/refresh');
+        await apiClient.post('auth/oauth2/refresh');
         // 원래 요청을 새로운 토큰으로 재시도
         return apiClient(originalRequest);
       } catch (refreshError) {

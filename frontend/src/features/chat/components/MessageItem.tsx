@@ -16,8 +16,10 @@ export function MessageItem({ message, currentUserId }: ChatMessageProps) {
 
   const formatTime = (timestamp: string) => {
     try {
-      const date = new Date(timestamp);
-      return formatDistanceToNow(date, {
+      // 백엔드에서 UTC 시간을 시간대 정보 없이 보내므로 명시적으로 UTC로 처리
+      const utcDate = new Date(timestamp + 'Z'); // Z를 추가해서 UTC로 명시
+
+      return formatDistanceToNow(utcDate, {
         addSuffix: true,
         locale: ko
       });

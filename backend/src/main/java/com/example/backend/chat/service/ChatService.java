@@ -477,31 +477,6 @@ public class ChatService {
         }
     }
 
-    public List<RoomResponse> getRoomsByCategory(String bigCategory) {
-        try {
-            List<Room> rooms;
-            if (bigCategory == null || bigCategory.trim().isEmpty()) {
-                // 카테고리가 없으면 모든 방 조회
-                rooms = roomRepository.findByIsActiveTrueOrderByParticipantsDesc();
-            } else {
-                // 특정 카테고리 방 조회
-                rooms = roomRepository.findByBigCategoryAndIsActiveTrueOrderByParticipantsDesc(bigCategory);
-            }
-
-            return rooms.stream()
-                .filter(room -> room.getCurrentParticipants() > 0) // 참여 인원이 0명인 방 제외
-                .map(room -> {
-                    int messageCount = chatCacheService.getRecentMessages(room.getRoomUuid()).size();
-                    return chatBuilderService.buildRoomResponseWithMessageCount(room, messageCount);
-                })
-                .collect(Collectors.toList());
-
-        } catch (Exception e) {
-            log.error("카테고리별 방 목록 조회 실패: {}", bigCategory, e);
-            throw new BusinessException(ErrorCode.CHAT_ROOM_INFO_FAILED, e);
-        }
-    }
-
     /**
      * 사용자의 채팅방 목록 조회
      */
@@ -531,22 +506,16 @@ public class ChatService {
             Room room = roomRepository.findByRoomUuidAndIsActiveTrue(roomId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CHAT_ROOM_INFO_FAILED, "존재하지 않는 채팅방입니다."));
 
-            // 2. 사용자가 참여중인지 확인
-            boolean isParticipant = roomParticipantRepository.existsActiveParticipant(roomId, userInfo.userId());
-            if (!isParticipant) {
-                throw new BusinessException(ErrorCode.CHAT_USER_NOT_AUTHENTICATED, "채팅방에 참여하지 않은 사용자입니다.");
-            }
-
-            // 3. 참여자 목록 조회
+            // 2. 참여자 목록 조회
             List<RoomParticipant> participants = roomParticipantRepository.findActiveParticipantsByRoomUuid(roomId);
             List<RoomResponse.ParticipantResponse> participantList = participants.stream()
                 .map(chatBuilderService::buildParticipantResponse)
                 .collect(Collectors.toList());
 
-            // 4. 최근 메시지 정보 조회
+            // 3. 최근 메시지 정보 조회
             int messageCount = chatCacheService.getRecentMessages(roomId).size();
 
-            // 5. RoomResponse 생성
+            // 4. RoomResponse 생성
             RoomResponse response = chatBuilderService.buildDetailedRoomResponse(room, messageCount, participantList);
 
             log.debug("방 상세 정보 조회 완료: {} for {}", roomId, userInfo.username());
