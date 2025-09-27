@@ -1,8 +1,9 @@
 // /lib/apiClient.ts
 import axios from 'axios';
+import { logoutAPI } from '@/features/auth/api/authApi';
 
 const apiClient = axios.create({
-  baseURL: '/api/v1', // 환경 변수 사용
+  baseURL: '/api/v1',
   withCredentials: true,
 });
 
@@ -16,17 +17,22 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true; // 재시도 플래그 설정
 
       try {
-        // 토큰 갱신 API 호출 (쿠키에 있는 리프레시 토큰이 자동으로 사용됨)
+        // 토큰 갱신 API 호출
         await apiClient.post('/oauth2/refresh');
-
         // 원래 요청을 새로운 토큰으로 재시도
         return apiClient(originalRequest);
       } catch (refreshError) {
-        // 토큰 갱신 실패 시 로그인 페이지로 리디렉션 또는 로그아웃 처리
-        console.error('Token refresh failed:', refreshError);
-        // TODO: useAuth 훅을 사용할 수 없으므로, 전역 상태나 다른 방식으로 로그아웃 처리 필요
-        // 예: window.location.href = '/login';
-        return Promise.reject(refreshError);
+        // 토큰 갱신 실패 시, 로그아웃 처리 후 비로그인 상태로 원래 요청 재시도
+        console.error('Token refresh failed, attempting request as unauthenticated user.', refreshError);
+        try {
+          await logoutAPI(); // 쿠키의 토큰들을 제거
+        } catch (logoutError) {
+          console.error('Logout failed while handling token refresh error:', logoutError);
+          // 로그아웃마저 실패하면 더 이상 진행하지 않고 에러 반환
+          return Promise.reject(refreshError);
+        }
+        // 비로그인 상태로 원래 요청 다시 시도
+        return apiClient(originalRequest);
       }
     }
 
