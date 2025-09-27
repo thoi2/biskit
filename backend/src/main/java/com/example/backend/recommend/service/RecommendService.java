@@ -20,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +35,8 @@ public class RecommendService {
     private final SearchCategoryPort searchCategoryPort;
     private final LoginSearchPort loginSearchPort;
     private final UserRepository userRepository; // UserRepository 주입
+
+    private static final Logger log = LoggerFactory.getLogger(RecommendService.class);
 
     /**
      * ✅ 단일 검색 - Top 20 업종 반환 및 저장

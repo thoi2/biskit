@@ -133,7 +133,7 @@ export default function Header() {
                   <div className="text-right hidden md:block">
                     <p className="text-sm text-orange-200">환영합니다</p>
                     <span className="text-lg font-semibold text-white">
-                      {user.username}님
+                      {user ? `${user.username}님` : '사용자님'}
                     </span>
                   </div>
 
@@ -143,15 +143,19 @@ export default function Header() {
                   >
                     <MessageCircle className="w-5 h-5" />
                   </Button>
-                  <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-orange-300 shadow-lg">
-                    <Image
-                      src={user.profileImageUrl}
-                      alt="프로필"
-                      width={40}
-                      height={40}
-                      priority
-                      className="object-cover"
-                    />
+                  <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-orange-300 shadow-lg flex items-center justify-center bg-orange-100">
+                    {user && user.profileImageUrl ? (
+                      <Image
+                        src={user.profileImageUrl}
+                        alt="프로필"
+                        width={40}
+                        height={40}
+                        priority
+                        className="object-cover"
+                      />
+                    ) : (
+                      <User className="w-6 h-6 text-orange-400" />
+                    )}
                   </div>
 
                   <Button
