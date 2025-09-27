@@ -5,6 +5,7 @@ import com.example.backend.recommend.dto.*;
 import com.example.backend.recommend.exception.RecommendErrorCode;
 import com.example.backend.recommend.infra.ai.AiResponseParser;
 import com.example.backend.recommend.infra.ai.AiServerClient;
+import com.example.backend.recommend.port.BuildingPort;
 import com.example.backend.recommend.port.CategoryPort;
 import com.example.backend.recommend.port.InOutPort;
 import com.example.backend.search.port.LoginSearchPort;
@@ -31,6 +32,7 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class RecommendService {
 
+    private final BuildingPort buildingPort;
     private final InOutPort inOutPort;
     private final AiServerClient aiServerClient;
     private final AiResponseParser aiResponseParser;
@@ -94,7 +96,7 @@ public class RecommendService {
     public RecommendResponse generateSingleIndustry(SingleIndustryRequest req, Long uid) {
         final BigDecimal lat = req.getLat();
         final BigDecimal lng = req.getLng();
-        final String categoryName = req.getCategoryName();
+        final String categoryName = req.getCategory();
         final Integer categoryId = categoryPort.getIdByName(categoryName);
 
         // 1) 좌표 → 건물 식별
@@ -110,7 +112,7 @@ public class RecommendService {
             source = Source.DB;
         } else {
             // 3) 없으면 AI 서버 호출 → Double 파싱 후 upsert
-            JsonNode aiRaw = aiServerClient.requestCategory(bld.id(),bld.lat(), bld.lng(),categoryId);
+            JsonNode aiRaw = aiServerClient.requestCategory(bld.id(),bld.lat(), bld.lng(),categoryName);
             value = aiResponseParser.toCategoryMetricV2(aiRaw, categoryName);
             inOutPort.upsert(bld.id(), categoryId, value);
             source = Source.AI;
@@ -177,7 +179,7 @@ public class RecommendService {
             List<Double> value;
             if (hit.isEmpty()) {
                 // AI 전체 응답 한 번 받아 모든 카테고리 upsert
-                JsonNode aiRaw = aiServerClient.requestCategory(r.bld.id(),r.bld.lat(), r.bld.lng(),categoryId);
+                JsonNode aiRaw = aiServerClient.requestCategory(r.bld.id(),r.bld.lat(), r.bld.lng(),categoryName);
                 value = aiResponseParser.toCategoryMetricV2(aiRaw, categoryName);
             }
             else {
@@ -204,6 +206,35 @@ public class RecommendService {
 
         return RangeResponse.builder()
                 .items(items)
+                .build();
+    }
+
+    @Transactional
+    public ExplainResponse SingleIndustryExplain(ExplainRequest req) {
+        final Integer buildingId = req.getBuilding_id();
+        final String categoryName = req.getCategory();
+        final Integer categoryId = categoryPort.getIdByName(categoryName);
+
+        Optional<String> opt = inOutPort.findExplanation(buildingId, categoryId);
+
+        if (opt.isPresent()) {
+            return ExplainResponse.builder()
+                    .building_id(buildingId)
+                    .category(categoryName)
+                    .explanation(opt.get())
+                    .build();
+        }
+
+        var bld = buildingPort.findByIdsList(List.of(buildingId)).getFirst();
+
+        JsonNode aiRaw = aiServerClient.requestGms(buildingId,bld.lat(), bld.lng(),categoryName);
+        String explain = aiResponseParser.toCategoryGMSV2(aiRaw);
+        inOutPort.upsertexplain(bld.id(), categoryId, explain);
+
+        return ExplainResponse.builder()
+                .building_id(buildingId)
+                .category(categoryName)
+                .explanation(explain)
                 .build();
     }
 }

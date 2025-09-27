@@ -67,9 +67,6 @@ public class InOutAdapter implements InOutPort {
 //        cache.set(buildingId, categoryId, result, DEFAULT_TTL);
     }
 
-//    public void evict(int buildingId, int categoryId) {
-//        cache.evict(buildingId, categoryId);
-//    }
     @Override
     public List<InOutResult> findResults(int buildingId, List<Integer> categoryIds) {
         if (categoryIds == null || categoryIds.isEmpty()) {
@@ -110,5 +107,26 @@ public class InOutAdapter implements InOutPort {
         }
 
         return result;
+    }
+
+    @Override
+    public Optional<String> findExplanation(int buildingId, int categoryId) {
+        return inOutRepository.findByBuildingIdAndCategoryId(buildingId, categoryId)
+                .map(InOutEntity::getExplanation);
+    }
+
+    @Override
+    @Transactional
+    public void upsertexplain(int buildingId, int categoryId, String explanation) {
+        var id = new Key(buildingId, categoryId);
+
+        InOutEntity entity = inOutRepository.findById(id).orElseGet(() -> {
+            var e = new InOutEntity();
+            e.setBuildingId(buildingId);
+            e.setCategoryId(categoryId);
+            return e;
+        });
+        entity.setExplanation(explanation);
+        inOutRepository.save(entity);
     }
 }

@@ -37,6 +37,7 @@ public final class SecurityPaths {
     public static final String[] rc_PATHS = {
             "/api/v1/ai/single",
             "/api/v1/ai/single-industry",
+            "/api/v1/ai/single-industry-explanation",
             "/api/v1/ai/range",
     };
     /**

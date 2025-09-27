@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS in_out (
     building_id MEDIUMINT UNSIGNED NOT NULL,
     category_id SMALLINT  UNSIGNED NOT NULL,
     result JSON,
+    explanation MEDIUMTEXT,
     frequency INTEGER NOT NULL DEFAULT 0,
     last_at TIMESTAMP NULL DEFAULT NULL,
     PRIMARY KEY (building_id, category_id),
