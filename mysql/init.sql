@@ -139,3 +139,6 @@ CREATE INDEX idx_location ON store (lat, lng);
 -- 최종 최적화
 OPTIMIZE TABLE store;
 ANALYZE TABLE store;
+
+-- DEBUG: Check if category data is loaded
+SELECT 'Number of rows in category table:', COUNT(*) FROM category;
