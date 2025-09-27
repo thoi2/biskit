@@ -7,16 +7,14 @@ import Image from 'next/image';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { logoutAPI } from '@/features/auth/api/authApi';
 import { User, LogOut, ChevronDown, Sparkles } from 'lucide-react';
-import { MessageCircle } from 'lucide-react';
 import IndustryRecommendationPanel from '@/features/survey/components/IndustryRecommendationPanel';
 import SurveyModal from '@/features/survey/components/SurveyModal';
-import { ChatMainModal } from '@/features/chat/components/ChatMainModal';
+
 
 export default function Header() {
-  const { user, isLoggedIn, logout } = useAuth();
+  const { user, isLoggedIn, loading, logout } = useAuth();
   const [showPanel, setShowPanel] = useState<boolean>(false);
   const [showSurveyModal, setShowSurveyModal] = useState<boolean>(false);
-  const [isChatOpen, setIsChatOpen] = useState(false);
   // ✅ Hydration 문제 해결
   const [isClient, setIsClient] = useState(false);
 
@@ -133,18 +131,15 @@ export default function Header() {
                   <div className="text-right hidden md:block">
                     <p className="text-sm text-orange-200">환영합니다</p>
                     <span className="text-lg font-semibold text-white">
-                      {user ? `${user.username}님` : '사용자님'}
+                      {loading ? '...' : user ? `${user.username}님` : '사용자님'}
                     </span>
                   </div>
 
-                  <Button
-                    onClick={() => setIsChatOpen(true)}
-                    className="bg-[#8B4513] hover:bg-amber-800 text-white p-3 rounded-lg transition-all duration-200 shadow-md border border-amber-700"
-                  >
-                    <MessageCircle className="w-5 h-5" />
-                  </Button>
+
                   <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-orange-300 shadow-lg flex items-center justify-center bg-orange-100">
-                    {user && user.profileImageUrl ? (
+                    {loading ? (
+                      <div className="w-10 h-10 bg-gray-200 animate-pulse"></div>
+                    ) : user && user.profileImageUrl ? (
                       <Image
                         src={user.profileImageUrl}
                         alt="프로필"
@@ -165,8 +160,7 @@ export default function Header() {
                     <LogOut className="w-4 h-4" />
                     <span className="hidden sm:inline">로그아웃</span>
                   </Button>
-                </>
-              ) : isClient && !isLoggedIn ? (
+</>              ) : isClient && !isLoggedIn ? (
                 <Button
                   onClick={handleLogin}
                   className="bg-orange-50 hover:bg-orange-100 text-orange-900 font-bold text-sm px-6 py-3 rounded-lg shadow-lg transition-all duration-200 flex items-center gap-2 border-2 border-orange-100 hover:border-orange-200"
@@ -183,13 +177,7 @@ export default function Header() {
             </div>
           </div>
         </div>
-        {/* 채팅 모달 */}
-        {isClient && isLoggedIn && (
-          <ChatMainModal
-            isOpen={isChatOpen}
-            onClose={() => setIsChatOpen(false)}
-          />
-        )}
+
       </header>
 
       {/* 설문 모달 */}

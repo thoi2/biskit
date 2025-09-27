@@ -10,6 +10,14 @@ export const useUserQuery = () => {
     queryFn: checkAuthStatusAPI,
     enabled: isLoggedIn,
     staleTime: Infinity,
-    select: data => data.user,
+    select: data => {
+      if (!data?.user) return null;
+      const { user } = data;
+      // 백엔드의 DTO 비일관성 대응: name을 username으로 통일
+      return {
+        ...user,
+        username: user.username || user.name,
+      };
+    },
   });
 };

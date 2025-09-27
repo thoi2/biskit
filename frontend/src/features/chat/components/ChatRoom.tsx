@@ -115,7 +115,7 @@ export function ChatRoom({
     } else {
       console.log('🔍 조건 불만족 - API 호출 스킵');
     }
-  }, [roomId, preloadedRoomInfo]);
+  }, [roomId]);
 
   const handleLeaveRoom = async () => {
     try {
