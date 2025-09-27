@@ -40,7 +40,7 @@ public class BuildingAdapter implements BuildingPort {
         ne.setLat(normalize(lat));
         ne.setLng(normalize(lng));
         try {
-            return buildingRepository.save(ne).getId();
+            return buildingRepository.saveAndFlush(ne).getId();
         } catch (DataIntegrityViolationException race) {
             return buildingRepository.findByAdrMngNo(adrMngNo)
                     .map(BuildingEntity::getId)
