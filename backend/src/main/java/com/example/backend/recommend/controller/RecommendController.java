@@ -62,4 +62,12 @@ public class RecommendController {
         RangeResponse body = recommendService.getRange(req, uid);
         return ApiResponse.of(body);
     }
+
+    @PostMapping("/single-industry-explanation")
+    public ApiResponse<ExplainResponse> SingleIndustryExplain(
+            @Valid @RequestBody ExplainRequest req
+    ) {
+        ExplainResponse body = recommendService.SingleIndustryExplain(req);
+        return ApiResponse.of(body);
+    }
 }

@@ -9,10 +9,13 @@ import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 @Component
 public class AiResponseParser {
 
     private static final String[] METRIC_KEYS = {"1","2","3","4","5"};
+    private static final Logger log = LoggerFactory.getLogger(AiResponseParser.class);
 
     /** 카테고리 → 지표 리스트(Map<String, List<Double>>) */
     public Map<String, List<Double>> toCategoryMetricListV2(JsonNode aiResponse) {
@@ -36,9 +39,8 @@ public class AiResponseParser {
     }
 
     public List<Double> toCategoryMetricV2(JsonNode aiResponse, String categoryName) {
-        JsonNode data = requireDataPresent(aiResponse);
+        JsonNode data = requireDataPresent(aiResponse).get(0);
 
-        // "category": "치과의원" 같은 문자열
         String category = data.path("category").asText(null);
         if (category == null || category.isBlank() || !category.equals(categoryName)) {
             throw new BusinessException(
@@ -55,6 +57,19 @@ public class AiResponseParser {
         }
 
         return vals;
+    }
+
+    public String toCategoryGMSV2(JsonNode aiResponse) {
+
+        String exp = aiResponse.path("body").path("explain").asText(null);
+        log.info("data"+exp);
+        if (exp == null) {
+            throw new BusinessException(
+                    RecommendErrorCode.AI_UPSTREAM_BAD_RESPONSE.getCommonCode(),
+                    "AI 응답이 null 입니다."
+            );
+        }
+        return exp;
     }
 
     // ---------- 내부 유틸 ----------

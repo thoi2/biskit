@@ -37,8 +37,8 @@ public final class SecurityPaths {
     public static final String[] rc_PATHS = {
             "/api/v1/ai/single",
             "/api/v1/ai/single-industry",
+            "/api/v1/ai/single-industry-explanation",
             "/api/v1/ai/range",
-            "/api/v1/auth/check"
     };
     /**
      * GET 메서드로만 인증 없이 접근 가능한 경로

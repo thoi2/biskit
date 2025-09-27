@@ -19,10 +19,8 @@ services:
       - LLM_MODEL=gpt-5-nano
       - LLM_TIMEOUT=60
       - DATA_DIR=./data
-
     networks:
       - my-network
-
   # Spring Boot 백엔드 애플리케이션
   backend:
     build:
@@ -47,18 +45,14 @@ services:
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
-      - SPRING_DEVTOOLS_RESTART_ENABLED=true
-      - SPRING_DEVTOOLS_LIVERELOAD_ENABLED=true
       - SPRING_DATA_REDIS_TIMEOUT=2000
       - LOGGING_LEVEL_ROOT=INFO
       - LOGGING_LEVEL_APP=DEBUG
       - GEOCODER_TOKEN=${GEOCODER_TOKEN}
       - AI_GMS_BASE_URL=https://gms.ssafy.io/gmsapi
       - AI_GMS_API_KEY=${GMS_KEY}
-
-    ports:
-      - "8080:8080"
-      - "35729:35729" # LiveReload 포트
+    networks:
+      - my-network
 
     depends_on:
       ai:
@@ -86,6 +80,7 @@ services:
       - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - NEXT_PUBLIC_GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
       - NEXT_PUBLIC_KAKAO_MAP_KEY=${KAKAO_MAP_KEY}
+
     depends_on:
       - backend
       - ai
@@ -94,21 +89,19 @@ services:
 
   # MySQL 데이터베이스
   mysql:
-    build: ./mysql
+    build: ./mysql # <-- 이 라인으로 교체/추가합니다.
     # (★핵심 수정★) 실행할 플랫폼을 명시적으로 지정합니다.
     platform: linux/amd64
     container_name: mysql
-
+    # 이하 나머지 설정은 동일합니다.
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       TZ: Asia/Seoul
-
     volumes:
       - mysql_data:/var/lib/mysql
-
     healthcheck:
       test:
         [
@@ -125,7 +118,6 @@ services:
       timeout: 15s
       retries: 5
       start_period: 30s
-
     networks:
       - my-network
 
@@ -134,17 +126,15 @@ services:
     image: redis:7-alpine
     container_name: redis
     command: ["redis-server", "--port", "${REDIS_PORT}", "--save", "60", "1000"]
-
     volumes:
       - redis_data:/data
-
     networks:
       - my-network
 
 volumes:
   mysql_data:
   redis_data:
-  gradle-cache: # 🎯 Gradle 캐시 볼륨 추가
+  gradle-cache:
 
 networks:
   my-network:

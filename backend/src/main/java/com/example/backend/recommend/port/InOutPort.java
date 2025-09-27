@@ -6,13 +6,10 @@ import java.util.Map;
 public interface InOutPort {
 
     Optional<List<Double>> get(int buildingId, int categoryId);
-
     void upsert(int buildingId, int categoryId, List<Double> result);
-
-    // 필요하면 캐시 제거도 계약에 추가 가능
-    // void evict(int buildingId, int categoryId);
     List<InOutResult> findResults(int buildingId, List<Integer> categoryIds);
-
     Map<Integer, List<InOutResult>> findResultsByBidList(Map<Integer, List<Integer>> BCL);
+    Optional<String> findExplanation(int buildingId, int categoryId);
+    void upsertexplain(int buildingId, int categoryId, String explanation);
     record InOutResult(int categoryId, List<Double> result) {}
 }

@@ -12,12 +12,11 @@ ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
 ARG NEXT_PUBLIC_GOOGLE_REDIRECT_URI
 ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
 ENV NEXT_PUBLIC_GOOGLE_REDIRECT_URI=${NEXT_PUBLIC_GOOGLE_REDIRECT_URI}
+ARG NEXT_PUBLIC_KAKAO_MAP_KEY
+ENV NEXT_PUBLIC_KAKAO_MAP_KEY=${NEXT_PUBLIC_KAKAO_MAP_KEY}
+ARG NEXT_PUBLIC_WS_URL
+ENV NEXT_PUBLIC_WS_URL=https://j13a101.p.ssafy.io/ws
 # 🔼🔼🔼 여기까지 추가 🔼🔼🔼
-
-RUN echo "================= DEBUGGING STEP 2: Docker Build Env =================" && \
-    echo "Dockerfile - NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}" && \
-    echo "Dockerfile - NEXT_PUBLIC_GOOGLE_REDIRECT_URI: ${NEXT_PUBLIC_GOOGLE_REDIRECT_URI}" && \
-    echo "===================================================================="
 
 COPY package.json yarn.lock ./
 RUN corepack enable && yarn install --frozen-lockfile

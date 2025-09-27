@@ -18,5 +18,5 @@ public class SingleIndustryRequest {
     private BigDecimal lng;
 
     @NotNull
-    private String categoryName;
+    private String category;
 }
