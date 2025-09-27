@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS category (
 CREATE TABLE IF NOT EXISTS in_out (
     building_id MEDIUMINT UNSIGNED NOT NULL,
     category_id SMALLINT  UNSIGNED NOT NULL,
-    result DOUBLE,
+    result JSON,
     frequency INTEGER NOT NULL DEFAULT 0,
     last_at TIMESTAMP NULL DEFAULT NULL,
     PRIMARY KEY (building_id, category_id),
@@ -102,7 +102,6 @@ CREATE TABLE IF NOT EXISTS search_category (
    CONSTRAINT fk_sc_category
        FOREIGN KEY (category_id) REFERENCES category(category_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 
 -- 권한 부여 (startup_dev 사용자에게 zara DB 접근 권한)
 GRANT ALL PRIVILEGES ON zara.* TO 'startup_dev'@'%';

@@ -26,6 +26,6 @@ public class ResultGetResponse {
     @Builder
     public static class Category {
         String category;
-        Double  survivalRate;
+        List<Double>  survivalRate;
     }
 }

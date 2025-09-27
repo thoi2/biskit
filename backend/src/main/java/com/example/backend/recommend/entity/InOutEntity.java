@@ -10,6 +10,9 @@ import java.io.Serializable;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Objects;
+import java.util.List;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "in_out")
@@ -27,8 +30,9 @@ public class InOutEntity {
     @Column(name = "category_id", nullable = false, columnDefinition = "SMALLINT UNSIGNED")
     private int categoryId;   // PK2
 
-    @Column(name = "result", nullable = false)
-    private Double result;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "result", columnDefinition = "json", nullable = false)
+    private List<Double> result;
 
     @Column(name = "frequency", nullable = false, columnDefinition = "INT NOT NULL DEFAULT 0")
     private int frequency = 0;

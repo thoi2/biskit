@@ -7,5 +7,6 @@ public interface LoginSearchPort {
     List<LoginSearchProjection> find(long userId);
     int delete(long userId, int buildingId);
     int set(long userId, int buildingId, boolean favorite);
+    boolean isFavorite(long userId, int buildingId);
     void upsertubid(long userId, int buildingId);
 }

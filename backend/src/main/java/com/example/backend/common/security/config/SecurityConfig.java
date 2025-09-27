@@ -57,13 +57,9 @@ public class SecurityConfig {
                 .requestCache(cache -> cache.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(SecurityPaths.PUBLIC_PATHS).permitAll()
+                        .requestMatchers(SecurityPaths.rc_PATHS).permitAll()
                         .requestMatchers("/error", "/favicon.ico").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
-                        .requestMatchers(HttpMethod.POST, "/api/v1/ai/single").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/ai/single-industry").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/ai/range").permitAll()
-                        // 나머지 모든 요청은 인증 필요
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(exceptions -> exceptions

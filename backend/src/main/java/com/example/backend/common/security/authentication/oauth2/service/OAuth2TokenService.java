@@ -325,19 +325,19 @@ public class OAuth2TokenService {
     private void setCookies(HttpServletResponse response, String accessToken, String refreshToken) {
         // ResponseCookie로 SameSite 설정 가능
         ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", accessToken)
-            .httpOnly(false) // 개발환경에서는 false로 설정
-            .secure(false) // 개발환경에서는 false
+            .httpOnly(true) // 개발환경에서는 false로 설정
+            .secure(true) // 개발환경에서는 false
             .path("/")
             .maxAge(-1) // 세션 쿠키
-            .sameSite("Lax") // SameSite 설정
+            .sameSite("Strict") // SameSite 설정
             .build();
 
         ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", refreshToken)
-            .httpOnly(false) // 개발환경에서는 false로 설정
-            .secure(false) // 개발환경에서는 false
+            .httpOnly(true) // 개발환경에서는 false로 설정
+            .secure(true) // 개발환경에서는 false
             .path("/")
             .maxAge(-1) // 세션 쿠키
-            .sameSite("Lax") // SameSite 설정
+            .sameSite("Strict") // SameSite 설정
             .build();
 
         response.addHeader("Set-Cookie", accessTokenCookie.toString());

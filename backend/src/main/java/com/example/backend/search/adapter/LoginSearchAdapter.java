@@ -34,6 +34,12 @@ public class LoginSearchAdapter implements LoginSearchPort {
         return repo.setFavorite(userId, buildingId, favorite);
     }
 
+    @Override @Transactional(readOnly = true)
+    public boolean isFavorite(long userId, int buildingId) {
+        Boolean v = repo.existsByUserIdAndBuildingIdAndFavoriteTrue(userId, buildingId);
+        return Boolean.TRUE.equals(v);  // null 또는 false ⇒ false
+    }
+
     @Override @Transactional
     public void upsertubid(long userId, int buildingId) {
         if (repo.existsByUserIdAndBuildingId(userId, buildingId)) return;

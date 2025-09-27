@@ -1,249 +1,138 @@
-// src/features/map/store/mapStore.ts
-import { create } from 'zustand';
-
+// src/features/map/types.ts
 export interface MapBounds {
   sw: { lat: number; lng: number };
   ne: { lat: number; lng: number };
 }
 
-// ✅ MapMarkerItem 인터페이스 추가
+// ✅ MapMarkerItem 통합 타입 (모든 속성 포함)
 export interface MapMarkerItem {
-  id: number;
-  lat: number;
-  lng: number;
+  id: string; // ✅ string 타입
+  type: 'store' | 'recommendation' | 'favorite' | 'cluster'; // ✅ type 속성
   name: string;
   category?: string;
+  address?: string;
+  coordinates: {
+    lat: number;
+    lng: number;
+  };
+  closureProbability?: number; // ✅ AI 추천용 생존율
+  originalData?: any; // ✅ 원본 데이터
+  hidden?: boolean; // ✅ 숨김 상태
+
+  // 상가 관련 추가 필드
   categoryName?: string;
   bizCategoryCode?: string;
-  address?: string;
   phone?: string;
-  // 기타 필요한 필드들
+
+  // ✅ AI 추천 관련 추가 필드
+  title?: string; // AI 추천 제목
+  survivalRate?: number; // 생존율 (closureProbability와 동일하지만 호환성)
+  buildingId?: number; // 건물 ID
+  isAreaResult?: boolean; // 범위 분석 결과 여부
+  source?: 'single' | 'range' | 'db'; // 데이터 출처
+  isFavorite?: boolean; // 좋아요 상태
+  isHighlighted?: boolean; // 하이라이트 상태
+
+  // 상가 관련 추가 필드
+  lat?: number; // coordinates와 별개로 직접 접근용
+  lng?: number; // coordinates와 별개로 직접 접근용
+  displayName?: string; // 상가 표시명
+  storeName?: string; // 상가명
+  branchName?: string; // 지점명
+  roadAddress?: string; // 도로명 주소
+  dongCode?: number; // 동 코드
+
+  // 클러스터 관련
+  count?: number; // 클러스터 내 아이템 수
+  items?: MapMarkerItem[]; // 클러스터 포함 아이템들
+
+  // 마커 표시 관련
+  markerSize?: { width: number; height: number }; // 마커 크기
+  zIndex?: number; // Z-인덱스
+  color?: string; // 마커 색상
+
+  // 이벤트 관련
+  onClick?: () => void; // 클릭 핸들러
+  onHover?: () => void; // 호버 핸들러
+
+  // 기타 확장 가능 필드
+  [key: string]: any;
 }
 
-// 위경도 타입 정의
-interface Coordinates {
-  lat: number | null;
-  lng: number | null;
+// ✅ 클러스터 전용 타입 (선택사항)
+export interface ClusterMarkerItem extends MapMarkerItem {
+  type: 'cluster';
+  count: number;
+  items: MapMarkerItem[];
+  storeCount?: number;
+  recommendationCount?: number;
+  favoriteCount?: number;
 }
 
-// 🎯 추천 마커 타입 정의
-export interface RecommendationMarker {
-  id: string;
+// ✅ 상가 마커 전용 타입 (선택사항)
+export interface StoreMarkerItem extends MapMarkerItem {
+  type: 'store';
+  storeName: string;
+  categoryName: string;
+  roadAddress: string;
   lat: number;
   lng: number;
+}
+
+// ✅ AI 추천 마커 전용 타입 (선택사항)
+export interface RecommendationMarkerItem extends MapMarkerItem {
   type: 'recommendation';
-  title: string;
-  category: string;
-  survivalRate: number;
   buildingId: number;
-  isAreaResult?: boolean;
+  survivalRate: number;
+  title: string;
+  source: 'single' | 'range' | 'db';
+  isFavorite?: boolean;
 }
 
-// ✅ 통합 하이라이트 타입 정의
-interface ActiveHighlight {
-  type: 'store' | 'recommendation' | null;
-  id: string | number | null;
+// ✅ 지도 이벤트 타입
+export interface MapClickEvent {
+  lat: number;
+  lng: number;
+  originalEvent?: any;
 }
 
-// Map 상태
-interface MapState {
-  mapBounds: MapBounds | null;
-  isSearching: boolean;
-  activeTab: 'search' | 'recommend' | 'result' | 'profile';
-  selectedCategories: string[];
-  highlightedStoreId: number | null;
-  highlightedRecommendationId: string | null;
-  coordinates: Coordinates;
-  map: any | null;
-
-  // ✅ 통합 하이라이트 상태
-  activeHighlight: ActiveHighlight;
-
-  // 드로잉 상태 (다각형 추가)
-  isDrawingMode: boolean;
-  isDrawingActive: boolean; // ✅ 추가
-  drawingType: 'rectangle' | 'circle' | 'polygon';
-
-  // 추천 탭 핀 상태
-  recommendPin: any | null;
-
-  // 추천 마커들 (AI 분석 결과)
-  recommendationMarkers: RecommendationMarker[];
+// ✅ 마커 스타일 타입
+export interface MarkerStyle {
+  width: number;
+  height: number;
+  color: string;
+  isHighlighted: boolean;
+  zIndex: number;
 }
 
-// Map 액션
-interface MapActions {
-  setMapBounds: (bounds: MapBounds | null) => void;
-  setIsSearching: (isSearching: boolean) => void;
-  setActiveTab: (tab: MapState['activeTab']) => void;
-  setSelectedCategories: (categories: string[]) => void;
-  setHighlightedStore: (storeId: number | null) => void;
-  setHighlightedRecommendation: (id: string | null) => void;
-  setCoordinates: (coords: Coordinates) => void;
-  setMap: (mapInstance: any) => void;
-  clearMapState: () => void;
-
-  // ✅ 통합 하이라이트 관리
-  setActiveHighlight: (type: 'store' | 'recommendation' | null, id: string | number | null) => void;
-  clearAllHighlights: () => void;
-
-  // 드로잉 액션
-  setIsDrawingMode: (isDrawing: boolean) => void;
-  setIsDrawingActive: (active: boolean) => void; // ✅ 여기에 추가되어야 함!
-  setDrawingType: (type: 'rectangle' | 'circle' | 'polygon') => void;
-
-  // 추천 핀 액션
-  setRecommendPin: (pin: any | null) => void;
-
-  // 추천 마커 액션들
-  setRecommendationMarkers: (markers: RecommendationMarker[]) => void;
-  addRecommendationMarker: (marker: RecommendationMarker) => void;
-  removeRecommendationMarker: (markerId: string) => void;
-  clearRecommendationMarkers: () => void;
+// ✅ 좌표 타입 (단순형)
+export interface Coordinates {
+  lat: number;
+  lng: number;
 }
 
-// Map Store
-export const useMapStore = create<MapState & MapActions>()((set, get) => ({
-  // 초기 상태
-  mapBounds: null,
-  isSearching: false,
-  activeTab: 'search',
-  selectedCategories: [],
-  highlightedStoreId: null,
-  highlightedRecommendationId: null,
-  coordinates: { lat: null, lng: null },
-  map: null,
+// ✅ 지도 상태 타입
+export interface MapViewState {
+  center: Coordinates;
+  level: number;
+  bounds: MapBounds | null;
+}
 
-  // ✅ 통합 하이라이트 초기 상태
-  activeHighlight: {
-    type: null,
-    id: null
-  },
+// ✅ 마커 필터 타입
+export interface MarkerFilter {
+  types: ('store' | 'recommendation' | 'favorite')[];
+  categories: string[];
+  hidden: boolean;
+  survivalRateRange?: {
+    min: number;
+    max: number;
+  };
+}
 
-  // 드로잉 초기 상태
-  isDrawingMode: false,
-  isDrawingActive: false, // ✅ 초기 상태 추가
-  drawingType: 'rectangle',
-
-  // 추천 핀 초기 상태
-  recommendPin: null,
-
-  // 추천 마커 초기 상태
-  recommendationMarkers: [],
-
-  // 기존 액션들
-  setMapBounds: bounds => set({ mapBounds: bounds }),
-  setIsSearching: isSearching => set({ isSearching }),
-  setActiveTab: tab => set(state => ({
-    activeTab: tab,
-    ...(tab !== 'recommend' && state.recommendPin && {
-      recommendPin: (() => {
-        state.recommendPin.setMap(null);
-        return null;
-      })()
-    })
-  })),
-  setSelectedCategories: categories => set({ selectedCategories: categories }),
-  setHighlightedStore: storeId => set({ highlightedStoreId: storeId }),
-  setHighlightedRecommendation: id => set({ highlightedRecommendationId: id }),
-  setCoordinates: coords => set({ coordinates: coords }),
-  setMap: mapInstance => set({ map: mapInstance }),
-
-  // ✅ 통합 하이라이트 관리
-  setActiveHighlight: (type, id) => {
-    console.log('🎯 setActiveHighlight:', { type, id });
-
-    // 이전 하이라이트 해제
-    const { activeHighlight } = get();
-    if (activeHighlight.type && activeHighlight.id) {
-      console.log('🔘 이전 하이라이트 해제:', activeHighlight);
-
-      // AI 스토어의 하이라이트 해제 (동적 import로 순환 참조 방지)
-      if (activeHighlight.type === 'recommendation') {
-        import('@/features/ai/store').then(({ useRecommendationStore }) => {
-          const { clearHighlight } = useRecommendationStore.getState();
-          clearHighlight?.();
-        });
-      }
-    }
-
-    // 새 하이라이트 설정
-    set({
-      activeHighlight: { type, id },
-      highlightedStoreId: type === 'store' ? id as number : null,
-      highlightedRecommendationId: type === 'recommendation' ? String(id) : null
-    });
-
-    // AI 스토어 하이라이트 설정
-    if (type === 'recommendation' && id) {
-      import('@/features/ai/store').then(({ useRecommendationStore }) => {
-        const { highlightMarker } = useRecommendationStore.getState();
-        highlightMarker?.(Number(id));
-      });
-    }
-  },
-
-  clearAllHighlights: () => {
-    console.log('🔘 모든 하이라이트 해제');
-
-    // AI 스토어 하이라이트 해제
-    import('@/features/ai/store').then(({ useRecommendationStore }) => {
-      const { clearHighlight } = useRecommendationStore.getState();
-      clearHighlight?.();
-    });
-
-    set({
-      activeHighlight: { type: null, id: null },
-      highlightedStoreId: null,
-      highlightedRecommendationId: null
-    });
-  },
-
-  // 드로잉 액션들
-  setIsDrawingMode: isDrawing => set({ isDrawingMode: isDrawing }),
-  setIsDrawingActive: active => set({ isDrawingActive: active }), // ✅ 구현 추가!
-  setDrawingType: type => set({ drawingType: type }),
-
-  // 추천 핀 액션
-  setRecommendPin: pin => set(state => {
-    if (state.recommendPin) {
-      state.recommendPin.setMap(null);
-    }
-    return { recommendPin: pin };
-  }),
-
-  // 추천 마커 액션들
-  setRecommendationMarkers: markers => set({ recommendationMarkers: markers }),
-
-  addRecommendationMarker: marker => set(state => ({
-    recommendationMarkers: [...state.recommendationMarkers, marker]
-  })),
-
-  removeRecommendationMarker: markerId => set(state => ({
-    recommendationMarkers: state.recommendationMarkers.filter(marker => marker.id !== markerId)
-  })),
-
-  clearRecommendationMarkers: () => set({ recommendationMarkers: [] }),
-
-  clearMapState: () =>
-      set(state => {
-        if (state.recommendPin) {
-          state.recommendPin.setMap(null);
-        }
-
-        return {
-          selectedCategories: [],
-          highlightedStoreId: null,
-          highlightedRecommendationId: null,
-          activeHighlight: { type: null, id: null },
-          isSearching: false,
-          coordinates: { lat: null, lng: null },
-          map: null,
-          isDrawingMode: false,
-          isDrawingActive: false, // ✅ clearMapState에도 추가
-          drawingType: 'rectangle',
-          recommendPin: null,
-          recommendationMarkers: [],
-        };
-      }),
-}));
+// ✅ 검색 결과 타입
+export interface SearchResult {
+  stores: StoreMarkerItem[];
+  recommendations: RecommendationMarkerItem[];
+  totalCount: number;
+  bounds: MapBounds;
+}

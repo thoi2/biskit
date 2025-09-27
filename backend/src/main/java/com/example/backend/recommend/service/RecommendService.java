@@ -1,9 +1,8 @@
 package com.example.backend.recommend.service;
 
-import com.example.backend.recommend.dto.RecommendResponse;
-import com.example.backend.recommend.dto.SingleRequest;
-import com.example.backend.recommend.dto.SingleIndustryRequest;
-import com.example.backend.recommend.dto.Source;
+import com.example.backend.common.exception.BusinessException;
+import com.example.backend.recommend.dto.*;
+import com.example.backend.recommend.exception.RecommendErrorCode;
 import com.example.backend.recommend.infra.ai.AiResponseParser;
 import com.example.backend.recommend.infra.ai.AiServerClient;
 import com.example.backend.recommend.port.CategoryPort;
@@ -23,9 +22,10 @@ import java.util.Optional;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.LinkedHashSet;
+import java.util.HashSet;
+import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 @Service
 @RequiredArgsConstructor
 public class RecommendService {
@@ -38,12 +38,8 @@ public class RecommendService {
     private final SearchCategoryPort searchCategoryPort;
     private final LoginSearchPort loginSearchPort;
 
-    private static final Logger log = LoggerFactory.getLogger(RecommendService.class);
     /**
-     * 일반(single): 좌표만 받아 모든 카테고리 데이터 반환
-     * - 카테고리별로 행 단위 저장하는 현재 스키마에서는
-     *   전체를 DB에서 한 번에 모으기 어렵기 때문에,
-     *   AI의 전체 응답을 받아 카테고리별로 upsert 하는 방식으로 단순화.
+     * ✅ 단일 검색 - Top 20 업종 반환 및 저장
      */
     @Transactional
     public RecommendResponse generateSingle(SingleRequest req, Long uid) {
@@ -54,33 +50,48 @@ public class RecommendService {
         GeoBuildingService.ResolvedBuilding bld = geoBuildingService.resolve(lat, lng);
 
         // 2) AI 서버 호출(모든 카테고리)
-        JsonNode aiRaw = aiServerClient.requestAll(bld.lat(), bld.lng());
-        Map<String, Double> byCat = aiResponseParser.toCategoryDoubleMap(aiRaw);
-//        Map<String, List<Double>> aijson = aiResponseParser.toCategoryMetricListV2(aiRaw);
-        // category table에 없는건 skip
+        JsonNode aiRaw = aiServerClient.requestAll(bld.id(), bld.lat(), bld.lng());
+        Map<String, List<Double>> byCat = aiResponseParser.toCategoryMetricListV2(aiRaw);
         Map<String, Integer> nameToId = categoryPort.getIdsByNames(byCat.keySet());
 
-        log.info("e"+nameToId);
-        List<RecommendResponse.CategoryResult> resultList = new ArrayList<>();
-        Set<Integer> cidSet = new LinkedHashSet<>();
-        byCat.forEach((name, value) -> {
-            Integer catId = nameToId.get(name);
-            if (catId == null) {
-                return;
-            }
-            inOutPort.upsert(bld.id(), catId, value);
+        // ✅ 3) 점수 계산 후 Top 20 선별
+        List<RecommendResponse.CategoryResult> resultList = byCat.entrySet().stream()
+                .filter(entry -> nameToId.containsKey(entry.getKey()))
+                .map(entry -> {
+                    String name = entry.getKey();
+                    List<Double> value = entry.getValue();
+                    Integer catId = nameToId.get(name);
 
-            cidSet.add(catId);
-            resultList.add(
-                    RecommendResponse.CategoryResult.builder()
-                            .category(name)
-                            .survivalRate(value)
-                            .build()
-            );
-        });
-        if(uid != null) {
+                    // DB 저장
+                    inOutPort.upsert(bld.id(), catId, value);
+
+                    // 점수 계산 (평균값)
+                    double avgScore = value.stream()
+                            .mapToDouble(Double::doubleValue)
+                            .average()
+                            .orElse(0.0);
+
+                    return new ScoredCategory(
+                            RecommendResponse.CategoryResult.builder()
+                                    .category(name)
+                                    .survivalRate(value)
+                                    .build(),
+                            avgScore
+                    );
+                })
+                .sorted((a, b) -> Double.compare(b.score, a.score)) // ✅ 점수 내림차순 정렬
+                .limit(20) // ✅ Top 20으로 변경
+                .map(scored -> scored.result)
+                .collect(Collectors.toList());
+
+        // ✅ 4) Top 20 카테고리 ID 수집
+        Set<Integer> cidSet = resultList.stream()
+                .map(result -> nameToId.get(result.getCategory()))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        if (uid != null) {
             loginSearchPort.upsertubid(uid, bld.id());
-            searchCategoryPort.upsertubcS(uid, bld.id(), cidSet);
+            searchCategoryPort.upsertubcS(uid, bld.id(), cidSet); // ✅ Top 20 저장
         }
 
         // 5) 응답
@@ -90,7 +101,7 @@ public class RecommendService {
                         .lat(bld.lat())
                         .lng(bld.lng())
                         .build())
-                .result(resultList)
+                .result(resultList) // ✅ Top 20 반환
                 .meta(RecommendResponse.RecommendMeta.builder()
                         .source(Source.AI)
                         .version("v1")
@@ -100,9 +111,7 @@ public class RecommendService {
     }
 
     /**
-     * 인더스트리(single-industry): 좌표 + categoryId 한 개만 반환
-     * - (building, category) 단건을 캐시→DB에서 조회,
-     *   없으면 AI 호출 후 upsert.
+     * ✅ 단일 업종 - 변경 없음 (이미 1개만 반환)
      */
     @Transactional
     public RecommendResponse generateSingleIndustry(SingleIndustryRequest req, Long uid) {
@@ -115,17 +124,17 @@ public class RecommendService {
         GeoBuildingService.ResolvedBuilding bld = geoBuildingService.resolve(lat, lng);
 
         // 2) 캐시 → DB 조회
-        Optional<Double> hit = inOutPort.get(bld.id(), categoryId);
+        Optional<List<Double>> hit = inOutPort.get(bld.id(), categoryId);
 
-        double value;
+        List<Double> value;
         Source source;
         if (hit.isPresent()) {
             value = hit.get();
             source = Source.DB;
         } else {
             // 3) 없으면 AI 서버 호출 → Double 파싱 후 upsert
-            JsonNode aiRaw = aiServerClient.requestCategory(bld.lat(), bld.lng(), categoryId);
-            value = aiResponseParser.toCategoryDouble(aiRaw, categoryName);
+            JsonNode aiRaw = aiServerClient.requestCategory(bld.id(), bld.lat(), bld.lng(), categoryId);
+            value = aiResponseParser.toCategoryMetricV2(aiRaw, categoryName);
             inOutPort.upsert(bld.id(), categoryId, value);
             source = Source.AI;
         }
@@ -138,7 +147,7 @@ public class RecommendService {
         );
 
         Set<Integer> cidSet = Set.of(categoryId);
-        if(uid != null) {
+        if (uid != null) {
             loginSearchPort.upsertubid(uid, bld.id());
             searchCategoryPort.upsertubcS(uid, bld.id(), cidSet);
         }
@@ -157,4 +166,91 @@ public class RecommendService {
                         .build())
                 .build();
     }
+
+    /**
+     * ✅ 범위 검색 - Top 10 건물 유지 (변경 없음)
+     */
+    @Transactional
+    public RangeResponse getRange(RangeRequest req, Long uid) {
+        final String categoryName = req.getCategory();
+        final Integer categoryId = categoryPort.getIdByName(categoryName);
+
+        record R(RangeRequest.Point pt, GeoBuildingService.ResolvedBuilding bld) {}
+        List<R> resolved = req.getPoints().stream()
+                .flatMap(p -> {
+                    try {
+                        var b = geoBuildingService.resolve(p.getLat(), p.getLng());
+                        return Stream.of(new R(p, b));
+                    } catch (Exception e) {
+                        return Stream.empty(); // 실패는 제거
+                    }
+                })
+                .toList();
+
+        if (resolved.isEmpty()) {
+            throw new BusinessException(
+                    RecommendErrorCode.AI_UPSTREAM_BAD_RESPONSE.getCommonCode(),
+                    "모든 좌표 resolve에 실패했습니다."
+            );
+        }
+
+        Set<Integer> ensured = new HashSet<>();
+        for (R r : resolved) {
+            int bldId = r.bld().id();
+            if (!ensured.add(bldId)) continue; // 이미 처리한 건물
+
+            if (inOutPort.get(bldId, categoryId).isEmpty()) {
+                // AI 전체 응답 한 번 받아 모든 카테고리 upsert
+                JsonNode aiRaw = aiServerClient.requestAll(r.bld().id(), r.bld().lat(), r.bld().lng());
+                Map<String, List<Double>> byCat = aiResponseParser.toCategoryMetricListV2(aiRaw);
+                Map<String, Integer> nameToId = categoryPort.getIdsByNames(byCat.keySet());
+                byCat.forEach((name, v) -> {
+                    Integer cid = nameToId.get(name);
+                    if (cid != null) inOutPort.upsert(bldId, cid, v);
+                });
+            }
+
+            if (uid != null) {
+                loginSearchPort.upsertubid(uid, bldId);
+                searchCategoryPort.upsertubcS(uid, bldId, Set.of(categoryId));
+            }
+        }
+
+        // ✅ Top 10 건물만 선별 (유지)
+        List<RangeResponse.Item> items = resolved.stream()
+                .map(r -> {
+                    List<Double> v = inOutPort.get(r.bld().id(), categoryId).orElse(List.of(0.0));
+
+                    // 점수 계산 (평균값)
+                    double avgScore = v.stream()
+                            .mapToDouble(Double::doubleValue)
+                            .average()
+                            .orElse(0.0);
+
+                    return new ScoredBuilding(
+                            RangeResponse.Item.builder()
+                                    .buildingId(r.bld().id())
+                                    .category(categoryName)
+                                    .lat(r.pt().getLat())   // 숫자(BigDecimal) 유지
+                                    .lng(r.pt().getLng())   // 숫자(BigDecimal) 유지
+                                    .survivalRate(v)
+                                    .build(),
+                            avgScore
+                    );
+                })
+                .sorted((a, b) -> Double.compare(b.score, a.score)) // ✅ 점수 내림차순 정렬
+                .limit(10) // ✅ Top 10 건물 유지
+                .map(scored -> scored.item)
+                .collect(Collectors.toList());
+
+        return RangeResponse.builder()
+                .items(items) // ✅ Top 10 건물만 반환
+                .build();
+    }
+
+    /**
+     * ✅ 정렬용 헬퍼 레코드들
+     */
+    private record ScoredCategory(RecommendResponse.CategoryResult result, double score) {}
+    private record ScoredBuilding(RangeResponse.Item item, double score) {}
 }

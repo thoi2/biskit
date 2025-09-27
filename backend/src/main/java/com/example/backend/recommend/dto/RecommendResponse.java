@@ -26,7 +26,7 @@ public class RecommendResponse {
     @Builder
     public static class CategoryResult {
         String category;
-        Double survivalRate;
+        List<Double> survivalRate;
     }
 
     @Value

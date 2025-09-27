@@ -28,7 +28,7 @@ public class InOutAdapter implements InOutPort {
     /** 캐시→DB 조회. DB 히트 시 frequency/last_at 갱신 + 캐시 set */
     @Override
     @Transactional
-    public Optional<Double> get(int buildingId, int categoryId) {
+    public Optional<List<Double>> get(int buildingId, int categoryId) {
         // 1) cache
 //        var cached = cache.get(buildingId, categoryId);
 //        if (cached.isPresent()) return cached;
@@ -39,15 +39,15 @@ public class InOutAdapter implements InOutPort {
 
         // 조회 성공: 사용량 증가 + 캐시 set
         inOutRepository.bumpUsage(buildingId, categoryId);
-        Double val = db.get().getResult();
-        cache.set(buildingId, categoryId, val, DEFAULT_TTL);
-        return Optional.ofNullable(val);
+        var vals = db.get().getResult();
+//        cache.set(buildingId, categoryId, val, DEFAULT_TTL);
+        return Optional.ofNullable(vals);
     }
 
     /** AI 결과 업서트 + 캐시 set (write-through) */
     @Override
     @Transactional
-    public void upsert(int buildingId, int categoryId, double result) {
+    public void upsert(int buildingId, int categoryId, List<Double> result) {
         var id = new Key(buildingId, categoryId);
 
         InOutEntity entity = inOutRepository.findById(id).orElseGet(() -> {
@@ -79,15 +79,17 @@ public class InOutAdapter implements InOutPort {
         List<InOutProjection> rows = inOutRepository
                 .findAllByBuildingIdAndCategoryIdIn(buildingId, categoryIds);
 
-        Map<Integer, Double> resultMap = rows.stream()
+        Map<Integer, List<Double>> resultMap = rows.stream()
                 .collect(Collectors.toMap(
                         InOutProjection::getCategoryId,
-                        InOutProjection::getResult
+                        InOutProjection::getResult,
+                        (a, b) -> a,
+                        java.util.LinkedHashMap::new
                 ));
 
         // 3) 입력 순서대로 리스트 생성, 없으면 기본값(null 또는 0.0)
         return categoryIds.stream()
-                .map(cid -> new InOutResult(cid, resultMap.getOrDefault(cid, null)))
+                .map(cid -> new InOutResult(cid, resultMap.get(cid))) // 없으면 null
                 .toList();
     }
 

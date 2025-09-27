@@ -19,9 +19,9 @@ export function useRecommendationForm() {
   const {
     isLoading,
     startRequest,
-    setRequestSuccess,
     setRequestError,
-    addRecommendationMarker
+    addSingleResult,     // ✅ 새로운 스토어 함수 사용
+    highlightMarker      // ✅ 마커 하이라이트
   } = useRecommendationStore();
 
   const handleSubmit = useCallback(async () => {
@@ -82,27 +82,10 @@ export function useRecommendationForm() {
       console.log('🔍 결과 타입:', category ? '단일 업종 분석' : '다중 분석');
       console.log('🔍 결과 개수:', result?.result?.length);
 
-      // 🎯 결과 저장 (누적)
-      setRequestSuccess(result as any);
+      // ✅ 새로운 스토어 시스템 사용 (중복 방지 + 순위 재계산)
+      addSingleResult(result as any);
 
-      // 🎯 마커 생성 (누적) - 새로운 분석은 파란색
-      const marker = {
-        id: `ai-${result?.building?.building_id || Date.now()}`,
-        lat: Number(result?.building?.lat) || formattedLat,
-        lng: Number(result?.building?.lng) || formattedLng,
-        type: 'recommendation' as const,
-        title: `AI 추천 #${result?.building?.building_id || 'Unknown'}`,
-        category: result?.result?.[0]?.category || '분석 결과',
-        survivalRate: result?.result?.[0]?.survivalRate || 0,
-        buildingId: result?.building?.building_id || 0,
-        isFromBackend: false, // ✅ 현재 세션 마커
-        color: 'blue' // ✅ 파란색으로 구분
-      };
-
-      addRecommendationMarker(marker);
-      console.log('🗺️ 새 분석 마커 생성:', marker);
-
-      // ✅ 분석 완료 후 자동 처리 (수정)
+      // ✅ 분석 완료 후 자동 처리
       setTimeout(() => {
         console.log('🚀 분석 완료 후 처리 시작');
 
@@ -113,7 +96,9 @@ export function useRecommendationForm() {
         // 2. 해당 결과 하이라이트 (탭 이동 후 추가 딜레이)
         setTimeout(() => {
           if (result?.building?.building_id) {
+            // ✅ 두 곳에서 하이라이트 처리
             setHighlightedRecommendation(String(result.building.building_id));
+            highlightMarker(result.building.building_id);
             console.log('✨ 하이라이트 시작:', result.building.building_id);
           }
         }, 300);
@@ -155,7 +140,16 @@ export function useRecommendationForm() {
           `- 네트워크 연결 상태 확인\n` +
           `- 잠시 후 다시 시도해보세요`);
     }
-  }, [coordinates, category, startRequest, setRequestSuccess, setRequestError, addRecommendationMarker, setActiveTab, setHighlightedRecommendation]); // ✅ 의존성 배열에 추가
+  }, [
+    coordinates,
+    category,
+    startRequest,
+    setRequestError,
+    addSingleResult,    // ✅ 변경
+    highlightMarker,    // ✅ 추가
+    setActiveTab,
+    setHighlightedRecommendation
+  ]);
 
   return {
     category,

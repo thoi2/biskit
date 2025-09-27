@@ -2,6 +2,8 @@ package com.example.backend.search.controller;
 
 import com.example.backend.common.response.ApiResponse;
 import com.example.backend.common.security.authentication.jwt.JwtUserInfo;
+import com.example.backend.common.exception.ErrorCode;
+import com.example.backend.common.exception.BusinessException;
 import com.example.backend.search.dto.ResultDeleteResponse;
 import com.example.backend.search.dto.ResultDeleteCategoriesResponse;
 import com.example.backend.search.dto.ResultDeleteCategoriesRequest;
@@ -33,7 +35,7 @@ public class ResultController {
             String userId = userInfo.userId();
             uid = Long.valueOf(userId);
         } catch (Exception e) {
-            uid = null;
+            throw new BusinessException(ErrorCode.AUTH_MISSING_REQUIRED_CLAIM);
         }
         ResultGetResponse res = resultService.getMyResults(uid);
         return ApiResponse.of(res);
@@ -52,7 +54,7 @@ public class ResultController {
             String userId = userInfo.userId();
             uid = Long.valueOf(userId);
         } catch (Exception e) {
-            uid = null;
+            throw new BusinessException(ErrorCode.AUTH_MISSING_REQUIRED_CLAIM);
         }
 
         ResultDeleteResponse res = resultService.deleteBuilding(uid, buildingId);
@@ -73,7 +75,7 @@ public class ResultController {
             String userId = userInfo.userId();
             uid = Long.valueOf(userId);
         } catch (Exception e) {
-            uid = null;
+            throw new BusinessException(ErrorCode.AUTH_MISSING_REQUIRED_CLAIM);
         }
         ResultDeleteCategoriesResponse res = resultService.deleteCategories(uid, buildingId, req);
         return ApiResponse.of(res);

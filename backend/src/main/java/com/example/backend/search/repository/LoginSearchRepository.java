@@ -15,6 +15,7 @@ public interface LoginSearchRepository
     List<LoginSearchProjection> findByUserId(long userId);
     int deleteByUserIdAndBuildingId(long userId, int buildingId);
     boolean existsByUserIdAndBuildingId(long userId, int buildingId);
+    boolean existsByUserIdAndBuildingIdAndFavoriteTrue(long userId, int buildingId);
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
         update LoginSearchEntity ls

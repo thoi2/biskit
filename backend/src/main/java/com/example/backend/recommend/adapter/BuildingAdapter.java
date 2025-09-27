@@ -25,7 +25,7 @@ public class BuildingAdapter implements BuildingPort {
     public BuildingPoint findByAdr(String adrMngNo) {
         return buildingRepository.findByAdrMngNo(adrMngNo)
                 .map(e -> new BuildingPoint(e.getId(), e.getLat(), e.getLng()))
-                .orElse(null); // ★ 없으면 null
+                .orElse(null);
     }
 
     @Override
@@ -58,7 +58,8 @@ public class BuildingAdapter implements BuildingPort {
         Map<Integer, BuildingPoint> byId = rows.stream()
                 .collect(Collectors.toMap(
                         BuildingProjection::getId,
-                        r -> new BuildingPoint(r.getId(), r.getLat(), r.getLng())
+                        r -> new BuildingPoint(r.getId(), r.getLat(), r.getLng()),
+                        (a, b) -> a
                 ));
 
         return ids.stream()
