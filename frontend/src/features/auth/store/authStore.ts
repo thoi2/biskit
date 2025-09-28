@@ -23,9 +23,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const user = await checkAuthStatusAPI();
       console.log('AuthCheck API Response:', user);
-      if (user && user.user) {
+      if (user && user.body) {
         set({ isLoggedIn: true });
-        queryClient.setQueryData(['user', 'profile'], user);
+        queryClient.setQueryData(['user', 'profile'], user.body);
       }
     } catch (error) {
       console.log('Initialization failed: User is not logged in. Logging out.');

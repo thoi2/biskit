@@ -36,6 +36,7 @@ export function ChatRoom({
 
   // useAuth에서 사용자 정보 가져오기
   const currentUserId = user?.userId;
+  const currentUsername = user?.username;
 
   const {
     messages,
@@ -47,6 +48,7 @@ export function ChatRoom({
   } = useChatRoom({
     roomId,
     currentUserId,
+    currentUsername,
   });
 
   // 방 정보 로드 제거 - 중복 입장 방지를 위해 WebSocket으로만 처리
