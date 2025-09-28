@@ -88,11 +88,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             System.out.println("🔐 쿠키에서 토큰 추출: " + (token != null ? "있음 (길이: " + token.length() + ")" : "없음"));
 
             if (!StringUtils.hasText(token)) {
+
+boolean isPassablePath = Arrays.stream(rc_PATHS)
+                .anyMatch(pattern -> {
+                    boolean matches = pathMatcher.match(pattern, requestURI); return matches;
+                });
+                if(isPassablePath){
+                filterChain.doFilter(request,response);
+                return;
+                }
                 System.out.println("🚨 토큰 없음 - 401 에러 응답 준비");
                 System.out.println("🚨 응답 상태: " + response.getStatus());
                 exceptionHandler.handleAccessTokenMissing(response, request.getRequestURI());
                 System.out.println("🚨 401 에러 응답 완료 - 필터 체인 중단");
-                filterChain.doFilter(request,response);
                 return;
             }
 
