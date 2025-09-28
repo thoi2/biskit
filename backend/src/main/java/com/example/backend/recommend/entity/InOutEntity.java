@@ -34,6 +34,9 @@ public class InOutEntity {
     @Column(name = "result", columnDefinition = "json", nullable = false)
     private List<Double> result;
 
+    @Column(name = "explanation", columnDefinition = "MEDIUMTEXT")
+    private String explanation;
+
     @Column(name = "frequency", nullable = false, columnDefinition = "INT NOT NULL DEFAULT 0")
     private int frequency = 0;
 

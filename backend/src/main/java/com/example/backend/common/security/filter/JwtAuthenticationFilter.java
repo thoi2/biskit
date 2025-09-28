@@ -3,7 +3,6 @@ package com.example.backend.common.security.filter;
 import com.example.backend.common.security.authentication.jwt.JwtUserInfo;
 import com.example.backend.common.security.authentication.jwt.JwtUtil;
 import com.example.backend.common.security.authentication.jwt.service.RefreshTokenService;
-import com.example.backend.common.security.config.SecurityPaths;
 import com.example.backend.common.security.exception.JwtAuthenticationExceptionHandler;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -29,8 +28,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
-import static com.example.backend.common.security.config.SecurityPaths.*;
+import static com.example.backend.common.security.config.SecurityPaths.PUBLIC_GET_PATHS;
+import static com.example.backend.common.security.config.SecurityPaths.PUBLIC_PATHS;
 
 /**
  * JWT 기반 인증을 처리하는 필터 클래스 (디버깅 로그 강화)
@@ -89,23 +88,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             System.out.println("🔐 쿠키에서 토큰 추출: " + (token != null ? "있음 (길이: " + token.length() + ")" : "없음"));
 
             if (!StringUtils.hasText(token)) {
-                String passpath = request.getRequestURI();
-                boolean isPublicPath = Arrays.stream(rc_PATHS)
-                        .anyMatch(pattern -> {
-                            boolean matches = pathMatcher.match(pattern, passpath);
-                            if (matches) {
-                                System.out.println("✅ PUBLIC_PATHS 매치: " + pattern + " -> " + passpath);
-                            }
-                            return matches;
-                        });
-                if(isPublicPath){
-                    filterChain.doFilter(request,response);
-                    return;
-                }
                 System.out.println("🚨 토큰 없음 - 401 에러 응답 준비");
                 System.out.println("🚨 응답 상태: " + response.getStatus());
                 exceptionHandler.handleAccessTokenMissing(response, request.getRequestURI());
                 System.out.println("🚨 401 에러 응답 완료 - 필터 체인 중단");
+                filterChain.doFilter(request,response);
                 return;
             }
 

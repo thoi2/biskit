@@ -21,12 +21,12 @@ export function CreateRoomModal({
   isOpen,
   onClose,
   onRoomCreated,
-  defaultCategory
+  defaultCategory,
 }: CreateRoomModalProps) {
   const [formData, setFormData] = useState<RoomCreateRequest>({
     roomName: '',
     bigCategory: defaultCategory || '',
-    maxParticipants: 500
+    maxParticipants: 500,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,7 +56,7 @@ export function CreateRoomModal({
       setFormData({
         roomName: '',
         bigCategory: defaultCategory || '',
-        maxParticipants: 500
+        maxParticipants: 500,
       });
     } catch (err: any) {
       console.error('방 생성 실패:', err);
@@ -99,7 +99,7 @@ export function CreateRoomModal({
               id="roomName"
               type="text"
               value={formData.roomName}
-              onChange={(e) =>
+              onChange={e =>
                 setFormData({ ...formData, roomName: e.target.value })
               }
               placeholder="채팅방 이름을 입력하세요"
@@ -115,14 +115,14 @@ export function CreateRoomModal({
             <select
               id="bigCategory"
               value={formData.bigCategory}
-              onChange={(e) =>
+              onChange={e =>
                 setFormData({ ...formData, bigCategory: e.target.value })
               }
               disabled={isLoading}
               className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">카테고리를 선택하세요</option>
-              {BIG_CATEGORIES.map((category) => (
+              {BIG_CATEGORIES.map(category => (
                 <option key={category} value={category}>
                   {category}
                 </option>
@@ -140,10 +140,10 @@ export function CreateRoomModal({
               id="maxParticipants"
               type="number"
               value={formData.maxParticipants}
-              onChange={(e) =>
+              onChange={e =>
                 setFormData({
                   ...formData,
-                  maxParticipants: parseInt(e.target.value) || 500
+                  maxParticipants: parseInt(e.target.value) || 500,
                 })
               }
               min={2}

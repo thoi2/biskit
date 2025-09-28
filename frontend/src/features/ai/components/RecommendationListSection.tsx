@@ -47,7 +47,7 @@ export function RecommendationListSection() {
         }
     }, [userResults, user, mergeWithBackendResults]);
 
-    // 하이라이트된 건물로 스크롤
+    // ✅ 하이라이트된 건물로 스크롤 (개선)
     useEffect(() => {
         if (highlightedRecommendationId && scrollRef.current && activeTab === 'result') {
             const el = scrollRef.current.querySelector(`[data-building-id="${highlightedRecommendationId}"]`);
@@ -56,7 +56,16 @@ export function RecommendationListSection() {
                     setIsExpanded(true);
                 }
                 setTimeout(() => {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    const container = scrollRef.current;
+                    const elementRect = el.getBoundingClientRect();
+                    const containerRect = container!.getBoundingClientRect();
+
+                    const scrollTop = container!.scrollTop + elementRect.top - containerRect.top - 20;
+
+                    container!.scrollTo({
+                        top: scrollTop,
+                        behavior: 'smooth'
+                    });
                 }, isExpanded ? 100 : 400);
             }
         }
@@ -117,7 +126,6 @@ export function RecommendationListSection() {
         if (!user) return;
 
         if (window.confirm('이 업종만 삭제하시겠습니까?')) {
-            // TODO: 카테고리별 삭제 API 필요
             deleteCategoryFromBuilding(buildingId, categoryId);
         }
     };
@@ -126,26 +134,32 @@ export function RecommendationListSection() {
         toggleBuildingVisibility(buildingId);
     };
 
-    const handleDetailView = (buildingId: number, category: string, rank?: number) => {
-        console.log('🔍 GMS 상세보기:', { buildingId, category, rank });
-        // TODO: GMS API 연결
-        alert(`GMS 상세보기\n\n건물 ID: ${buildingId}\n업종: ${category}\n순위: ${rank || 'N/A'}위`);
-    };
-
     const handleRefresh = () => {
         if (user) {
             refetchUserData();
         }
     };
 
-    // 통계 계산
+    // ✅ 시간 기준 통계 계산
     const statistics = useMemo(() => {
-        const singleCount = buildings.filter(b => b.source === 'single').length;
-        const rangeCount = buildings.filter(b => b.source === 'range').length;
-        const dbCount = buildings.filter(b => b.source === 'db').length;
+        const now = Date.now();
+        const RECENT_THRESHOLD = 300000; // 5분
+
+        const recentSingle = buildings.filter(b =>
+            b.source === 'single' && b.timestamp && (now - b.timestamp) < RECENT_THRESHOLD
+        ).length;
+
+        const recentRange = buildings.filter(b =>
+            b.source === 'range' && b.timestamp && (now - b.timestamp) < RECENT_THRESHOLD
+        ).length;
+
+        const savedCount = buildings.filter(b =>
+            b.source === 'db' || !b.timestamp || (now - b.timestamp) >= RECENT_THRESHOLD
+        ).length;
+
         const totalCategories = buildings.reduce((sum, b) => sum + b.categories.length, 0);
 
-        return { singleCount, rangeCount, dbCount, totalCategories };
+        return { recentSingle, recentRange, savedCount, totalCategories };
     }, [buildings]);
 
     // EmptyState
@@ -179,20 +193,20 @@ export function RecommendationListSection() {
                     <span className="font-medium text-sm text-orange-700">AI 추천</span>
                     <Badge variant="outline" className="text-xs h-5">{buildings.length}</Badge>
 
-                    {/* ✅ 소스별 뱃지 */}
-                    {statistics.singleCount > 0 && (
+                    {/* ✅ 시간 기준 소스별 뱃지 */}
+                    {statistics.recentSingle > 0 && (
                         <Badge variant="outline" className="text-xs h-5 bg-blue-50 text-blue-600">
-                            단일 {statistics.singleCount}
+                            단일 {statistics.recentSingle}
                         </Badge>
                     )}
-                    {statistics.rangeCount > 0 && (
+                    {statistics.recentRange > 0 && (
                         <Badge variant="outline" className="text-xs h-5 bg-green-50 text-green-600">
-                            범위 {statistics.rangeCount}
+                            범위 {statistics.recentRange}
                         </Badge>
                     )}
-                    {statistics.dbCount > 0 && (
+                    {statistics.savedCount > 0 && (
                         <Badge variant="outline" className="text-xs h-5 bg-purple-50 text-purple-600">
-                            DB {statistics.dbCount}
+                            저장됨 {statistics.savedCount}
                         </Badge>
                     )}
 
@@ -223,12 +237,12 @@ export function RecommendationListSection() {
                     <div className="px-2 pb-2 border-t">
                         <div ref={scrollRef} className="space-y-2 mt-2 max-h-[550px] overflow-y-auto">
 
-                            {/* ✅ 건물별 추천 아이템들 */}
                             {buildings.map((building) => (
                                 <BuildingRecommendationItem
                                     key={building.building.building_id}
                                     building={building.building}
                                     categories={building.categories}
+                                    source={building.source} // ✅ source 전달
                                     isFavorite={building.isFavorite || false}
                                     isHighlighted={String(building.building.building_id) === highlightedRecommendationId}
                                     isVisible={building.isVisible || false}
@@ -238,7 +252,6 @@ export function RecommendationListSection() {
                                     onCategoryDelete={handleCategoryDelete}
                                     onClick={handleBuildingClick}
                                     onToggleVisibility={handleToggleVisibility}
-                                    onDetailView={handleDetailView}
                                     onMoveToTop={moveBuildingToTop}
                                 />
                             ))}

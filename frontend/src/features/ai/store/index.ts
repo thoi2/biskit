@@ -8,28 +8,114 @@ import type {
     RecommendationMarker,
 } from '../types';
 
-// ✅ 배열에서 대표값 추출 함수
-const getDisplaySurvivalRate = (rates: number[] | number): number => {
+// ✅ 배열에서 대표값 추출 함수 (폐업률)
+const getDisplayFailureRate = (rates: number[] | number): number => {
     if (Array.isArray(rates)) {
-        if (rates.length === 0) return 0;
+        if (rates.length === 0) return 100;
         return rates[rates.length - 1];
     }
-    return typeof rates === 'number' ? rates : 0;
+    return typeof rates === 'number' ? rates : 100;
 };
 
-// ✅ 생존율 기준 점수 계산 함수
-const calculateCategoryScore = (survivalRate: number[]): number => {
-    if (!Array.isArray(survivalRate) || survivalRate.length === 0) return 0;
+// ✅ 폐업률 기준 점수 계산 함수 (낮을수록 좋음)
+const calculateCategoryScore = (failureRate: number[]): number => {
+    if (!Array.isArray(failureRate) || failureRate.length === 0) return 100;
 
-    // 5년차 생존율 우선, 없으면 평균
-    if (survivalRate.length >= 5) {
-        return survivalRate[4]; // 5년차 (인덱스 4)
+    if (failureRate.length >= 5) {
+        return failureRate[4]; // 5년차 폐업률
     }
-    return survivalRate.reduce((sum, rate) => sum + rate, 0) / survivalRate.length;
+    return failureRate.reduce((sum, rate) => sum + rate, 0) / failureRate.length;
+};
+
+// ✅ 카테고리 병합 로직
+const mergeCategories = (existing: CategoryInfo[], newCategories: CategoryInfo[]) => {
+    const merged = [...existing];
+
+    newCategories.forEach(newCat => {
+        const existingIndex = merged.findIndex(cat => cat.category === newCat.category);
+
+        if (existingIndex >= 0) {
+            // 같은 업종이면 더 최신 데이터로 교체
+            merged[existingIndex] = {
+                ...newCat,
+                rank: newCat.rank || merged[existingIndex].rank
+            };
+        } else {
+            // 새로운 업종이면 추가
+            merged.push(newCat);
+        }
+    });
+
+    // 폐업률 기준으로 재정렬
+    return merged
+        .map(cat => ({
+            ...cat,
+            score: calculateCategoryScore(cat.survivalRate)
+        }))
+        .sort((a, b) => a.score - b.score)
+        .map((cat, index) => ({
+            category: cat.category,
+            survivalRate: cat.survivalRate,
+            rank: index + 1,
+            sessionId: cat.sessionId,
+            isRangeResult: cat.isRangeResult
+        }));
+};
+
+// ✅ 스마트 병합 로직
+const smartMerge = (
+    existingBuilding: BuildingRecommendation,
+    newData: any,
+    newSource: 'single' | 'range' | 'db'
+): BuildingRecommendation => {
+    const now = Date.now();
+
+    // 1. 새로운 검색 결과가 DB 데이터를 덮어씀
+    if (newSource !== 'db' && existingBuilding.source === 'db') {
+        console.log('🔄 DB 데이터를 새 검색 결과로 교체');
+        return {
+            building: newData.building,
+            categories: newData.categories || [],
+            source: newSource,
+            timestamp: now,
+            lastUpdated: new Date().toISOString(),
+            isFavorite: existingBuilding.isFavorite,
+            isVisible: true
+        };
+    }
+
+    // 2. 같은 소스끼리는 카테고리 병합
+    if (existingBuilding.source === newSource) {
+        console.log('🔄 같은 소스 - 카테고리 병합');
+        return {
+            ...existingBuilding,
+            categories: mergeCategories(existingBuilding.categories, newData.categories || []),
+            timestamp: now,
+            lastUpdated: new Date().toISOString()
+        };
+    }
+
+    // 3. 최신 검색 결과가 30초 이내면 DB 데이터 무시
+    if (existingBuilding.source !== 'db' && newSource === 'db') {
+        if (existingBuilding.timestamp && (now - existingBuilding.timestamp) < 30000) {
+            console.log('🔄 최신 검색 결과 유지, DB 데이터 무시');
+            return existingBuilding;
+        }
+    }
+
+    // 기본값: 새 데이터로 교체
+    return {
+        building: newData.building,
+        categories: newData.categories || [],
+        source: newSource,
+        timestamp: now,
+        lastUpdated: new Date().toISOString(),
+        isFavorite: existingBuilding.isFavorite || false,
+        isVisible: true
+    };
 };
 
 interface RecommendationState {
-    // ✅ 건물별 통합 관리
     buildings: BuildingRecommendation[];
     recommendationMarkers: RecommendationMarker[];
     isLoading: boolean;
@@ -39,13 +125,9 @@ interface RecommendationState {
     startRequest: () => void;
     setRequestError: (error: string) => void;
 
-    // ✅ Single 결과 추가 (중복 방지 + 순위 재계산)
+    // ✅ 스마트 결과 추가
     addSingleResult: (result: SingleBuildingRecommendationResponse) => void;
-
-    // ✅ Range 결과 추가
     addRangeResult: (result: RangeRecommendationResponse) => void;
-
-    // ✅ DB 결과 병합
     mergeWithBackendResults: (backendResults: any[]) => void;
 
     // 마커 관리
@@ -58,8 +140,6 @@ interface RecommendationState {
     deleteCategoryFromBuilding: (buildingId: number, categoryId: number) => void;
     toggleBuildingVisibility: (buildingId: number) => void;
     updateBuildingFavorite: (buildingId: number, isFavorite: boolean) => void;
-
-    // ✅ 건물 맨 위로 이동
     moveBuildingToTop: (buildingId: number) => void;
 
     // 하이라이트 관리
@@ -79,18 +159,10 @@ export const useRecommendationStore = create<RecommendationState>()((set, get) =
     startRequest: () => set({ isLoading: true, error: null }),
     setRequestError: (error: string) => set({ error, isLoading: false }),
 
-    // ✅ Single 결과를 중복 체크 후 순위 재계산하여 추가
-
-    // ✅ Range 결과를 건물별로 변환 후 추가
-
-    // ✅ 백엔드 결과 병합
-
-    // ✅ 건물 맨 위로 이동
     moveBuildingToTop: (buildingId: number) => {
         const { buildings } = get();
-
         const targetIndex = buildings.findIndex(b => b.building.building_id === buildingId);
-        if (targetIndex <= 0) return; // 이미 맨 위거나 없음
+        if (targetIndex <= 0) return;
 
         const newBuildings = [...buildings];
         const [targetBuilding] = newBuildings.splice(targetIndex, 1);
@@ -100,18 +172,14 @@ export const useRecommendationStore = create<RecommendationState>()((set, get) =
         set({ buildings: newBuildings });
     },
 
-    // ✅ 건물-마커 동기화
     syncMarkersWithBuildings: () => {
         const { buildings, recommendationMarkers } = get();
-
-        console.log('🔄 [syncMarkersWithBuildings] 건물-마커 동기화:', buildings.length);
 
         if (buildings.length === 0) {
             set({ recommendationMarkers: [] });
             return;
         }
 
-        // 기존 마커 상태 보존
         const existingStates = new Map();
         recommendationMarkers.forEach(marker => {
             if (marker.buildingId) {
@@ -138,7 +206,7 @@ export const useRecommendationStore = create<RecommendationState>()((set, get) =
                 category: topCategory.category,
                 lat: building.building.lat,
                 lng: building.building.lng,
-                survivalRate: getDisplaySurvivalRate(topCategory.survivalRate),
+                survivalRate: getDisplayFailureRate(topCategory.survivalRate),
                 type: 'recommendation' as const,
                 source: building.source,
                 isHighlighted: preservedState.isHighlighted,
@@ -150,7 +218,6 @@ export const useRecommendationStore = create<RecommendationState>()((set, get) =
         set({ recommendationMarkers: newMarkers });
     },
 
-    // ✅ 건물 관리 액션들
     deleteBuilding: (buildingId: number) => {
         const { buildings, recommendationMarkers } = get();
 
@@ -164,111 +231,58 @@ export const useRecommendationStore = create<RecommendationState>()((set, get) =
         });
     },
 
-    // src/features/ai/store.ts의 해당 부분 수정
-
-// ✅ Single 결과를 중복 체크 후 순위 재계산하여 추가
+    // ✅ 스마트 Single 결과 처리
     addSingleResult: (result: SingleBuildingRecommendationResponse) => {
         const { buildings } = get();
         const buildingId = result.building.building_id;
 
         console.log('📥 [addSingleResult] 새 Single 결과:', buildingId);
 
-        // 기존 건물 찾기
         const existingIndex = buildings.findIndex(b => b.building.building_id === buildingId);
 
-        // 새로 받은 카테고리들
         const newCategories = result.result.map((cat, index) => ({
             category: cat.category,
             survivalRate: cat.survivalRate,
             rank: index + 1,
             sessionId: `single-${buildingId}-${Date.now()}`,
-            isRangeResult: false // ✅ 명시적으로 추가
+            isRangeResult: false
         }));
 
+        const newData = {
+            building: result.building,
+            categories: newCategories
+        };
+
         if (existingIndex >= 0) {
-            // ✅ 기존 건물이 있는 경우 - 중복 체크 & 병합
+            // ✅ 스마트 병합 적용
             const existing = buildings[existingIndex];
-            const existingCategoryNames = new Set(existing.categories.map(c => c.category));
+            const merged = smartMerge(existing, newData, 'single');
 
-            // 중복되지 않은 새 카테고리만 필터링
-            const uniqueNewCategories = newCategories.filter(newCat =>
-                !existingCategoryNames.has(newCat.category)
-            );
-
-            console.log('🔍 [중복 체크]', {
-                기존카테고리: existing.categories.length,
-                새카테고리: newCategories.length,
-                중복제거후: uniqueNewCategories.length
-            });
-
-            if (uniqueNewCategories.length > 0) {
-                // ✅ 모든 카테고리 합쳐서 순위 재계산
-                const allCategories = [...existing.categories, ...uniqueNewCategories];
-
-                // 생존율 기준으로 정렬 후 순위 재할당
-                const sortedCategories = allCategories
-                    .map(cat => ({
-                        category: cat.category,
-                        survivalRate: cat.survivalRate,
-                        sessionId: cat.sessionId,
-                        isRangeResult: cat.isRangeResult || false, // ✅ 기본값 설정
-                        score: calculateCategoryScore(cat.survivalRate)
-                    }))
-                    .sort((a, b) => b.score - a.score) // 내림차순
-                    .map((cat, index) => ({
-                        category: cat.category,
-                        survivalRate: cat.survivalRate,
-                        rank: index + 1, // ✅ 새로운 순위
-                        sessionId: cat.sessionId,
-                        isRangeResult: cat.isRangeResult // ✅ 속성 보존
-                    }));
-
-                // 기존 건물 업데이트
-                const newBuildings = [...buildings];
-                newBuildings[existingIndex] = {
-                    ...existing,
-                    categories: sortedCategories, // ✅ 순위 재계산된 카테고리들
-                    lastUpdated: result.meta.last_at
-                };
-
-                console.log('✅ [건물 업데이트] 순위 재계산:', {
-                    건물ID: buildingId,
-                    총카테고리: sortedCategories.length,
-                    새로추가: uniqueNewCategories.length
-                });
-
-                set({ buildings: newBuildings });
-            } else {
-                console.log('⏭️ [스킵] 모든 카테고리가 중복됨:', buildingId);
-                // 중복이어도 하이라이트는 해야 함
-                get().highlightMarker(buildingId);
-                return; // 추가 처리 없이 종료
-            }
+            const newBuildings = [merged, ...buildings.filter(b => b.building.building_id !== buildingId)];
+            set({ buildings: newBuildings });
         } else {
-            // ✅ 새 건물 추가
+            // 새 건물 추가
             const newBuilding: BuildingRecommendation = {
                 building: result.building,
                 categories: newCategories,
                 source: 'single',
+                timestamp: Date.now(),
                 lastUpdated: result.meta.last_at,
                 isVisible: true
             };
 
-            const newBuildings = [newBuilding, ...buildings];
-            console.log('✅ 새 건물 추가:', buildingId);
-            set({ buildings: newBuildings });
+            set({ buildings: [newBuilding, ...buildings] });
         }
 
         set({ isLoading: false, error: null });
 
-        // 마커 동기화 및 하이라이트
         setTimeout(() => {
             get().syncMarkersWithBuildings();
             get().highlightMarker(buildingId);
         }, 100);
     },
 
-// ✅ Range 결과를 건물별로 변환 후 추가
+    // ✅ 스마트 Range 결과 처리
     addRangeResult: (result: RangeRecommendationResponse) => {
         const { buildings } = get();
 
@@ -285,51 +299,31 @@ export const useRecommendationStore = create<RecommendationState>()((set, get) =
                 category: item.category,
                 survivalRate: item.survivalRate,
                 rank: index + 1,
-                isRangeResult: true, // ✅ Range 결과 표시
+                isRangeResult: true,
                 sessionId: `range-${buildingId}-${Date.now()}`
             };
 
+            const newData = {
+                building: {
+                    building_id: buildingId,
+                    lat: Number(item.lat),
+                    lng: Number(item.lng)
+                },
+                categories: [rangeCategory]
+            };
+
             if (existingIndex >= 0) {
-                // 기존 건물에 Range 카테고리 추가 (중복 체크)
+                // ✅ 스마트 병합 적용
                 const existing = newBuildings[existingIndex];
-                const existingCategoryNames = new Set(existing.categories.map(c => c.category));
-
-                if (!existingCategoryNames.has(item.category)) {
-                    // ✅ 중복 안되면 추가 후 순위 재계산
-                    const allCategories = [...existing.categories, rangeCategory];
-                    const sortedCategories = allCategories
-                        .map(cat => ({
-                            category: cat.category,
-                            survivalRate: cat.survivalRate,
-                            sessionId: cat.sessionId,
-                            isRangeResult: cat.isRangeResult || false, // ✅ 기본값 설정
-                            score: calculateCategoryScore(cat.survivalRate)
-                        }))
-                        .sort((a, b) => b.score - a.score)
-                        .map((cat, idx) => ({
-                            category: cat.category,
-                            survivalRate: cat.survivalRate,
-                            rank: idx + 1,
-                            sessionId: cat.sessionId,
-                            isRangeResult: cat.isRangeResult // ✅ 속성 보존
-                        }));
-
-                    newBuildings[existingIndex] = {
-                        ...existing,
-                        categories: sortedCategories,
-                        lastUpdated: timestamp
-                    };
-                }
+                const merged = smartMerge(existing, newData, 'range');
+                newBuildings[existingIndex] = merged;
             } else {
                 // 새 건물 생성
                 newBuildings.unshift({
-                    building: {
-                        building_id: buildingId,
-                        lat: Number(item.lat),
-                        lng: Number(item.lng)
-                    },
+                    building: newData.building,
                     categories: [rangeCategory],
                     source: 'range',
+                    timestamp: Date.now(),
                     lastUpdated: timestamp,
                     isVisible: true
                 });
@@ -342,86 +336,130 @@ export const useRecommendationStore = create<RecommendationState>()((set, get) =
             error: null
         });
 
-        // 마커 동기화
         setTimeout(() => get().syncMarkersWithBuildings(), 100);
     },
 
-// ✅ 백엔드 결과 병합 (타입 안전성 확보)
+    // ✅ DB API 응답 구조에 맞는 mergeWithBackendResults
     mergeWithBackendResults: (backendResults: any[]) => {
         console.log('🔄 [mergeWithBackendResults] DB 결과 병합:', backendResults.length);
 
-        const backendBuildings: BuildingRecommendation[] = backendResults.map(item => ({
-            building: {
-                building_id: item.buildingId,
-                lat: parseFloat(String(item.lat)),
-                lng: parseFloat(String(item.lng))
-            },
-            categories: item.categories.map((cat: any, index: number) => ({
-                category: cat.category,
-                survivalRate: cat.survivalRate,
-                rank: index + 1,
-                isRangeResult: false, // ✅ DB 결과는 기본적으로 단일 검색 결과
-                sessionId: `db-${item.buildingId}-${Date.now()}-${index}`
-            })),
-            source: 'db' as const,
-            lastUpdated: new Date().toISOString(),
-            isFavorite: item.favorite || false,
-            isVisible: true
-        }));
-
         const { buildings } = get();
-        const mergedMap = new Map<number, BuildingRecommendation>();
+        const now = Date.now();
+        const updatedBuildings = [...buildings];
 
-        // 1. 백엔드 결과 먼저 추가
-        backendBuildings.forEach(building => {
-            mergedMap.set(building.building.building_id, building);
-        });
+        backendResults.forEach(item => {
+            console.log('📝 [DB ITEM] 원본 데이터:', item);
 
-        // 2. 현재 결과 추가 (중복되면 카테고리 병합)
-        buildings.forEach(building => {
-            const existing = mergedMap.get(building.building.building_id);
-            if (existing && existing.source === 'db') {
-                // DB 결과 + 현재 결과 카테고리 병합 (중복 제거)
-                const existingCategoryNames = new Set(existing.categories.map(c => c.category));
-                const uniqueCurrentCategories = building.categories.filter(c =>
-                    !existingCategoryNames.has(c.category)
-                );
+            // ✅ DB API 응답 구조 처리
+            const buildingId = item.buildingId;
+            const buildingLat = Number(item.lat);
+            const buildingLng = Number(item.lng);
+            const isFavorite = !!item.favorite;
 
-                const allCategories = [...existing.categories, ...uniqueCurrentCategories];
-                const sortedCategories = allCategories
-                    .map(cat => ({
-                        category: cat.category,
-                        survivalRate: cat.survivalRate,
-                        sessionId: cat.sessionId,
-                        isRangeResult: cat.isRangeResult || false, // ✅ 기본값 설정
-                        score: calculateCategoryScore(cat.survivalRate)
-                    }))
-                    .sort((a, b) => b.score - a.score)
-                    .map((cat, idx) => ({
-                        category: cat.category,
-                        survivalRate: cat.survivalRate,
-                        rank: idx + 1,
-                        sessionId: cat.sessionId,
-                        isRangeResult: cat.isRangeResult // ✅ 속성 보존
-                    }));
+            if (!buildingId) {
+                console.warn('⚠️ [WARNING] buildingId가 없는 DB 항목:', item);
+                return;
+            }
 
-                mergedMap.set(building.building.building_id, {
-                    ...building,
-                    categories: sortedCategories,
-                    isFavorite: existing.isFavorite // DB의 즐겨찾기 상태 유지
+            // ✅ categories 배열을 CategoryInfo로 변환
+            const dbCategories: CategoryInfo[] = (item.categories || []).map((cat: any, index: number) => {
+                console.log(`  📝 [CATEGORY] ${index + 1}/${item.categories.length}:`, {
+                    category: cat.category,
+                    survivalRate: cat.survivalRate
+                });
+
+                return {
+                    category: cat.category,
+                    survivalRate: cat.survivalRate || [],
+                    rank: index + 1, // DB에서는 이미 정렬되어 왔다고 가정
+                    isRangeResult: false,
+                    sessionId: `db-${buildingId}-${Date.now()}-${index}`
+                };
+            });
+
+            if (dbCategories.length === 0) {
+                console.warn('⚠️ [WARNING] categories가 비어있는 DB 항목:', item);
+                return;
+            }
+
+            const existingIndex = updatedBuildings.findIndex(
+                b => b.building.building_id === buildingId
+            );
+
+            const buildingInfo = {
+                building_id: buildingId,
+                lat: buildingLat,
+                lng: buildingLng
+            };
+
+            const newBuilding: BuildingRecommendation = {
+                building: buildingInfo,
+                categories: dbCategories,
+                source: 'db',
+                timestamp: now,
+                lastUpdated: new Date().toISOString(),
+                isFavorite: isFavorite,
+                isVisible: true
+            };
+
+            if (existingIndex >= 0) {
+                const existing = updatedBuildings[existingIndex];
+
+                // 최신 검색 결과가 30초 이내면 DB 데이터 무시
+                if (existing.source !== 'db' && existing.timestamp && (now - existing.timestamp) < 30000) {
+                    console.log('🔄 최신 검색 결과 유지, DB 데이터 무시:', buildingId);
+                    return;
+                }
+
+                const merged = smartMerge(existing, newBuilding, 'db');
+                merged.isFavorite = isFavorite; // DB의 favorite 상태가 진짜
+                updatedBuildings[existingIndex] = merged;
+
+                console.log('✅ [DB UPDATE] 기존 건물 업데이트:', {
+                    buildingId,
+                    categories: merged.categories.length,
+                    isFavorite: merged.isFavorite
                 });
             } else {
-                mergedMap.set(building.building.building_id, building);
+                updatedBuildings.push(newBuilding);
+
+                console.log('✅ [DB ADD] 새 DB 건물 추가:', {
+                    buildingId,
+                    categories: dbCategories.length,
+                    isFavorite
+                });
             }
         });
 
-        const mergedBuildings = Array.from(mergedMap.values());
+        // ✅ 폐업률 기준으로 각 건물의 카테고리 재정렬
+        const finalBuildings = updatedBuildings.map(building => ({
+            ...building,
+            categories: building.categories
+                .map(cat => ({
+                    ...cat,
+                    score: calculateCategoryScore(cat.survivalRate)
+                }))
+                .sort((a, b) => a.score - b.score) // 폐업률 낮은 순
+                .map((cat, index) => ({
+                    category: cat.category,
+                    survivalRate: cat.survivalRate,
+                    rank: index + 1,
+                    sessionId: cat.sessionId,
+                    isRangeResult: cat.isRangeResult || false
+                }))
+        }));
 
-        set({ buildings: mergedBuildings });
-        setTimeout(() => get().syncMarkersWithBuildings(), 100);
+        set({ buildings: finalBuildings });
+
+        console.log('✅ [DB MERGE] DB 병합 완료:', {
+            totalBuildings: finalBuildings.length,
+            dbBuildings: finalBuildings.filter(b => b.source === 'db').length
+        });
+
+        // ✅ 마커 즉시 동기화 (좋아요 상태 반영)
+        setTimeout(() => get().syncMarkersWithBuildings(), 50);
     },
 
-// ✅ 카테고리 삭제 시에도 타입 안전성 확보
     deleteCategoryFromBuilding: (buildingId: number, categoryId: number) => {
         const { buildings } = get();
 
@@ -429,14 +467,22 @@ export const useRecommendationStore = create<RecommendationState>()((set, get) =
             if (building.building.building_id === buildingId) {
                 const filteredCategories = building.categories.filter(cat => cat.category_id !== categoryId);
 
-                // ✅ 카테고리 삭제 후 순위 재계산 (속성 보존)
-                const rerankedCategories = filteredCategories.map((cat, index) => ({
-                    category: cat.category,
-                    survivalRate: cat.survivalRate,
-                    rank: index + 1,
-                    sessionId: cat.sessionId,
-                    isRangeResult: cat.isRangeResult || false // ✅ 속성 보존
-                }));
+                const rerankedCategories = filteredCategories
+                    .map(cat => ({
+                        category: cat.category,
+                        survivalRate: cat.survivalRate,
+                        sessionId: cat.sessionId,
+                        isRangeResult: cat.isRangeResult || false,
+                        score: calculateCategoryScore(cat.survivalRate)
+                    }))
+                    .sort((a, b) => a.score - b.score)
+                    .map((cat, index) => ({
+                        category: cat.category,
+                        survivalRate: cat.survivalRate,
+                        rank: index + 1,
+                        sessionId: cat.sessionId,
+                        isRangeResult: cat.isRangeResult
+                    }));
 
                 return {
                     ...building,
@@ -444,9 +490,9 @@ export const useRecommendationStore = create<RecommendationState>()((set, get) =
                 };
             }
             return building;
-        }).filter(building => building.categories.length > 0); // 카테고리가 없는 건물 제거
+        }).filter(building => building.categories.length > 0);
 
-        console.log('🗑️ [deleteCategoryFromBuilding]:', buildingId, categoryId);
+        console.log('🗑️ [deleteCategoryFromBuilding] 폐업률 기준 재정렬:', buildingId, categoryId);
         set({ buildings: updatedBuildings });
         setTimeout(() => get().syncMarkersWithBuildings(), 100);
     },
@@ -464,6 +510,7 @@ export const useRecommendationStore = create<RecommendationState>()((set, get) =
         setTimeout(() => get().syncMarkersWithBuildings(), 100);
     },
 
+    // ✅ 좋아요 상태 업데이트 시 마커도 즉시 동기화
     updateBuildingFavorite: (buildingId: number, isFavorite: boolean) => {
         const { buildings } = get();
 
@@ -474,11 +521,18 @@ export const useRecommendationStore = create<RecommendationState>()((set, get) =
         );
 
         set({ buildings: updatedBuildings });
+
+        console.log('💖 [updateBuildingFavorite] 좋아요 상태 업데이트:', {
+            buildingId,
+            isFavorite
+        });
+
+        // ✅ 마커 즉시 동기화
+        setTimeout(() => get().syncMarkersWithBuildings(), 50);
     },
 
     // 마커 관리
     setRecommendationMarkers: (markers: RecommendationMarker[]) => {
-        console.log('🎯 [setRecommendationMarkers]:', markers.length);
         set({ recommendationMarkers: markers });
     },
 
@@ -531,7 +585,6 @@ export const useRecommendationStore = create<RecommendationState>()((set, get) =
     }
 }));
 
-// ✅ 편의성을 위한 스토어 상태 selectors
 export const useBuildings = () => useRecommendationStore(state => state.buildings);
 export const useRecommendationMarkers = () => useRecommendationStore(state => state.recommendationMarkers);
 export const useRecommendationLoading = () => useRecommendationStore(state => state.isLoading);

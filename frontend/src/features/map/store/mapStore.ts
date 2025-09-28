@@ -43,7 +43,7 @@ interface MapState {
 
   // 드로잉 상태 (다각형 추가)
   isDrawingMode: boolean;
-  isDrawingActive: boolean; // ✅ 추가
+  isDrawingActive: boolean;
   drawingType: 'rectangle' | 'circle' | 'polygon';
 
   // 추천 탭 핀 상태
@@ -71,7 +71,7 @@ interface MapActions {
 
   // 드로잉 액션
   setIsDrawingMode: (isDrawing: boolean) => void;
-  setIsDrawingActive: (active: boolean) => void; // ✅ 추가
+  setIsDrawingActive: (active: boolean) => void;
   setDrawingType: (type: 'rectangle' | 'circle' | 'polygon') => void;
 
   // 추천 핀 액션
@@ -82,6 +82,9 @@ interface MapActions {
   addRecommendationMarker: (marker: RecommendationMarker) => void;
   removeRecommendationMarker: (markerId: string) => void;
   clearRecommendationMarkers: () => void;
+
+  // ✅ 지도 이동 액션 추가
+  moveToLocation: (lat: number, lng: number, level?: number, animate?: boolean) => void;
 }
 
 // Map Store
@@ -104,7 +107,7 @@ export const useMapStore = create<MapState & MapActions>()((set, get) => ({
 
   // 드로잉 초기 상태
   isDrawingMode: false,
-  isDrawingActive: false, // ✅ 추가
+  isDrawingActive: false,
   drawingType: 'rectangle',
 
   // 추천 핀 초기 상태
@@ -183,7 +186,7 @@ export const useMapStore = create<MapState & MapActions>()((set, get) => ({
 
   // 드로잉 액션들
   setIsDrawingMode: isDrawing => set({ isDrawingMode: isDrawing }),
-  setIsDrawingActive: active => set({ isDrawingActive: active }), // ✅ 추가
+  setIsDrawingActive: active => set({ isDrawingActive: active }),
   setDrawingType: type => set({ drawingType: type }),
 
   // 추천 핀 액션
@@ -207,6 +210,36 @@ export const useMapStore = create<MapState & MapActions>()((set, get) => ({
 
   clearRecommendationMarkers: () => set({ recommendationMarkers: [] }),
 
+  // ✅ 지도 이동 함수 추가
+  moveToLocation: (lat: number, lng: number, level = 4, animate = true) => {
+    const { map } = get();
+    if (!map || !lat || !lng) {
+      console.warn('🗺️ 지도 이동 실패: 지도 또는 좌표가 없음');
+      return;
+    }
+
+    console.log('🗺️ 지도 이동:', { lat, lng, level, animate });
+
+    try {
+      const moveLatLng = new window.kakao.maps.LatLng(lat, lng);
+
+      if (animate) {
+        // ✅ 부드러운 애니메이션 이동
+        map.panTo(moveLatLng);
+      } else {
+        // ✅ 즉시 이동
+        map.setCenter(moveLatLng);
+      }
+
+      // ✅ 줌 레벨 조정 (현재보다 확대할 때만)
+      if (level && map.getLevel() > level) {
+        map.setLevel(level);
+      }
+    } catch (error) {
+      console.error('🗺️ 지도 이동 중 오류:', error);
+    }
+  },
+
   clearMapState: () =>
       set(state => {
         if (state.recommendPin) {
@@ -217,12 +250,12 @@ export const useMapStore = create<MapState & MapActions>()((set, get) => ({
           selectedCategories: [],
           highlightedStoreId: null,
           highlightedRecommendationId: null,
-          activeHighlight: { type: null, id: null }, // ✅ 통합 하이라이트도 초기화
+          activeHighlight: { type: null, id: null },
           isSearching: false,
           coordinates: { lat: null, lng: null },
           map: null,
           isDrawingMode: false,
-          isDrawingActive: false, // ✅ 추가
+          isDrawingActive: false,
           drawingType: 'rectangle',
           recommendPin: null,
           recommendationMarkers: [],
@@ -231,4 +264,4 @@ export const useMapStore = create<MapState & MapActions>()((set, get) => ({
 }));
 
 // 타입 export
-export type { RecommendationMarker };
+export type { RecommendationMarker, Coordinates, ActiveHighlight, MapState, MapActions };

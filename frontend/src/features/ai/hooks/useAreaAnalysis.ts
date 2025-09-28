@@ -1,5 +1,15 @@
 // src/features/ai/hooks/useAreaAnalysis.ts
 import { useState, useCallback } from 'react';
+import { getRangeRecommendation } from '@/features/ai/api';
+// ✅ 타입과 함수를 분리해서 import
+import type { RangeApiResponse } from '@/features/ai/types'; // 타입만
+import { isRangeApiResponse } from '@/features/ai/types';    // 함수는 일반 import
+
+// 또는 간단하게 타입 가드를 사용하지 않고 any로 처리
+// ✅ 좌표 포맷팅 유틸리티 함수
+const formatCoordinateForDB = (coord: number): number => {
+    return parseFloat(coord.toFixed(12));
+};
 
 interface PolygonPoint {
     lat: number;
@@ -15,15 +25,14 @@ interface AreaInfo {
 
 interface AnalysisResult {
     success: boolean;
-    analysisId?: string;
     recommendations?: Array<{
         id: string;
-        title: string;
         category: string;
-        score: number;
-        description: string;
         lat: number;
         lng: number;
+        survivalRate: number[];
+        buildingId: number;
+        score: number;
     }>;
     summary?: {
         totalStores: number;
@@ -33,7 +42,6 @@ interface AnalysisResult {
     error?: string;
 }
 
-// ✅ export function으로 명시적 export
 export function useAreaAnalysis(
     drawnArea: PolygonPoint[] | null,
     areaCategory: string,
@@ -63,61 +71,152 @@ export function useAreaAnalysis(
                 polygonPoints: drawnArea.length
             });
 
-            // 임시 분석 시뮬레이션 (2초 딜레이)
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // ✅ 좌표 포맷팅 적용
+            const formattedPolygon = drawnArea.map(point => {
+                const formattedLat = formatCoordinateForDB(point.lat);
+                const formattedLng = formatCoordinateForDB(point.lng);
 
-            // 영역 중심점 계산
-            const centerLat = drawnArea.reduce((sum, point) => sum + point.lat, 0) / drawnArea.length;
-            const centerLng = drawnArea.reduce((sum, point) => sum + point.lng, 0) / drawnArea.length;
+                if (formattedLat < -90 || formattedLat > 90) {
+                    throw new Error(`위도는 -90.0 ~ 90.0 범위여야 합니다: ${formattedLat}`);
+                }
+                if (formattedLng < -180 || formattedLng > 180) {
+                    throw new Error(`경도는 -180.0 ~ 180.0 범위여야 합니다: ${formattedLng}`);
+                }
 
-            // Mock 분석 결과
-            const mockResult: AnalysisResult = {
-                success: true,
-                analysisId: `area_${Date.now()}`,
-                recommendations: [
-                    {
-                        id: `rec_1_${Date.now()}`,
-                        title: `${areaCategory} 추천 입지 #1`,
-                        category: areaCategory,
-                        score: 85,
-                        description: '높은 유동인구와 접근성이 우수한 위치입니다.',
-                        lat: centerLat + (Math.random() - 0.5) * 0.001,
-                        lng: centerLng + (Math.random() - 0.5) * 0.001
-                    },
-                    {
-                        id: `rec_2_${Date.now()}`,
-                        title: `${areaCategory} 추천 입지 #2`,
-                        category: areaCategory,
-                        score: 78,
-                        description: '경쟁업체가 적고 임대료가 적절한 지역입니다.',
-                        lat: centerLat + (Math.random() - 0.5) * 0.001,
-                        lng: centerLng + (Math.random() - 0.5) * 0.001
-                    },
-                    {
-                        id: `rec_3_${Date.now()}`,
-                        title: `${areaCategory} 추천 입지 #3`,
-                        category: areaCategory,
-                        score: 72,
-                        description: '향후 개발 계획이 있어 성장 가능성이 높습니다.',
-                        lat: centerLat + (Math.random() - 0.5) * 0.001,
-                        lng: centerLng + (Math.random() - 0.5) * 0.001
+                return {
+                    lat: formattedLat,
+                    lng: formattedLng
+                };
+            });
+
+            console.log('📍 좌표 포맷팅 완료');
+
+            const rangeRequest = {
+                polygon: formattedPolygon,
+                category: areaCategory
+            };
+
+            console.log('📤 Range API 요청:', rangeRequest);
+
+            const apiResponse = await getRangeRecommendation(rangeRequest);
+
+            console.log('📥 [RAW] 전체 응답:', apiResponse);
+
+            // ✅ 간단하게 any로 처리 (타입 가드 사용하지 않음)
+            let items: any[] = [];
+            const responseData = apiResponse as any;
+
+            if (responseData?.body?.items && Array.isArray(responseData.body.items)) {
+                items = responseData.body.items;
+                console.log('📥 [PARSE] body.items 구조 감지, items 개수:', items.length);
+            } else if (responseData?.body && Array.isArray(responseData.body)) {
+                items = responseData.body;
+                console.log('📥 [PARSE] body 배열 구조 감지, items 개수:', items.length);
+            } else if (responseData?.items && Array.isArray(responseData.items)) {
+                items = responseData.items;
+                console.log('📥 [PARSE] 직접 items 구조 감지, items 개수:', items.length);
+            } else if (Array.isArray(responseData)) {
+                items = responseData;
+                console.log('📥 [PARSE] 직접 배열 구조 감지, items 개수:', items.length);
+            } else {
+                console.error('❌ [ERROR] 알 수 없는 응답 구조:', {
+                    response: responseData,
+                    hasBody: !!responseData?.body,
+                    bodyType: typeof responseData?.body,
+                    hasBodyItems: !!(responseData?.body?.items),
+                    bodyItemsType: typeof responseData?.body?.items
+                });
+                throw new Error('범위 분석 응답 구조를 인식할 수 없습니다.');
+            }
+
+            console.log('📥 [SUCCESS] 파싱된 items:', items);
+
+            if (!Array.isArray(items)) {
+                console.error('❌ [ERROR] items가 배열이 아님:', typeof items, items);
+                throw new Error('범위 분석 응답에 올바른 items가 없습니다.');
+            }
+
+            if (items.length === 0) {
+                console.warn('⚠️ [WARNING] 검색 결과가 비어있음');
+                setAnalysisResult({
+                    success: true,
+                    recommendations: [],
+                    summary: {
+                        totalStores: 0,
+                        averageScore: 0,
+                        riskLevel: 'high'
                     }
-                ],
+                });
+                return;
+            }
+
+            // ✅ API 응답을 AnalysisResult 형태로 변환
+            const recommendations = items.map((item: any, index: number) => {
+                console.log(`📝 [CONVERT] ${index + 1}/${items.length}:`, {
+                    building_id: item.building_id || item.buildingId,
+                    category: item.category,
+                    lat: item.lat,
+                    lng: item.lng,
+                    survival_rate: item.survival_rate || item.survivalRate
+                });
+
+                const buildingId = item.building_id || item.buildingId;
+                const survivalRate = item.survival_rate || item.survivalRate || [];
+                const score = calculateScoreFromSurvivalRate(survivalRate);
+
+                if (!buildingId) {
+                    console.warn('⚠️ [WARNING] building_id가 없는 항목:', item);
+                }
+
+                return {
+                    id: `${buildingId || `unknown-${index}`}`,
+                    category: item.category || areaCategory,
+                    lat: Number(item.lat) || 0,
+                    lng: Number(item.lng) || 0,
+                    survivalRate: survivalRate,
+                    buildingId: buildingId || 0,
+                    score: score
+                };
+            });
+
+            const analysisResult: AnalysisResult = {
+                success: true,
+                recommendations: recommendations,
                 summary: {
-                    totalStores: areaInfo.storeCount,
-                    averageScore: 78,
-                    riskLevel: areaInfo.storeCount > 50 ? 'high' : areaInfo.storeCount > 20 ? 'medium' : 'low'
+                    totalStores: items.length,
+                    averageScore: calculateAverageScore(items),
+                    riskLevel: determineRiskLevel(items.length, areaInfo.storeCount)
                 }
             };
 
-            setAnalysisResult(mockResult);
-            console.log('✅ 영역 분석 완료:', mockResult);
+            setAnalysisResult(analysisResult);
+            console.log('✅ 영역 분석 완료:', {
+                totalRecommendations: recommendations.length,
+                averageScore: analysisResult.summary?.averageScore,
+                riskLevel: analysisResult.summary?.riskLevel
+            });
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('❌ 영역 분석 실패:', error);
+            console.error('❌ 에러 스택:', error.stack);
+
+            let errorMessage = '영역 분석 중 오류가 발생했습니다.';
+
+            if (error.message.includes('위도') || error.message.includes('경도')) {
+                errorMessage = `좌표 범위 오류: ${error.message}`;
+            } else if (error.response?.status === 400) {
+                errorMessage = error.response?.data?.message || '잘못된 요청입니다.';
+            } else if (error.response?.status === 500) {
+                errorMessage = '서버 내부 오류가 발생했습니다.';
+            } else if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+
             setAnalysisResult({
                 success: false,
-                error: '영역 분석 중 오류가 발생했습니다.'
+                error: errorMessage
             });
         } finally {
             setIsAreaAnalyzing(false);
@@ -138,8 +237,37 @@ export function useAreaAnalysis(
     };
 }
 
-// ✅ 추가로 named export도 명시
-export { useAreaAnalysis as default };
+// ✅ 헬퍼 함수들
+function calculateScoreFromSurvivalRate(survivalRate: number[]): number {
+    if (!survivalRate || survivalRate.length === 0) return 0;
 
-// ✅ 타입들도 export
+    const failureRate = survivalRate.length >= 5
+        ? survivalRate[4]
+        : survivalRate.reduce((sum, rate) => sum + rate, 0) / survivalRate.length;
+
+    const score = Math.max(0, Math.min(100, 100 - failureRate));
+    return Math.round(score * 10) / 10;
+}
+
+function calculateAverageScore(items: any[]): number {
+    if (!items || items.length === 0) return 0;
+
+    const totalScore = items.reduce((sum, item) => {
+        return sum + calculateScoreFromSurvivalRate(item.survival_rate || item.survivalRate || []);
+    }, 0);
+
+    return Math.round(totalScore / items.length);
+}
+
+function determineRiskLevel(recommendedCount: number, totalStoreCount: number): 'low' | 'medium' | 'high' {
+    if (recommendedCount === 0) return 'high';
+
+    const ratio = totalStoreCount > 0 ? recommendedCount / totalStoreCount : 0;
+
+    if (ratio > 0.3 || recommendedCount >= 10) return 'low';
+    if (ratio > 0.1 || recommendedCount >= 5) return 'medium';
+    return 'high';
+}
+
+export { useAreaAnalysis as default };
 export type { PolygonPoint, AreaInfo, AnalysisResult };

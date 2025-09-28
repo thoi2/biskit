@@ -211,7 +211,7 @@ export default function AIRecommendationStep({
     };
 
     const simulateAIProcess = async () => {
-        const delays = [1500, 1200, 2000, 800];
+        const delays = [2500, 2500, 2500, 2500];
 
         for (let i = 0; i < aiProcessSteps.length; i++) {
             setCurrentStepIndex(i);

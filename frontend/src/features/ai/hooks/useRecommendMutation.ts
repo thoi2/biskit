@@ -6,7 +6,7 @@ export const useRecommendMutations = () => {
   const queryClient = useQueryClient();
 
   const deleteResultMutation = useMutation({
-    mutationFn: (buildingId: string) => deleteResult(buildingId),
+    mutationFn: (buildingId: string) => deleteResult(parseInt(buildingId)), // ✅ string → number 변환
     onSuccess: (data) => {
       console.log('✅ 삭제 성공:', data);
       queryClient.invalidateQueries({ queryKey: ['recommendList'] });
@@ -17,7 +17,7 @@ export const useRecommendMutations = () => {
   });
 
   const addLikeMutation = useMutation({
-    mutationFn: (buildingId: string) => addLike(buildingId),
+    mutationFn: (buildingId: string) => addLike(parseInt(buildingId)), // ✅ string → number 변환
     onSuccess: (data) => {
       console.log('✅ 좋아요 추가 성공:', data);
       queryClient.invalidateQueries({ queryKey: ['recommendList'] });
@@ -25,7 +25,7 @@ export const useRecommendMutations = () => {
   });
 
   const deleteLikeMutation = useMutation({
-    mutationFn: (buildingId: string) => deleteLike(buildingId),
+    mutationFn: (buildingId: string) => deleteLike(parseInt(buildingId)), // ✅ string → number 변환
     onSuccess: (data) => {
       console.log('✅ 좋아요 삭제 성공:', data);
       queryClient.invalidateQueries({ queryKey: ['recommendList'] });

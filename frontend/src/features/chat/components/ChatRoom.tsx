@@ -29,7 +29,10 @@ export function ChatRoom({
   );
   const [isLoadingRoom, setIsLoadingRoom] = useState(false);
   const { user } = useAuth();
-  const { leaveRoom: wsLeaveRoom, connectionStatus: { isConnected } } = useGlobalWebSocket();
+  const {
+    leaveRoom: wsLeaveRoom,
+    connectionStatus: { isConnected },
+  } = useGlobalWebSocket();
 
   // useAuth에서 사용자 정보 가져오기
   const currentUserId = user?.userId;

@@ -196,40 +196,46 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     console.log('Global WebSocket 연결 해제 완료');
   };
 
-  const subscribe = useCallback((destination: string, callback: (message: any) => void) => {
-    if (!clientRef.current?.connected) {
-      handleError({
-        code: 'NOT_CONNECTED',
-        message: '웹소켓이 연결되지 않았습니다.',
-      });
-      return;
-    }
+  const subscribe = useCallback(
+    (destination: string, callback: (message: any) => void) => {
+      if (!clientRef.current?.connected) {
+        handleError({
+          code: 'NOT_CONNECTED',
+          message: '웹소켓이 연결되지 않았습니다.',
+        });
+        return;
+      }
 
-    try {
-      const subscription = clientRef.current.subscribe(destination, message => {
-        try {
-          const data = JSON.parse(message.body);
-          callback(data);
-        } catch (error) {
-          console.error('메시지 파싱 에러:', error);
-          handleError({
-            code: 'MESSAGE_PARSE_ERROR',
-            message: '메시지 파싱 중 오류가 발생했습니다.',
-            details: error,
-          });
-        }
-      });
+      try {
+        const subscription = clientRef.current.subscribe(
+          destination,
+          message => {
+            try {
+              const data = JSON.parse(message.body);
+              callback(data);
+            } catch (error) {
+              console.error('메시지 파싱 에러:', error);
+              handleError({
+                code: 'MESSAGE_PARSE_ERROR',
+                message: '메시지 파싱 중 오류가 발생했습니다.',
+                details: error,
+              });
+            }
+          },
+        );
 
-      subscriptionsRef.current.set(destination, subscription);
-      return subscription;
-    } catch (error) {
-      handleError({
-        code: 'SUBSCRIPTION_ERROR',
-        message: '구독 설정 중 오류가 발생했습니다.',
-        details: error,
-      });
-    }
-  }, []);
+        subscriptionsRef.current.set(destination, subscription);
+        return subscription;
+      } catch (error) {
+        handleError({
+          code: 'SUBSCRIPTION_ERROR',
+          message: '구독 설정 중 오류가 발생했습니다.',
+          details: error,
+        });
+      }
+    },
+    [],
+  );
 
   const unsubscribe = useCallback((destination: string) => {
     const subscription = subscriptionsRef.current.get(destination);
@@ -264,17 +270,26 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     }
   }, []);
 
-  const sendMessage = useCallback((roomId: string, messageRequest: any) => {
-    return publish(`/app/chat.sendMessage/${roomId}`, messageRequest);
-  }, [publish]);
+  const sendMessage = useCallback(
+    (roomId: string, messageRequest: any) => {
+      return publish(`/app/chat.sendMessage/${roomId}`, messageRequest);
+    },
+    [publish],
+  );
 
-  const joinRoom = useCallback((roomId: string) => {
-    return publish(`/app/chat.joinRoom/${roomId}`);
-  }, [publish]);
+  const joinRoom = useCallback(
+    (roomId: string) => {
+      return publish(`/app/chat.joinRoom/${roomId}`);
+    },
+    [publish],
+  );
 
-  const leaveRoom = useCallback((roomId: string) => {
-    return publish(`/app/chat.leaveRoom/${roomId}`);
-  }, [publish]);
+  const leaveRoom = useCallback(
+    (roomId: string) => {
+      return publish(`/app/chat.leaveRoom/${roomId}`);
+    },
+    [publish],
+  );
 
   // 로그인 상태 변경 시 연결/해제
   useEffect(() => {
@@ -289,15 +304,26 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     };
   }, [isLoggedIn]);
 
-  const contextValue: WebSocketContextType = useMemo(() => ({
-    connectionStatus,
-    subscribe,
-    unsubscribe,
-    publish,
-    sendMessage,
-    joinRoom,
-    leaveRoom,
-  }), [connectionStatus, subscribe, unsubscribe, publish, sendMessage, joinRoom, leaveRoom]);
+  const contextValue: WebSocketContextType = useMemo(
+    () => ({
+      connectionStatus,
+      subscribe,
+      unsubscribe,
+      publish,
+      sendMessage,
+      joinRoom,
+      leaveRoom,
+    }),
+    [
+      connectionStatus,
+      subscribe,
+      unsubscribe,
+      publish,
+      sendMessage,
+      joinRoom,
+      leaveRoom,
+    ],
+  );
 
   return (
     <WebSocketContext.Provider value={contextValue}>

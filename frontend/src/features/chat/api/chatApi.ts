@@ -3,7 +3,9 @@ import { ChatMessage, Room, RoomCreateRequest } from '../types/chat';
 
 export const chatApi = {
   // 채팅방 생성
-  createRoom: (request: RoomCreateRequest): Promise<{ data: { body: Room; status: number; success: boolean } }> =>
+  createRoom: (
+    request: RoomCreateRequest,
+  ): Promise<{ data: { body: Room; status: number; success: boolean } }> =>
     apiClient.post('/chat/rooms', request),
 
   // 공개 채팅방 목록 조회 (페이징 지원)
@@ -43,7 +45,9 @@ export const chatApi = {
     apiClient.get('/chat/rooms'),
 
   // 채팅방 정보 조회
-  getRoomInfo: (roomId: string): Promise<{ data: { body: Room; status: number; success: boolean } }> =>
+  getRoomInfo: (
+    roomId: string,
+  ): Promise<{ data: { body: Room; status: number; success: boolean } }> =>
     apiClient.get(`/chat/rooms/${roomId}`),
 
   // 방 참여하기 (REST API가 없으면 공개방 목록에서 정보 찾기)
@@ -54,14 +58,18 @@ export const chatApi = {
     }),
 
   // 채팅방 나가기
-  leaveRoom: (roomId: string): Promise<{ data: { body: string; status: number; success: boolean } }> =>
+  leaveRoom: (
+    roomId: string,
+  ): Promise<{ data: { body: string; status: number; success: boolean } }> =>
     apiClient.delete(`/chat/rooms/${roomId}/leave`),
 
   // 최근 메시지 조회
   getRecentMessages: (
     roomId: string,
     limit = 50,
-  ): Promise<{ data: { body: ChatMessage[]; status: number; success: boolean } }> =>
+  ): Promise<{
+    data: { body: ChatMessage[]; status: number; success: boolean };
+  }> =>
     apiClient.get(`/chat/rooms/${roomId}/messages`, {
       params: { limit },
     }),
@@ -71,7 +79,9 @@ export const chatApi = {
     roomId: string,
     cursor: string,
     limit = 50,
-  ): Promise<{ data: { body: ChatMessage[]; status: number; success: boolean } }> =>
+  ): Promise<{
+    data: { body: ChatMessage[]; status: number; success: boolean };
+  }> =>
     apiClient.get(`/chat/rooms/${roomId}/messages/before`, {
       params: { cursor, limit },
     }),

@@ -151,27 +151,6 @@ public class UserIndustryController {
         log.info("사용자 {}의 업종 추천 결과가 삭제되었습니다.", userId);
         return ApiResponse.of("업종 추천 결과가 성공적으로 삭제되었습니다.");
     }
-
-    /**
-     * AI 기반 업종 추천 (POST /api/v1/user/industry/ai-recommend)
-     * 비동기 처리 + ResponseBodyAdvice 호환
-     */
-    /**
-     * AI 기반 업종 추천 (POST /api/v1/user/industry/ai-recommend)
-     * SecurityContext 보존하여 Reactive 환경에서 인증 정보 유지
-     */
-    /**
-     * AI 기반 업종 추천 (POST /api/v1/user/industry/ai-recommend)
-     * SecurityContext 보존하여 Reactive 환경에서 인증 정보 유지
-     */
-    /**
-     * AI 기반 업종 추천 (POST /api/v1/user/industry/ai-recommend)
-     * Spring Security Context 완벽 전파 방식
-     */
-    /**
-     * AI 기반 업종 추천 (POST /api/v1/user/industry/ai-recommend)
-     * Spring Security + Reactive 완벽 호환
-     */
     /**
      * AI 기반 업종 추천 (POST /api/v1/user/industry/ai-recommend)
      * RestTemplate + @Async 방식으로 Spring Security 완벽 호환

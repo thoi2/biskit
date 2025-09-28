@@ -48,7 +48,9 @@ export function RoomList({ onJoinRoom, onCreateRoom }: RoomListProps) {
           20,
           cursor || undefined,
         ),
-        isLoadMore ? Promise.resolve({ data: { body: userRooms } }) : chatApi.getUserRooms(), // 더보기일 때는 기존 userRooms 사용
+        isLoadMore
+          ? Promise.resolve({ data: { body: userRooms } })
+          : chatApi.getUserRooms(), // 더보기일 때는 기존 userRooms 사용
       ]);
 
       console.log('=== RoomList Debug ===');
@@ -63,7 +65,9 @@ export function RoomList({ onJoinRoom, onCreateRoom }: RoomListProps) {
         nextCursor: null,
         hasMore: false,
       };
-      const myRooms = isLoadMore ? userRooms : (myRoomsResponse?.data?.body || []);
+      const myRooms = isLoadMore
+        ? userRooms
+        : myRoomsResponse?.data?.body || [];
 
       console.log('publicRoomsData:', publicRoomsData);
       console.log('myRooms:', myRooms);
@@ -105,11 +109,7 @@ export function RoomList({ onJoinRoom, onCreateRoom }: RoomListProps) {
       console.log('선택된 카테고리:', category);
 
       const [publicRoomsResponse, myRoomsResponse] = await Promise.all([
-        chatApi.getPublicRooms(
-          category || undefined,
-          20,
-          undefined,
-        ),
+        chatApi.getPublicRooms(category || undefined, 20, undefined),
         chatApi.getUserRooms(),
       ]);
 
@@ -294,7 +294,10 @@ export function RoomList({ onJoinRoom, onCreateRoom }: RoomListProps) {
         {activeTab === 'my' && (
           <>
             {console.log('🔍 내 방 탭 렌더링 - userRooms:', userRooms)}
-            {console.log('🔍 내 방 탭 렌더링 - userRooms.length:', userRooms.length)}
+            {console.log(
+              '🔍 내 방 탭 렌더링 - userRooms.length:',
+              userRooms.length,
+            )}
             {userRooms.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <p>참여 중인 채팅방이 없습니다.</p>

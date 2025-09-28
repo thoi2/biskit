@@ -21,7 +21,7 @@ export function MessageItem({ message, currentUserId }: ChatMessageProps) {
 
       return formatDistanceToNow(utcDate, {
         addSuffix: true,
-        locale: ko
+        locale: ko,
       });
     } catch {
       return '';
@@ -49,8 +49,14 @@ export function MessageItem({ message, currentUserId }: ChatMessageProps) {
   }
 
   return (
-    <div className={`flex mb-4 ${isMyMessage ? 'justify-end' : 'justify-start'}`}>
-      <div className={`flex gap-2 max-w-xs lg:max-w-md ${isMyMessage ? 'flex-row-reverse' : 'flex-row'}`}>
+    <div
+      className={`flex mb-4 ${isMyMessage ? 'justify-end' : 'justify-start'}`}
+    >
+      <div
+        className={`flex gap-2 max-w-xs lg:max-w-md ${
+          isMyMessage ? 'flex-row-reverse' : 'flex-row'
+        }`}
+      >
         {/* 프로필 아바타 */}
         <Avatar
           src={message.profileImageUrl}
@@ -62,9 +68,11 @@ export function MessageItem({ message, currentUserId }: ChatMessageProps) {
         {/* 메시지 내용 */}
         <div className="flex flex-col">
           {/* 사용자 이름 */}
-          <div className={`text-sm text-gray-600 mb-1 px-1 ${
-            isMyMessage ? 'text-right' : 'text-left'
-          }`}>
+          <div
+            className={`text-sm text-gray-600 mb-1 px-1 ${
+              isMyMessage ? 'text-right' : 'text-left'
+            }`}
+          >
             {message.senderName}
           </div>
 

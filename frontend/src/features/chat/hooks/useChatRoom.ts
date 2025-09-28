@@ -202,7 +202,10 @@ export const useChatRoom = ({
     const handleMessage = (message: ChatMessage) => {
       console.log('=== 새 메시지 수신 ===', message);
       setMessages(prev => {
-        if (message.messageId && prev.some(m => m.messageId === message.messageId)) {
+        if (
+          message.messageId &&
+          prev.some(m => m.messageId === message.messageId)
+        ) {
           console.log('중복 메시지 무시:', message.messageId);
           return prev;
         }

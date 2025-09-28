@@ -14,6 +14,7 @@ interface AreaInfo {
     storeCount: number;
     isValid: boolean;
     errorMessage?: string;
+    stores?: any[];
 }
 
 export function useAreaDrawing(areaCategory: string) {
@@ -111,13 +112,12 @@ export function useAreaDrawing(areaCategory: string) {
                     clearAllOverlays();
                 });
 
-                // ✅ 도형별 분기 처리
                 window.kakao.maps.event.addListener(drawingManagerRef.current, 'drawend', (mouseEvent: any) => {
                     console.log('🎉 DRAWEND - 타입:', mouseEvent.overlayType);
                     setIsDrawingActive(false);
 
                     setTimeout(() => {
-                        const data = mouseEvent.target;
+                        const data = mouseEvent.target || mouseEvent.overlay;
                         let polygon: PolygonPoint[] = [];
 
                         try {
@@ -126,7 +126,6 @@ export function useAreaDrawing(areaCategory: string) {
 
                             // ✅ 도형별로 다른 방법 사용
                             if (mouseEvent.overlayType === 'rectangle' || mouseEvent.overlayType === 'circle') {
-                                // 사각형과 원형: getBounds() 사용
                                 console.log('📐 사각형/원형: getBounds() 사용');
 
                                 if (typeof data.getBounds === 'function') {
@@ -151,43 +150,60 @@ export function useAreaDrawing(areaCategory: string) {
                                 }
                             }
                             else if (mouseEvent.overlayType === 'polygon') {
-                                // 다각형: 지도 현재 중심으로 사각형 생성
-                                console.log('🔺 다각형: 지도 중심 기준 사각형 생성');
+                                console.log('🔺 다각형: 실제 그린 좌표 추출');
 
-                                if (map) {
-                                    const center = map.getCenter();
-                                    const bounds = map.getBounds();
+                                let polygonPath = [];
 
-                                    // 현재 지도 영역의 1/6 크기 사각형 생성
-                                    const sw = bounds.getSouthWest();
-                                    const ne = bounds.getNorthEast();
-                                    const centerLat = center.getLat();
-                                    const centerLng = center.getLng();
-                                    const latRange = (ne.getLat() - sw.getLat()) / 6;
-                                    const lngRange = (ne.getLng() - sw.getLng()) / 6;
+                                if (drawingManagerRef.current) {
+                                    console.log('🔄 [POLYGON] Drawing Manager getData() 사용');
 
-                                    polygon = [
-                                        { lat: centerLat - latRange, lng: centerLng - lngRange },
-                                        { lat: centerLat - latRange, lng: centerLng + lngRange },
-                                        { lat: centerLat + latRange, lng: centerLng + lngRange },
-                                        { lat: centerLat + latRange, lng: centerLng - lngRange }
-                                    ];
+                                    try {
+                                        const drawnData = drawingManagerRef.current.getData();
+                                        console.log('📊 [POLYGON] Drawing Manager 전체 데이터:', drawnData);
 
-                                    console.log('✅ 다각형 → 지도 중심 사각형 생성:', {
-                                        center: `(${centerLat.toFixed(6)}, ${centerLng.toFixed(6)})`,
-                                        size: `±${latRange.toFixed(6)}, ±${lngRange.toFixed(6)}`,
-                                        polygon: polygon.map(p => `(${p.lat.toFixed(6)}, ${p.lng.toFixed(6)})`)
-                                    });
-                                } else {
-                                    throw new Error('지도 객체를 찾을 수 없습니다');
+                                        if (drawnData && drawnData[window.kakao.maps.drawing.OverlayType.POLYGON]) {
+                                            const polygonData = drawnData[window.kakao.maps.drawing.OverlayType.POLYGON];
+                                            console.log('📊 [POLYGON] 다각형 데이터:', polygonData);
+
+                                            if (Array.isArray(polygonData) && polygonData.length > 0) {
+                                                const latestPolygon = polygonData[polygonData.length - 1];
+                                                console.log('📊 [POLYGON] 최신 다각형:', latestPolygon);
+
+                                                if (latestPolygon && latestPolygon.points && Array.isArray(latestPolygon.points)) {
+                                                    polygonPath = latestPolygon.points.map((point: any, index: number) => {
+                                                        console.log(`📍 [DRAWING] Point ${index}:`, point);
+
+                                                        if (point && typeof point === 'object') {
+                                                            const lat = typeof point.y === 'number' ? point.y : point.lat;
+                                                            const lng = typeof point.x === 'number' ? point.x : point.lng;
+
+                                                            if (typeof lat === 'number' && typeof lng === 'number') {
+                                                                return { lat, lng };
+                                                            }
+                                                        }
+                                                        return null;
+                                                    }).filter(Boolean);
+
+                                                    console.log('✅ [POLYGON] Drawing Manager 데이터 성공:', polygonPath.length, '개 점');
+                                                }
+                                            }
+                                        }
+                                    } catch (error) {
+                                        console.error('❌ [POLYGON] Drawing Manager 데이터 추출 실패:', error);
+                                    }
                                 }
-                            } else {
-                                throw new Error(`지원하지 않는 도형 타입: ${mouseEvent.overlayType}`);
+
+                                if (polygonPath.length >= 3) {
+                                    polygon = polygonPath;
+                                    console.log('✅ [POLYGON] 실제 다각형 좌표 사용:', polygon.length, '개 점');
+                                } else {
+                                    throw new Error(`다각형 좌표 추출 실패: ${polygonPath.length}개 점`);
+                                }
                             }
 
-                            // ✅ 폴리곤 검증 및 처리
-                            if (polygon.length === 4) {
-                                console.log('🔍 폴리곤 검증 시작:', polygon.map(p => `(${p.lat.toFixed(6)}, ${p.lng.toFixed(6)})`));
+                            // ✅ 폴리곤 검증 및 처리 (백엔드 호출 없음)
+                            if (polygon.length >= 3) {
+                                console.log('🔍 폴리곤 검증 시작:', polygon.length, '개 점');
 
                                 const validation = validateAndGetStoresInArea(polygon, areaCategory);
                                 console.log('🔍 검증 결과:', validation);
@@ -203,12 +219,13 @@ export function useAreaDrawing(areaCategory: string) {
                                     area: validation.area,
                                     storeCount: validation.storeCount,
                                     isValid: validation.isValid,
-                                    errorMessage: validation.errorMessage
+                                    errorMessage: validation.errorMessage,
+                                    stores: validation.stores  // ✅ 상가 데이터 저장
                                 });
                                 setDrawnArea(polygon);
                                 setDrawnOverlay(data);
 
-                                console.log('✅ 최종 처리 완료!', {
+                                console.log('✅ 영역 그리기 완료!', {
                                     area: validation.area,
                                     storeCount: validation.storeCount,
                                     isValid: validation.isValid
@@ -216,9 +233,11 @@ export function useAreaDrawing(areaCategory: string) {
 
                                 if (!validation.isValid) {
                                     alert(`⚠️ 영역 선택 오류\n\n${validation.errorMessage}`);
+                                } else {
+                                    console.log('ℹ️ 범위 분석 버튼을 눌러서 분석을 시작하세요.');
                                 }
                             } else {
-                                throw new Error(`폴리곤 생성 실패: 점의 개수가 4개가 아님 (${polygon.length}개)`);
+                                throw new Error(`폴리곤 생성 실패: 점의 개수가 부족함 (${polygon.length}개)`);
                             }
 
                         } catch (error: unknown) {
@@ -240,43 +259,30 @@ export function useAreaDrawing(areaCategory: string) {
                         }
                     }, 100);
                 });
-                // ✅ 지도 클릭 이벤트 통합 처리 추가
-                window.kakao.maps.event.addListener(map, 'click', (mouseEvent: any) => {
-                    console.log('🔥🔥🔥 통합 지도 클릭 처리! 🔥🔥🔥');
 
+                // ✅ 지도 클릭 이벤트
+                window.kakao.maps.event.addListener(map, 'click', (mouseEvent: any) => {
                     const currentState = useMapStore.getState();
                     const { activeTab, isDrawingMode, isDrawingActive } = currentState;
 
-                    console.log('🗺️ 통합 클릭 상태:', { activeTab, isDrawingMode, isDrawingActive });
-
-                    // ✅ 드로잉 진행 중이면 차단
                     if (isDrawingActive) {
-                        console.log('🚫 드로잉 진행 중 - 통합 클릭 차단');
+                        console.log('🚫 드로잉 진행 중 - 클릭 차단');
                         return;
                     }
 
-                    // ✅ 드로잉 모드이지만 실제 드로잉 안 시작했으면 추천 핀 생성 허용
                     const latlng = mouseEvent.latLng;
                     const lat = latlng.getLat();
                     const lng = latlng.getLng();
 
-                    console.log('📍 통합 클릭 좌표:', { lat, lng });
-
-                    // ✅ 추천 탭에서는 항상 핀 생성
                     if (activeTab === 'recommend') {
-                        console.log('📍 통합 처리 - 추천 핀 생성 시작');
-
                         try {
-                            // setCoordinates와 createRecommendPin을 여기서 직접 호출
                             useMapStore.getState().setCoordinates({ lat, lng });
 
-                            // 기존 추천 핀 제거
                             const currentPin = useMapStore.getState().recommendPin;
                             if (currentPin) {
                                 currentPin.setMap(null);
                             }
 
-                            // 새 추천 핀 생성
                             const position = new window.kakao.maps.LatLng(lat, lng);
                             const pinSvg = `
               <svg width="40" height="50" viewBox="0 0 40 50" xmlns="http://www.w3.org/2000/svg">
@@ -299,10 +305,10 @@ export function useAreaDrawing(areaCategory: string) {
                             });
 
                             useMapStore.getState().setRecommendPin(marker);
-                            console.log('✅ 통합 처리 - 추천 핀 생성 완료');
+                            console.log('✅ 추천 핀 생성 완료');
 
                         } catch (error) {
-                            console.error('❌ 통합 처리 - 추천 핀 생성 실패:', error);
+                            console.error('❌ 추천 핀 생성 실패:', error);
                         }
                     }
                 });
@@ -392,6 +398,9 @@ export function useAreaDrawing(areaCategory: string) {
         drawnArea,
         drawnOverlay,
         areaInfo,
-        clearDrawnArea
+        clearDrawnArea,
+        canUseAreaRecommendation,
+        hasStoreData,
+        isValidZoom
     };
 }

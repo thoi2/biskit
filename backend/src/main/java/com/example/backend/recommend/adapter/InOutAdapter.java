@@ -6,6 +6,7 @@ import com.example.backend.recommend.entity.InOutEntity.Key;
 import com.example.backend.recommend.repository.InOutRepository;
 import com.example.backend.recommend.repository.projection.InOutProjection;
 import com.example.backend.recommend.port.InOutPort;
+import com.example.backend.recommend.port.CategoryPort;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -14,8 +15,10 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.LinkedHashMap;
+
 @Component
 @RequiredArgsConstructor
 public class InOutAdapter implements InOutPort {
@@ -24,6 +27,7 @@ public class InOutAdapter implements InOutPort {
 
     private final InOutRepository inOutRepository;
     private final ResultCache cache;
+    private final CategoryPort categoryPort; // ✅ 추가
 
     /** 캐시→DB 조회. DB 히트 시 frequency/last_at 갱신 + 캐시 set */
     @Override
@@ -67,9 +71,6 @@ public class InOutAdapter implements InOutPort {
 //        cache.set(buildingId, categoryId, result, DEFAULT_TTL);
     }
 
-//    public void evict(int buildingId, int categoryId) {
-//        cache.evict(buildingId, categoryId);
-//    }
     @Override
     public List<InOutResult> findResults(int buildingId, List<Integer> categoryIds) {
         if (categoryIds == null || categoryIds.isEmpty()) {
@@ -110,5 +111,62 @@ public class InOutAdapter implements InOutPort {
         }
 
         return result;
+    }
+
+    @Override
+    public Optional<String> findExplanation(int buildingId, int categoryId) {
+        return inOutRepository.findByBuildingIdAndCategoryId(buildingId, categoryId)
+                .map(InOutEntity::getExplanation);
+    }
+
+    @Override
+    @Transactional
+    public void upsertexplain(int buildingId, int categoryId, String explanation) {
+        var id = new Key(buildingId, categoryId);
+
+        InOutEntity entity = inOutRepository.findById(id).orElseGet(() -> {
+            var e = new InOutEntity();
+            e.setBuildingId(buildingId);
+            e.setCategoryId(categoryId);
+            return e;
+        });
+        entity.setExplanation(explanation);
+        inOutRepository.save(entity);
+    }
+
+    // ============================================
+    // ✅ 추가: 캐시 완성도 체크용 메소드들
+    // ============================================
+
+    @Override
+    public int getCachedCategoryCount(int buildingId) {
+        return inOutRepository.countByBuildingId(buildingId);
+    }
+
+    @Override
+    public List<CachedCategoryData> getAllCachedCategories(int buildingId) {
+        // 1) 해당 건물의 모든 InOutEntity 조회
+        List<InOutEntity> entities = inOutRepository.findAllByBuildingId(buildingId);
+
+        if (entities.isEmpty()) {
+            return List.of();
+        }
+
+        // 2) 카테고리 ID들 수집
+        Set<Integer> categoryIds = entities.stream()
+                .map(InOutEntity::getCategoryId)
+                .collect(Collectors.toSet());
+
+        // 3) 카테고리 이름들 조회 (배치)
+        Map<Integer, String> categoryNames = categoryPort.getNamesByIds(categoryIds);
+
+        // 4) 결과 조합
+        return entities.stream()
+                .map(entity -> new CachedCategoryData(
+                        categoryNames.get(entity.getCategoryId()),
+                        entity.getResult()
+                ))
+                .filter(data -> data.categoryName() != null) // null 이름 제거
+                .collect(Collectors.toList());
     }
 }

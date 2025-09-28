@@ -43,22 +43,32 @@ public class HttpAiServerClient implements AiServerClient {
     }
 
     @Override
-    public JsonNode requestCategory(int id, BigDecimal lat, BigDecimal lng, int categoryId) {
+    public JsonNode requestCategory(int id, BigDecimal lat, BigDecimal lng, String categoryName) {
         URI uri = UriComponentsBuilder
                 .fromUriString(baseUrl)
                 .path("/api/v1/ai/job")
                 .build(true)
                 .toUri();
-        return postJson(uri.toString(), payload(id, lat, lng, categoryId));
+        return postJson(uri.toString(), payload(id, lat, lng, categoryName));
     }
 
-    private Map<String, Object> payload(int id, BigDecimal lat, BigDecimal lng, Integer categoryId) {
+    @Override
+    public JsonNode requestGms(int id, BigDecimal lat, BigDecimal lng, String categoryName) {
+        URI uri = UriComponentsBuilder
+                .fromUriString(baseUrl)
+                .path("/api/v1/ai/gms")
+                .build(true)
+                .toUri();
+        return postJson(uri.toString(), payload(id, lat, lng, categoryName));
+    }
+
+    private Map<String, Object> payload(int id, BigDecimal lat, BigDecimal lng, String categoryName) {
         Map<String, Object> body = new HashMap<>();
         // 정밀도 보존을 위해 문자열로 직렬화
         body.put("building_id", id);
         body.put("lat", lat.toPlainString());
         body.put("lng", lng.toPlainString());
-        if (categoryId != null) body.put("categoryId", categoryId);
+        if (categoryName != null) body.put("category", categoryName);
         return body;
     }
 

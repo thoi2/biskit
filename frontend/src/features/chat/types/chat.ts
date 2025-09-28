@@ -3,11 +3,11 @@ export interface ChatMessage {
   messageId?: string | null; // nullable in backend
   type: 'JOIN' | 'CHAT' | 'LEAVE' | 'TYPING' | 'HISTORY' | 'ERROR';
   roomId: string;
-  senderId: string;        // 사용자 ID (구분용)
-  senderName: string;      // 사용자 이름 (표시용)
+  senderId: string; // 사용자 ID (구분용)
+  senderName: string; // 사용자 이름 (표시용)
   profileImageUrl?: string; // 프로필 이미지 URL (옵셔널)
   content: string;
-  timestamp: string;       // ISO string 형태 (yyyy-MM-dd HH:mm:ss)
+  timestamp: string; // ISO string 형태 (yyyy-MM-dd HH:mm:ss)
 }
 
 export interface Room {
@@ -19,8 +19,8 @@ export interface Room {
   isActive?: boolean;
   maxParticipants: number;
   currentParticipants: number;
-  createdAt: string;    // ISO string 형태 (yyyy-MM-dd HH:mm:ss)
-  updatedAt?: string;   // ISO string 형태 (yyyy-MM-dd HH:mm:ss)
+  createdAt: string; // ISO string 형태 (yyyy-MM-dd HH:mm:ss)
+  updatedAt?: string; // ISO string 형태 (yyyy-MM-dd HH:mm:ss)
   recentMessageCount?: number | null; // nullable in backend
   participants?: ParticipantResponse[] | null; // nullable in backend
 }
@@ -29,8 +29,8 @@ export interface ParticipantResponse {
   userId: string;
   username: string;
   isActive?: boolean;
-  joinedAt: string;     // ISO string 형태 (yyyy-MM-dd HH:mm:ss)
-  leftAt?: string;      // ISO string 형태 (yyyy-MM-dd HH:mm:ss)
+  joinedAt: string; // ISO string 형태 (yyyy-MM-dd HH:mm:ss)
+  leftAt?: string; // ISO string 형태 (yyyy-MM-dd HH:mm:ss)
 }
 
 export interface RoomCreateRequest {
