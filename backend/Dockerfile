@@ -22,7 +22,7 @@ RUN ./gradlew dependencies --no-daemon
 COPY src/ src/
 
 # 애플리케이션 빌드 (테스트 제외)
-RUN ./gradlew clean build -x test --no-daemon
+RUN ./gradlew clean build -x test --no-daemon --stacktrace
 
 # Stage 2: 런타임 스테이지 (Eclipse Temurin 사용)
 FROM eclipse-temurin:21-jre-alpine
