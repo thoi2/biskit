@@ -136,6 +136,60 @@ export function KakaoMap() {
     return marker;
   }, [map, safeBtoa]);
 
+  // 🔥 지역 선택 핸들러 추가
+  const handleLocationSelect = useCallback((coordinates: { lat: number; lng: number }) => {
+    if (!map) return;
+
+    console.log('🗺️ 지역 선택:', coordinates);
+
+    // 지도 중심 이동 (부드러운 애니메이션)
+    const moveLatLon = new window.kakao.maps.LatLng(coordinates.lat, coordinates.lng);
+    map.panTo(moveLatLon);
+
+    // 적절한 줌 레벨로 설정 (구 단위 보기 좋은 레벨)
+    setTimeout(() => {
+      map.setLevel(5);
+    }, 300);
+
+    // 해당 위치에 임시 마커 표시
+    const locationMarker = new window.kakao.maps.Marker({
+      position: moveLatLon,
+      map: map,
+      image: new window.kakao.maps.MarkerImage(
+          'data:image/svg+xml;base64,' + btoa(`
+          <svg width="30" height="40" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15 0C6.716 0 0 6.716 0 15c0 8.284 15 25 15 25s15-16.716 15-25C30 6.716 23.284 0 15 0z" 
+                  fill="#10B981" stroke="#059669" stroke-width="2"/>
+            <circle cx="15" cy="15" r="6" fill="white"/>
+            <text x="15" y="19" text-anchor="middle" fill="#059669" font-size="10" font-weight="bold">📍</text>
+          </svg>
+        `),
+          new window.kakao.maps.Size(30, 40),
+          { offset: new window.kakao.maps.Point(15, 40) }
+      ),
+      zIndex: 500
+    });
+
+    // 3초 후 마커 제거
+    setTimeout(() => {
+      locationMarker.setMap(null);
+    }, 3000);
+
+    // 선택한 지역명 토스트 표시 (임시)
+    const toast = document.createElement('div');
+    toast.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-all';
+    toast.innerHTML = '🗺️ 선택한 지역으로 이동했습니다';
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      if (document.body.contains(toast)) {
+        document.body.removeChild(toast);
+      }
+    }, 2000);
+
+    console.log('✅ 지도 이동 완료');
+  }, [map]);
+
   // 카카오맵 스크립트 로딩
   useEffect(() => {
     let isMounted = true;
@@ -352,7 +406,6 @@ export function KakaoMap() {
   if (isLoading || loadError) {
     return <LoadingAndError isLoading={isLoading} loadError={loadError} />;
   }
-v
   const searchButtonInfo = getSearchButtonInfo(currentLevel);
 
   return (
@@ -388,7 +441,8 @@ v
             maxSearchLevel={MAX_SEARCH_LEVEL}
         />
 
-        <LocationSelector onLocationSelect={() => {}} />
+        {/* 🔥 수정된 LocationSelector - 실제 핸들러 전달 */}
+        <LocationSelector onLocationSelect={handleLocationSelect} />
 
         {/* ✅ selectedItem 팝업 (사용 시에만 표시) */}
         {selectedItem && (
