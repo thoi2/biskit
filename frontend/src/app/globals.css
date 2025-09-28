@@ -150,3 +150,9 @@ html {
 /* 레이아웃 체인 높이 보장 */
 html, body, #__next { height: 100%; }
 
+/* Kakao 지도 컨테이너 역스케일: 전역 zoom 0.8의 반대값(1/0.8=1.25) */
+.kakao-map-container {
+    transform: scale(1.25);
+    transform-origin: top left;
+    /* overflow는 지도 relayout으로 처리, pointer-events는 기본값 유지 */
+}

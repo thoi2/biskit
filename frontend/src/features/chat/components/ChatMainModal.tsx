@@ -13,11 +13,12 @@ import { Room } from '../types/chat';
 interface ChatMainModalProps {
   isOpen: boolean;
   onClose: () => void;
+  isPanel?: boolean; // 패널 모드 추가
 }
 
 type ModalView = 'roomList' | 'chatRoom' | 'createRoom';
 
-export function ChatMainModal({ isOpen, onClose }: ChatMainModalProps) {
+export function ChatMainModal({ isOpen, onClose, isPanel = false }: ChatMainModalProps) {
   const [currentView, setCurrentView] = useState<ModalView>('roomList');
   const [selectedRoomId, setSelectedRoomId] = useState<string>('');
   const [roomInfo, setRoomInfo] = useState<Room | null>(null);
@@ -103,83 +104,162 @@ export function ChatMainModal({ isOpen, onClose }: ChatMainModalProps) {
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed top-20 right-4 z-50">
-      <div className="bg-white rounded-lg w-80 h-[500px] shadow-lg border flex flex-col">
-        {/* 헤더 */}
-        <div className="flex items-center justify-between p-3 border-b">
-          <div className="flex items-center gap-2">
-            {currentView !== 'roomList' && (
-              <Button
-                onClick={handleBackToList}
-                variant="ghost"
-                size="sm"
-                className="p-1"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </Button>
-            )}
-            <h2 className="text-lg font-semibold">
-              {currentView === 'roomList' && '채팅방'}
-              {currentView === 'chatRoom' && '채팅'}
-              {currentView === 'createRoom' && '새 채팅방 만들기'}
-            </h2>
+  // 패널 모드일 때는 wrapper 없이 직접 렌더링
+  if (isPanel) {
+    return (
+        <div className="h-full flex flex-col bg-white">
+          {/* 헤더 */}
+          <div className="flex items-center justify-between p-3 border-b">
+            <div className="flex items-center gap-2">
+              {currentView !== 'roomList' && (
+                  <Button
+                      onClick={handleBackToList}
+                      variant="ghost"
+                      size="sm"
+                      className="p-1"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                  </Button>
+              )}
+              <h2 className="text-lg font-semibold">
+                {currentView === 'roomList' && '채팅방'}
+                {currentView === 'chatRoom' && '채팅'}
+                {currentView === 'createRoom' && '새 채팅방 만들기'}
+              </h2>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {currentView === 'roomList' && (
+                  <Button onClick={handleCreateRoom} variant="outline" size="sm">
+                    <Plus className="w-4 h-4 mr-2" />방 만들기
+                  </Button>
+              )}
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            {currentView === 'roomList' && (
-              <Button onClick={handleCreateRoom} variant="outline" size="sm">
-                <Plus className="w-4 h-4 mr-2" />방 만들기
-              </Button>
+          {/* 콘텐츠 */}
+          <div className="flex-1 overflow-hidden">
+            {isLoadingRoom && (
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                    <p className="text-sm text-gray-600">방 정보 로드 중...</p>
+                  </div>
+                </div>
             )}
-            <Button onClick={onClose} variant="ghost" size="sm" className="p-1">
-              <X className="w-4 h-4" />
-            </Button>
+
+            {!isLoadingRoom && currentView === 'roomList' && (
+                <div className="h-full overflow-y-auto p-2">
+                  <RoomList
+                      onJoinRoom={handleJoinRoom}
+                      onCreateRoom={handleCreateRoom}
+                  />
+                </div>
+            )}
+
+            {!isLoadingRoom && currentView === 'chatRoom' && selectedRoomId && (
+                <>
+                  {console.log('ChatRoom으로 전달할 roomInfo:', roomInfo)}
+                  <ChatRoom
+                      roomId={selectedRoomId}
+                      onLeaveRoom={handleLeaveRoom}
+                      onBackClick={handleBackToList}
+                      preloadedRoomInfo={roomInfo}
+                  />
+                </>
+            )}
+
+            {currentView === 'createRoom' && (
+                <div className="h-full overflow-y-auto p-2">
+                  <CreateRoomForm
+                      onRoomCreated={handleRoomCreated}
+                      onCancel={handleBackToList}
+                  />
+                </div>
+            )}
           </div>
         </div>
+    );
+  }
 
-        {/* 콘텐츠 */}
-        <div className="flex-1 overflow-hidden">
-          {isLoadingRoom && (
-            <div className="h-full flex items-center justify-center">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-                <p className="text-sm text-gray-600">방 정보 로드 중...</p>
-              </div>
+  // 모달 모드 (기존)
+  return (
+      <div className="fixed top-20 right-4 z-50">
+        <div className="bg-white rounded-lg w-80 h-[500px] shadow-lg border flex flex-col">
+          {/* 헤더 */}
+          <div className="flex items-center justify-between p-3 border-b">
+            <div className="flex items-center gap-2">
+              {currentView !== 'roomList' && (
+                  <Button
+                      onClick={handleBackToList}
+                      variant="ghost"
+                      size="sm"
+                      className="p-1"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                  </Button>
+              )}
+              <h2 className="text-lg font-semibold">
+                {currentView === 'roomList' && '채팅방'}
+                {currentView === 'chatRoom' && '채팅'}
+                {currentView === 'createRoom' && '새 채팅방 만들기'}
+              </h2>
             </div>
-          )}
 
-          {!isLoadingRoom && currentView === 'roomList' && (
-            <div className="h-full overflow-y-auto p-2">
-              <RoomList
-                onJoinRoom={handleJoinRoom}
-                onCreateRoom={handleCreateRoom}
-              />
+            <div className="flex items-center gap-2">
+              {currentView === 'roomList' && (
+                  <Button onClick={handleCreateRoom} variant="outline" size="sm">
+                    <Plus className="w-4 h-4 mr-2" />방 만들기
+                  </Button>
+              )}
+              <Button onClick={onClose} variant="ghost" size="sm" className="p-1">
+                <X className="w-4 h-4" />
+              </Button>
             </div>
-          )}
+          </div>
 
-          {!isLoadingRoom && currentView === 'chatRoom' && selectedRoomId && (
-            <>
-              {console.log('ChatRoom으로 전달할 roomInfo:', roomInfo)}
-              <ChatRoom
-                roomId={selectedRoomId}
-                onLeaveRoom={handleLeaveRoom}
-                onBackClick={handleBackToList}
-                preloadedRoomInfo={roomInfo}
-              />
-            </>
-          )}
+          {/* 콘텐츠 */}
+          <div className="flex-1 overflow-hidden">
+            {isLoadingRoom && (
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                    <p className="text-sm text-gray-600">방 정보 로드 중...</p>
+                  </div>
+                </div>
+            )}
 
-          {currentView === 'createRoom' && (
-            <div className="h-full overflow-y-auto p-2">
-              <CreateRoomForm
-                onRoomCreated={handleRoomCreated}
-                onCancel={handleBackToList}
-              />
-            </div>
-          )}
+            {!isLoadingRoom && currentView === 'roomList' && (
+                <div className="h-full overflow-y-auto p-2">
+                  <RoomList
+                      onJoinRoom={handleJoinRoom}
+                      onCreateRoom={handleCreateRoom}
+                  />
+                </div>
+            )}
+
+            {!isLoadingRoom && currentView === 'chatRoom' && selectedRoomId && (
+                <>
+                  {console.log('ChatRoom으로 전달할 roomInfo:', roomInfo)}
+                  <ChatRoom
+                      roomId={selectedRoomId}
+                      onLeaveRoom={handleLeaveRoom}
+                      onBackClick={handleBackToList}
+                      preloadedRoomInfo={roomInfo}
+                  />
+                </>
+            )}
+
+            {currentView === 'createRoom' && (
+                <div className="h-full overflow-y-auto p-2">
+                  <CreateRoomForm
+                      onRoomCreated={handleRoomCreated}
+                      onCancel={handleBackToList}
+                  />
+                </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
   );
 }

@@ -9,10 +9,6 @@ import { MapControls } from './MapControls';
 import { LoadingAndError } from './LoadingAndError';
 import { LocationSelector } from './LocationSelector';
 import { SeparatedMarkers } from './SeparatedMarkers';
-import Button from '@/lib/components/ui/Button/Button';
-import { MessageCircle } from 'lucide-react';
-import { ChatMainModal } from '@/features/chat/components/ChatMainModal';
-import { useAuth } from '@/features/auth/hooks/useAuth';
 
 declare global {
   interface Window {
@@ -23,13 +19,6 @@ declare global {
 }
 
 export function KakaoMap() {
-  const { isLoggedIn } = useAuth();
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
   // ✅ 사용하지 않는 변수들 제거
   const {
     isSearching,
@@ -368,8 +357,8 @@ export function KakaoMap() {
 
   return (
       <div className="relative w-full h-full">
-        {/* 지도 컨테이너 */}
-        <div ref={mapRef} className="w-full h-full rounded-lg overflow-hidden" />
+        {/* 🔥 지도 컨테이너 - kakao-map-container 클래스 추가 */}
+        <div ref={mapRef} className="kakao-map-container w-full h-full rounded-lg overflow-hidden" />
 
         {/* ✅ 통합 마커 시스템 */}
         <SeparatedMarkers map={map} selectedCategories={selectedCategories} />
@@ -436,21 +425,6 @@ export function KakaoMap() {
                 </div>
               </div>
             </div>
-        )}
-
-        {isClient && isLoggedIn && (
-          <>
-            <Button
-              onClick={() => setIsChatOpen(!isChatOpen)}
-              className="absolute top-16 left-4 z-10 bg-[#8B4513] hover:bg-amber-800 text-white p-3 rounded-lg transition-all duration-200 shadow-md border border-amber-700"
-            >
-              <MessageCircle className="w-5 h-5" />
-            </Button>
-            <ChatMainModal
-              isOpen={isChatOpen}
-              onClose={() => setIsChatOpen(false)}
-            />
-          </>
         )}
       </div>
   );
