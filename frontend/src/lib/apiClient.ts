@@ -15,7 +15,7 @@ apiClient.interceptors.response.use(
 
     // 401 에러이고, 재시도한 요청이 아니며, 리프레시 요청도 아닐 경우
     if (error.response?.status === 401 && !originalRequest._retry) {
-      if (originalRequest.url === '/oauth2/refresh') {
+      if (originalRequest.url === 'auth/oauth2/refresh') {
         return Promise.reject(error);
       }
 
