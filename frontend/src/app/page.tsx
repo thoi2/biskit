@@ -32,55 +32,11 @@ export default function HomePage() {
     if (loading) return <LoadingScreen />;
 
     return (
-        <div className="h-full bg-gradient-warm flex overflow-hidden">
+        <div className="h-full flex overflow-hidden min-h-0">
             <Sidebar />
-
-            <div className="flex-1 h-full">
+            <div className="flex-1 h-full min-h-0">
                 <MapArea />
             </div>
-
-            {/* 검색 오류 표시 */}
-            {searchError && (
-                <div className="fixed bottom-4 right-4 bg-red-500 text-white p-4 rounded-lg shadow-lg z-50">
-                    <div className="flex items-center justify-between">
-                        <span>{searchError}</span>
-                        <button
-                            onClick={() =>
-                                handlers.handleClearResults && handlers.handleClearResults()
-                            }
-                            className="ml-2 text-white hover:text-gray-200"
-                        >
-                            ✕
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* 🎯 설문조사 모달 - 컴포넌트 생성 후 주석 해제 */}
-            {/* {user && (
-        <SurveyModal
-          open={surveyModalOpen}
-          onClose={() => setSurveyModalOpen(false)}
-        />
-      )} */}
-
-            {/* 임시 모달 */}
-            {surveyModalOpen && user && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-                        <h2 className="text-xl font-bold mb-4">설문조사 모달</h2>
-                        <p className="mb-4">여기에 설문조사 컴포넌트가 들어갑니다</p>
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => setSurveyModalOpen(false)}
-                                className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
-                            >
-                                닫기
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

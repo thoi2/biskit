@@ -130,3 +130,23 @@ html {
 .drawing-mode canvas {
     pointer-events: auto !important;
 }
+/* 75% 전역 축소 */
+.app-75 {
+    zoom: 0.8;              /* Chrome/Edge/Safari */
+    overflow: hidden;        /* 가로·세로 스크롤 유입 방지 */
+}
+
+/* Firefox 폴백 */
+@supports not (zoom: 1) {
+    .app-75 {
+        transform: scale(0.8);
+        transform-origin: top left;
+        width: calc(100vw / 0.8);   /* 스케일 보정 */
+        height: calc(100vh / 0.8);
+        overflow: hidden;
+    }
+}
+
+/* 레이아웃 체인 높이 보장 */
+html, body, #__next { height: 100%; }
+

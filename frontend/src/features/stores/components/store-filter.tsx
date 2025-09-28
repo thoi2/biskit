@@ -250,14 +250,13 @@ export function StoreFilter() {
         )
     );
   };
-
   return (
-      <Card className="h-full">
-        <CardHeader>
+      <Card className="h-full flex flex-col">
+        <CardHeader className="flex-shrink-0">
           <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <Filter className="w-5 h-5" /> 업종별 필터
-            </span>
+          <span className="flex items-center gap-2">
+            <Filter className="w-5 h-5" /> 업종별 필터
+          </span>
             {selectedCategories.length > 0 && (
                 <Button
                     variant="ghost"
@@ -272,9 +271,9 @@ export function StoreFilter() {
           </CardTitle>
         </CardHeader>
 
-        <CardContent className="space-y-4 h-full">
+        <CardContent className="flex-1 flex flex-col space-y-4 min-h-0">
           {/* 검색창 */}
-          <div className="relative">
+          <div className="relative flex-shrink-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
                 placeholder={`업종 검색... (총 ${stores.length}개 상가)`}
@@ -288,7 +287,7 @@ export function StoreFilter() {
 
           {/* 선택 배지 */}
           {selectedCategories.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-2 flex-shrink-0">
                 <p className="text-sm font-medium">
                   선택된 업종 ({selectedCategories.length}개)
                 </p>
@@ -310,215 +309,218 @@ export function StoreFilter() {
           )}
 
           {/* 카테고리 트리 */}
-          <ScrollArea className="flex-1 h-[calc(100vh-520px)]">
-            <div className="space-y-1">
-              {/* 🎯 내 추천 업종 섹션 (로그인된 사용자만) */}
-              {myRecommendedIndustries.length > 0 && (
-                  <div className="mb-4 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
-                    <div className="flex items-center gap-2 mb-3">
-                      <User className="w-4 h-4 text-purple-600" />
-                      <h4 className="font-semibold text-purple-800 text-sm">내 추천 업종</h4>
-                      <Star className="w-4 h-4 text-purple-600" />
-                    </div>
-
-                    <div className="space-y-2">
-                      {myRecommendedIndustries.map(industry => (
-                          <Button
-                              key={industry.code}
-                              variant={industry.isSelected ? 'secondary' : 'ghost'}
-                              className={`w-full justify-between p-2 text-sm transition-all duration-200 ${
-                                  industry.isSelected
-                                      ? 'bg-purple-100 text-purple-800 hover:bg-purple-200'
-                                      : 'hover:bg-purple-100 text-purple-700'
-                              }`}
-                              onClick={() => handleMyRecommendationToggle(industry.name)}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="text-base">{industry.emoji}</span>
-                              <span className="text-left font-medium">
-                                {industry.name}
-                              </span>
-                            </div>
-
-                            {industry.count > 0 && (
-                                <Badge
-                                    variant="outline"
-                                    className={`bg-purple-50 text-purple-700 border-purple-200 ${
-                                        industry.isSelected ? 'bg-purple-200 text-purple-800' : ''
-                                    }`}
-                                >
-                                  {industry.count}개
-                                </Badge>
-                            )}
-                          </Button>
-                      ))}
-                    </div>
-                  </div>
-              )}
-
-              {/* 기존 카테고리 트리 */}
-              {filtered.map(([major, minors]) => {
-                const majorState = getMajorSelectionState(major);
-                const majorCount = getMajorStoreCount(major);
-                const isMajorExpanded = expandedMajor.includes(major);
-
-                return (
-                    <div key={major} className="overflow-hidden">
-                      <div className="flex items-center gap-1">
-                        {/* 대분류 토글 버튼 */}
-                        <Button
-                            variant="ghost"
-                            className="flex-1 justify-start p-2 hover:bg-gray-100 transition-all duration-200"
-                            onClick={() => toggle(expandedMajor, major, setExpandedMajor)}
-                        >
-                          <ChevronRight
-                              className={`w-4 h-4 mr-2 transition-transform duration-300 ease-in-out ${
-                                  isMajorExpanded ? 'rotate-90' : 'rotate-0'
-                              }`}
-                          />
-                          <span className="flex-1 text-left">
-                            {highlightSearchTerm(major)}
-                          </span>
-                          <Badge
-                              variant="outline"
-                              className={`ml-auto transition-all duration-200 ${
-                                  majorCount > 0 ? 'bg-blue-50 text-blue-700 border-blue-200' : ''
-                              }`}
-                          >
-                            {majorCount}개
-                          </Badge>
-                        </Button>
-
-                        {/* 대분류 선택 체크박스 */}
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="px-2 hover:bg-blue-50 transition-colors"
-                            onClick={() => handleMajorToggle(major)}
-                        >
-                          {majorState === 'all' ? (
-                              <CheckSquare className="w-4 h-4 text-blue-600" />
-                          ) : majorState === 'partial' ? (
-                              <Square className="w-4 h-4 text-blue-400 fill-blue-100" />
-                          ) : (
-                              <Square className="w-4 h-4 transition-colors hover:text-blue-400" />
-                          )}
-                        </Button>
+          <div className="flex-1 min-h-0">
+            <ScrollArea className="h-full">
+              <div className="space-y-1">
+                {/* 🎯 내 추천 업종 섹션 (로그인된 사용자만) */}
+                {myRecommendedIndustries.length > 0 && (
+                    <div className="mb-4 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                      <div className="flex items-center gap-2 mb-3">
+                        <User className="w-4 h-4 text-purple-600" />
+                        <h4 className="font-semibold text-purple-800 text-sm">내 추천 업종</h4>
+                        <Star className="w-4 h-4 text-purple-600" />
                       </div>
 
-                      {/* 중분류 펼치기 */}
-                      <div
-                          className={`ml-6 overflow-hidden transition-all duration-300 ease-in-out ${
-                              isMajorExpanded ? 'max-h-[9999px] opacity-100' : 'max-h-0 opacity-0'
-                          }`}
-                      >
-                        <div className="space-y-1 py-1">
-                          {Object.entries(minors).map(([minor, subs]) => {
-                            const minorState = getMinorSelectionState(major, minor);
-                            const minorCount = getMinorStoreCount(major, minor);
-                            const isMinorExpanded = expandedMinor.includes(minor);
+                      <div className="space-y-2">
+                        {myRecommendedIndustries.map(industry => (
+                            <Button
+                                key={industry.code}
+                                variant={industry.isSelected ? 'secondary' : 'ghost'}
+                                className={`w-full justify-between p-2 text-sm transition-all duration-200 ${
+                                    industry.isSelected
+                                        ? 'bg-purple-100 text-purple-800 hover:bg-purple-200'
+                                        : 'hover:bg-purple-100 text-purple-700'
+                                }`}
+                                onClick={() => handleMyRecommendationToggle(industry.name)}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="text-base">{industry.emoji}</span>
+                                <span className="text-left font-medium">
+                                {industry.name}
+                              </span>
+                              </div>
 
-                            return (
-                                <div key={minor} className="overflow-hidden">
-                                  <div className="flex items-center gap-1">
-                                    {/* 중분류 토글 버튼 */}
-                                    <Button
-                                        variant="ghost"
-                                        className="flex-1 justify-start p-2 text-sm hover:bg-gray-50 transition-all duration-200"
-                                        onClick={() => toggle(expandedMinor, minor, setExpandedMinor)}
-                                    >
-                                      <ChevronRight
-                                          className={`w-3 h-3 mr-2 transition-transform duration-300 ease-in-out ${
-                                              isMinorExpanded ? 'rotate-90' : 'rotate-0'
-                                          }`}
-                                      />
-                                      <span className="flex-1 text-left">
-                                        {highlightSearchTerm(minor)}
-                                      </span>
-                                      <Badge
-                                          variant="outline"
-                                          className={`ml-auto transition-all duration-200 ${
-                                              minorCount > 0 ? 'bg-green-50 text-green-700 border-green-200' : ''
-                                          }`}
-                                      >
-                                        {minorCount}개
-                                      </Badge>
-                                    </Button>
-
-                                    {/* 중분류 선택 체크박스 */}
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="px-2 hover:bg-green-50 transition-colors"
-                                        onClick={() => handleMinorToggle(major, minor)}
-                                    >
-                                      {minorState === 'all' ? (
-                                          <CheckSquare className="w-4 h-4 text-green-600" />
-                                      ) : minorState === 'partial' ? (
-                                          <Square className="w-4 h-4 text-green-400 fill-green-100" />
-                                      ) : (
-                                          <Square className="w-4 h-4 transition-colors hover:text-green-400" />
-                                      )}
-                                    </Button>
-                                  </div>
-
-                                  {/* 소분류 펼치기 */}
-                                  <div
-                                      className={`ml-6 overflow-hidden transition-all duration-300 ease-in-out ${
-                                          isMinorExpanded ? 'max-h-[9999px] opacity-100' : 'max-h-0 opacity-0'
+                              {industry.count > 0 && (
+                                  <Badge
+                                      variant="outline"
+                                      className={`bg-purple-50 text-purple-700 border-purple-200 ${
+                                          industry.isSelected ? 'bg-purple-200 text-purple-800' : ''
                                       }`}
                                   >
-                                    <div className="space-y-1 py-1">
-                                      {subs.map(sub => {
-                                        const subCount = getStoreCountForCategory(sub);
-                                        const isSelected = selectedCategories.includes(sub);
+                                    {industry.count}개
+                                  </Badge>
+                              )}
+                            </Button>
+                        ))}
+                      </div>
+                    </div>
+                )}
 
-                                        return (
-                                            <Button
-                                                key={sub}
-                                                variant={isSelected ? 'secondary' : 'ghost'}
-                                                className={`w-full justify-between p-2 text-sm transition-all duration-200 ${
-                                                    isSelected
-                                                        ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                                                        : 'hover:bg-gray-50'
-                                                }`}
-                                                onClick={() =>
-                                                    setSelectedCategories(
-                                                        selectedCategories.includes(sub)
-                                                            ? selectedCategories.filter(c => c !== sub)
-                                                            : [...selectedCategories, sub],
-                                                    )
-                                                }
-                                            >
+                {/* 기존 카테고리 트리 */}
+                {filtered.map(([major, minors]) => {
+                  const majorState = getMajorSelectionState(major);
+                  const majorCount = getMajorStoreCount(major);
+                  const isMajorExpanded = expandedMajor.includes(major);
+
+                  return (
+                      <div key={major} className="overflow-hidden">
+                        <div className="flex items-center gap-1">
+                          {/* 대분류 토글 버튼 */}
+                          <Button
+                              variant="ghost"
+                              className="flex-1 justify-start p-2 hover:bg-gray-100 transition-all duration-200"
+                              onClick={() => toggle(expandedMajor, major, setExpandedMajor)}
+                          >
+                            <ChevronRight
+                                className={`w-4 h-4 mr-2 transition-transform duration-300 ease-in-out ${
+                                    isMajorExpanded ? 'rotate-90' : 'rotate-0'
+                                }`}
+                            />
+                            <span className="flex-1 text-left">
+                            {highlightSearchTerm(major)}
+                          </span>
+                            <Badge
+                                variant="outline"
+                                className={`ml-auto transition-all duration-200 ${
+                                    majorCount > 0 ? 'bg-blue-50 text-blue-700 border-blue-200' : ''
+                                }`}
+                            >
+                              {majorCount}개
+                            </Badge>
+                          </Button>
+
+                          {/* 대분류 선택 체크박스 */}
+                          <Button
+                              variant="ghost"
+                              size="sm"
+                              className="px-2 hover:bg-blue-50 transition-colors"
+                              onClick={() => handleMajorToggle(major)}
+                          >
+                            {majorState === 'all' ? (
+                                <CheckSquare className="w-4 h-4 text-blue-600" />
+                            ) : majorState === 'partial' ? (
+                                <Square className="w-4 h-4 text-blue-400 fill-blue-100" />
+                            ) : (
+                                <Square className="w-4 h-4 transition-colors hover:text-blue-400" />
+                            )}
+                          </Button>
+                        </div>
+
+                        {/* 중분류 펼치기 */}
+                        <div
+                            className={`ml-6 overflow-hidden transition-all duration-300 ease-in-out ${
+                                isMajorExpanded ? 'max-h-[9999px] opacity-100' : 'max-h-0 opacity-0'
+                            }`}
+                        >
+                          <div className="space-y-1 py-1">
+                            {Object.entries(minors).map(([minor, subs]) => {
+                              const minorState = getMinorSelectionState(major, minor);
+                              const minorCount = getMinorStoreCount(major, minor);
+                              const isMinorExpanded = expandedMinor.includes(minor);
+
+                              return (
+                                  <div key={minor} className="overflow-hidden">
+                                    <div className="flex items-center gap-1">
+                                      {/* 중분류 토글 버튼 */}
+                                      <Button
+                                          variant="ghost"
+                                          className="flex-1 justify-start p-2 text-sm hover:bg-gray-50 transition-all duration-200"
+                                          onClick={() => toggle(expandedMinor, minor, setExpandedMinor)}
+                                      >
+                                        <ChevronRight
+                                            className={`w-3 h-3 mr-2 transition-transform duration-300 ease-in-out ${
+                                                isMinorExpanded ? 'rotate-90' : 'rotate-0'
+                                            }`}
+                                        />
+                                        <span className="flex-1 text-left">
+                                        {highlightSearchTerm(minor)}
+                                      </span>
+                                        <Badge
+                                            variant="outline"
+                                            className={`ml-auto transition-all duration-200 ${
+                                                minorCount > 0 ? 'bg-green-50 text-green-700 border-green-200' : ''
+                                            }`}
+                                        >
+                                          {minorCount}개
+                                        </Badge>
+                                      </Button>
+
+                                      {/* 중분류 선택 체크박스 */}
+                                      <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="px-2 hover:bg-green-50 transition-colors"
+                                          onClick={() => handleMinorToggle(major, minor)}
+                                      >
+                                        {minorState === 'all' ? (
+                                            <CheckSquare className="w-4 h-4 text-green-600" />
+                                        ) : minorState === 'partial' ? (
+                                            <Square className="w-4 h-4 text-green-400 fill-green-100" />
+                                        ) : (
+                                            <Square className="w-4 h-4 transition-colors hover:text-green-400" />
+                                        )}
+                                      </Button>
+                                    </div>
+
+                                    {/* 소분류 펼치기 */}
+                                    <div
+                                        className={`ml-6 overflow-hidden transition-all duration-300 ease-in-out ${
+                                            isMinorExpanded ? 'max-h-[9999px] opacity-100' : 'max-h-0 opacity-0'
+                                        }`}
+                                    >
+                                      <div className="space-y-1 py-1">
+                                        {subs.map(sub => {
+                                          const subCount = getStoreCountForCategory(sub);
+                                          const isSelected = selectedCategories.includes(sub);
+
+                                          return (
+                                              <Button
+                                                  key={sub}
+                                                  variant={isSelected ? 'secondary' : 'ghost'}
+                                                  className={`w-full justify-between p-2 text-sm transition-all duration-200 ${
+                                                      isSelected
+                                                          ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                                                          : 'hover:bg-gray-50'
+                                                  }`}
+                                                  onClick={() =>
+                                                      setSelectedCategories(
+                                                          selectedCategories.includes(sub)
+                                                              ? selectedCategories.filter(c => c !== sub)
+                                                              : [...selectedCategories, sub],
+                                                      )
+                                                  }
+                                              >
                                               <span className="text-left flex-1">
                                                 {highlightSearchTerm(sub)}
                                               </span>
-                                              {subCount > 0 && (
-                                                  <Badge
-                                                      variant="outline"
-                                                      className={`bg-gray-50 text-gray-700 transition-all duration-200 ${
-                                                          isSelected ? 'bg-blue-50 text-blue-700' : ''
-                                                      }`}
-                                                  >
-                                                    {subCount}
-                                                  </Badge>
-                                              )}
-                                            </Button>
-                                        );
-                                      })}
+                                                {subCount > 0 && (
+                                                    <Badge
+                                                        variant="outline"
+                                                        className={`bg-gray-50 text-gray-700 transition-all duration-200 ${
+                                                            isSelected ? 'bg-blue-50 text-blue-700' : ''
+                                                        }`}
+                                                    >
+                                                      {subCount}
+                                                    </Badge>
+                                                )}
+                                              </Button>
+                                          );
+                                        })}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                );
-              })}
-            </div>
-          </ScrollArea>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+          </div>
         </CardContent>
       </Card>
   );
+
 }

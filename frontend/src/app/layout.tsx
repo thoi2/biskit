@@ -10,28 +10,26 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({
-  children,
-}: {
+                                     children,
+                                   }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ko" suppressHydrationWarning>
-      <body suppressHydrationWarning>
-        <Providers>
-          <div className="h-screen flex flex-col">
-            {' '}
-            {/* 👈 전체 레이아웃 컨테이너 */}
-            {/* 헤더 - 상단 고정 */}
-            <Header />
-            {/* 메인 콘텐츠 - 나머지 공간 차지 */}
-            <main className="flex-1 overflow-hidden">
-              {' '}
-              {/* 👈 flex-1로 나머지 공간 차지 */}
-              {children}
-            </main>
+      <html lang="ko" suppressHydrationWarning>
+      {/* 전체 배율 75% 적용 (globals.css에서 .app-75 정의) */}
+      <body className="app-75" suppressHydrationWarning>
+      <Providers>
+          {/* h-screen → h-full (배율/브라우저별 vh 계산 이슈 방지) */}
+          <div className="h-full flex flex-col overflow-hidden">
+              <Header />
+              {/* 이미 적용한 min-h-0 유지 */}
+              <main className="flex-1 min-h-0 overflow-hidden">
+                  {children}
+              </main>
           </div>
-        </Providers>
+      </Providers>
       </body>
-    </html>
+
+      </html>
   );
 }
