@@ -352,7 +352,7 @@ export function KakaoMap() {
   if (isLoading || loadError) {
     return <LoadingAndError isLoading={isLoading} loadError={loadError} />;
   }
-
+v
   const searchButtonInfo = getSearchButtonInfo(currentLevel);
 
   return (
