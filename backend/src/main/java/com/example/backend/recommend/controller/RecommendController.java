@@ -33,7 +33,7 @@ public class RecommendController {
         log.info("🌟 단일 검색 시작: lat={}, lng={}, uid={}", req.getLat(), req.getLng(), uid);
 
         DeferredResult<ApiResponse<RecommendResponse>> deferredResult =
-                new DeferredResult<>(30000L); // 30초 타임아웃
+                new DeferredResult<>(120000L); // 30초 타임아웃
 
         // ✅ 캐시 기반 동적 처리 (Async 제거)
         recommendService.generateSingle(req, uid)
@@ -63,7 +63,7 @@ public class RecommendController {
                 req.getLat(), req.getLng(), req.getCategory(), uid);
 
         DeferredResult<ApiResponse<RecommendResponse>> deferredResult =
-                new DeferredResult<>(30000L);
+                new DeferredResult<>(120000L);
 
         // ✅ 캐시 기반 동적 처리
         recommendService.generateSingleIndustry(req, uid)
@@ -95,7 +95,7 @@ public class RecommendController {
                 req.getCategory(), req.getPoints().size(), uid);
 
         DeferredResult<ApiResponse<RangeResponse>> deferredResult =
-                new DeferredResult<>(60000L); // 60초 타임아웃 (범위 검색은 더 오래 걸림)
+                new DeferredResult<>(120000L); // 60초 타임아웃 (범위 검색은 더 오래 걸림)
 
         // ✅ 캐시 기반 동적 처리
         recommendService.getRange(req, uid)
