@@ -46,8 +46,6 @@ public class RecommendService {
     private final LoginSearchPort loginSearchPort;
     private final UserRepository userRepository; // UserRepository 주입
 
-    private static final Logger log = LoggerFactory.getLogger(RecommendService.class);
-
     /**
      * ✅ 단일 검색: 247개 완전 캐시 → 동기, 불완전 → 비동기 AI 호출
      */
