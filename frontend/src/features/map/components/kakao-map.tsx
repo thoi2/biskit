@@ -55,18 +55,19 @@ export function KakaoMap() {
       try {
         return btoa(str);
       } catch (fallbackError) {
-        return btoa(str.replace(/[^\x00-\x7F]/g, ""));
+        return btoa(str.replace(/[^\x00-\x7F]/g, ''));
       }
     }
   }, []);
 
   // ✅ 추천 핀 생성 함수
-  const createRecommendPin = useCallback((lat: number, lng: number) => {
-    if (!map) return null;
+  const createRecommendPin = useCallback(
+    (lat: number, lng: number) => {
+      if (!map) return null;
 
-    const position = new window.kakao.maps.LatLng(lat, lng);
+      const position = new window.kakao.maps.LatLng(lat, lng);
 
-    const pinSvg = `
+      const pinSvg = `
       <svg width="40" height="50" viewBox="0 0 40 50" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <filter id="pin-shadow" x="-50%" y="-50%" width="200%" height="200%">
@@ -95,21 +96,21 @@ export function KakaoMap() {
       </svg>
     `;
 
-    const marker = new window.kakao.maps.Marker({
-      position: position,
-      map: map,
-      image: new window.kakao.maps.MarkerImage(
+      const marker = new window.kakao.maps.Marker({
+        position: position,
+        map: map,
+        image: new window.kakao.maps.MarkerImage(
           'data:image/svg+xml;base64,' + safeBtoa(pinSvg),
           new window.kakao.maps.Size(40, 50),
-          { offset: new window.kakao.maps.Point(20, 50) }
-      ),
-      title: '분석 위치 선택',
-      zIndex: 400
-    });
+          { offset: new window.kakao.maps.Point(20, 50) },
+        ),
+        title: '분석 위치 선택',
+        zIndex: 400,
+      });
 
-    window.kakao.maps.event.addListener(marker, 'click', () => {
-      const infoWindow = new window.kakao.maps.InfoWindow({
-        content: `
+      window.kakao.maps.event.addListener(marker, 'click', () => {
+        const infoWindow = new window.kakao.maps.InfoWindow({
+          content: `
           <div style="padding: 10px; text-align: center; font-family: 'Pretendard', sans-serif;">
             <div style="margin-bottom: 6px;">
               <span style="font-size: 16px;">📍</span>
@@ -128,13 +129,77 @@ export function KakaoMap() {
             </div>
           </div>
         `,
-        removable: true
+          removable: true,
+        });
+        infoWindow.open(map, marker);
       });
-      infoWindow.open(map, marker);
-    });
 
-    return marker;
-  }, [map, safeBtoa]);
+      return marker;
+    },
+    [map, safeBtoa],
+  );
+
+  // 🔥 지역 선택 핸들러 추가
+  const handleLocationSelect = useCallback(
+    (coordinates: { lat: number; lng: number }) => {
+      if (!map) return;
+
+      console.log('🗺️ 지역 선택:', coordinates);
+
+      // 지도 중심 이동 (부드러운 애니메이션)
+      const moveLatLon = new window.kakao.maps.LatLng(
+        coordinates.lat,
+        coordinates.lng,
+      );
+      map.panTo(moveLatLon);
+
+      // 적절한 줌 레벨로 설정 (구 단위 보기 좋은 레벨)
+      setTimeout(() => {
+        map.setLevel(5);
+      }, 300);
+
+      // 해당 위치에 임시 마커 표시
+      const locationMarker = new window.kakao.maps.Marker({
+        position: moveLatLon,
+        map: map,
+        image: new window.kakao.maps.MarkerImage(
+          'data:image/svg+xml;base64,' +
+            btoa(`
+          <svg width="30" height="40" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15 0C6.716 0 0 6.716 0 15c0 8.284 15 25 15 25s15-16.716 15-25C30 6.716 23.284 0 15 0z" 
+                  fill="#10B981" stroke="#059669" stroke-width="2"/>
+            <circle cx="15" cy="15" r="6" fill="white"/>
+            <text x="15" y="19" text-anchor="middle" fill="#059669" font-size="10" font-weight="bold">📍</text>
+          </svg>
+        `),
+          new window.kakao.maps.Size(30, 40),
+          { offset: new window.kakao.maps.Point(15, 40) },
+        ),
+        zIndex: 500,
+      });
+
+      // 3초 후 마커 제거
+      setTimeout(() => {
+        locationMarker.setMap(null);
+      }, 3000);
+
+      // 선택한 지역명 토스트 표시 (임시)
+      const toast = document.createElement('div');
+      toast.className =
+        'fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-all';
+      toast.innerHTML = '🗺️ 선택한 지역으로 이동했습니다';
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        if (document.body.contains(toast)) {
+          document.body.removeChild(toast);
+        }
+      }, 2000);
+
+      console.log('✅ 지도 이동 완료');
+    },
+    [map],
+  );
 
   // 카카오맵 스크립트 로딩
   useEffect(() => {
@@ -142,7 +207,11 @@ export function KakaoMap() {
 
     const loadKakaoMap = async () => {
       try {
-        if (typeof window !== 'undefined' && window.kakao && window.kakao.maps) {
+        if (
+          typeof window !== 'undefined' &&
+          window.kakao &&
+          window.kakao.maps
+        ) {
           setIsLoading(false);
           return;
         }
@@ -182,7 +251,11 @@ export function KakaoMap() {
     if (isLoading || loadError || !mapRef.current) return;
 
     const initializeMap = () => {
-      if (typeof window === 'undefined' || !window.kakao || !window.kakao.maps) {
+      if (
+        typeof window === 'undefined' ||
+        !window.kakao ||
+        !window.kakao.maps
+      ) {
         setTimeout(initializeMap, 100);
         return;
       }
@@ -205,7 +278,7 @@ export function KakaoMap() {
         console.log('🗺️ 지도 생성 완료:', {
           map: !!kakaoMap,
           level: kakaoMap.getLevel(),
-          center: kakaoMap.getCenter()
+          center: kakaoMap.getCenter(),
         });
 
         setMap(kakaoMap);
@@ -226,7 +299,7 @@ export function KakaoMap() {
     console.log('🎧 이벤트 리스너 등록 시작', {
       isDrawingMode,
       isDrawingActive,
-      activeTab
+      activeTab,
     });
 
     const handleZoomChanged = () => {
@@ -255,7 +328,7 @@ export function KakaoMap() {
         lng,
         activeTab: currentState.activeTab,
         isDrawingMode: currentState.isDrawingMode,
-        isDrawingActive: currentState.isDrawingActive
+        isDrawingActive: currentState.isDrawingActive,
       });
 
       // ✅ 추천 탭에서 핀 생성
@@ -289,14 +362,28 @@ export function KakaoMap() {
       console.log('🧹 이벤트 리스너 정리');
       if (map && window.kakao?.maps) {
         try {
-          window.kakao.maps.event.removeListener(map, 'zoom_changed', handleZoomChanged);
+          window.kakao.maps.event.removeListener(
+            map,
+            'zoom_changed',
+            handleZoomChanged,
+          );
           window.kakao.maps.event.removeListener(map, 'click', handleMapClick);
         } catch (e) {
           console.warn('이벤트 리스너 제거 중 오류:', e);
         }
       }
     };
-  }, [map, isDrawingMode, isDrawingActive, activeTab, createRecommendPin, setCoordinates, setRecommendPin, handlers, setSelectedItem]);
+  }, [
+    map,
+    isDrawingMode,
+    isDrawingActive,
+    activeTab,
+    createRecommendPin,
+    setCoordinates,
+    setRecommendPin,
+    handlers,
+    setSelectedItem,
+  ]);
 
   // 지도 크기 변화 감지
   useEffect(() => {
@@ -352,80 +439,87 @@ export function KakaoMap() {
   if (isLoading || loadError) {
     return <LoadingAndError isLoading={isLoading} loadError={loadError} />;
   }
-
   const searchButtonInfo = getSearchButtonInfo(currentLevel);
 
   return (
-      <div className="relative w-full h-full">
-        {/* 🔥 지도 컨테이너 - kakao-map-container 클래스 추가 */}
-        <div ref={mapRef} className="kakao-map-container w-full h-full rounded-lg overflow-hidden" />
+    <div className="relative w-full h-full">
+      {/* 🔥 지도 컨테이너 - kakao-map-container 클래스 추가 */}
+      <div
+        ref={mapRef}
+        className="kakao-map-container w-full h-full rounded-lg overflow-hidden"
+      />
 
-        {/* ✅ 통합 마커 시스템 */}
-        <SeparatedMarkers map={map} selectedCategories={selectedCategories} />
+      {/* ✅ 통합 마커 시스템 */}
+      <SeparatedMarkers map={map} selectedCategories={selectedCategories} />
 
-        {/* 추천 탭 안내 */}
-        {activeTab === 'recommend' && (
-            <div className="absolute top-4 left-4 bg-blue-500 text-white px-3 py-2 rounded-lg shadow-lg text-sm font-medium z-10">
-              📍 지도를 클릭하여 분석 위치를 선택하세요
+      {/* 추천 탭 안내 */}
+      {activeTab === 'recommend' && (
+        <div className="absolute top-4 left-4 bg-blue-500 text-white px-3 py-2 rounded-lg shadow-lg text-sm font-medium z-10">
+          📍 지도를 클릭하여 분석 위치를 선택하세요
+        </div>
+      )}
+
+      {/* 드로잉 모드 안내 */}
+      {isDrawingMode && (
+        <div className="absolute top-4 right-4 bg-purple-500 text-white px-3 py-2 rounded-lg shadow-lg text-sm font-medium z-10">
+          ✏️ 드로잉 모드 활성화
+          {isDrawingActive && <span className="ml-2">- 그리는 중...</span>}
+        </div>
+      )}
+
+      {/* 지도 컨트롤들 */}
+      <MapControls
+        isSearching={isSearching}
+        currentLevel={currentLevel}
+        isSearchAvailable={isSearchAvailable}
+        searchButtonInfo={searchButtonInfo}
+        onSearchClick={handleSearchButtonClick}
+        maxSearchLevel={MAX_SEARCH_LEVEL}
+      />
+
+      {/* 🔥 수정된 LocationSelector - 실제 핸들러 전달 */}
+      <LocationSelector onLocationSelect={handleLocationSelect} />
+
+      {/* ✅ selectedItem 팝업 (사용 시에만 표시) */}
+      {selectedItem && (
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-white rounded-lg shadow-xl border p-4 z-20 min-w-64">
+          <div className="flex items-start justify-between mb-3">
+            <div>
+              <h3 className="font-semibold text-gray-900">
+                {selectedItem.name}
+              </h3>
+              {selectedItem.category && (
+                <p className="text-sm text-gray-600">{selectedItem.category}</p>
+              )}
             </div>
-        )}
-
-        {/* 드로잉 모드 안내 */}
-        {isDrawingMode && (
-            <div className="absolute top-4 right-4 bg-purple-500 text-white px-3 py-2 rounded-lg shadow-lg text-sm font-medium z-10">
-              ✏️ 드로잉 모드 활성화
-              {isDrawingActive && <span className="ml-2">- 그리는 중...</span>}
-            </div>
-        )}
-
-        {/* 지도 컨트롤들 */}
-        <MapControls
-            isSearching={isSearching}
-            currentLevel={currentLevel}
-            isSearchAvailable={isSearchAvailable}
-            searchButtonInfo={searchButtonInfo}
-            onSearchClick={handleSearchButtonClick}
-            maxSearchLevel={MAX_SEARCH_LEVEL}
-        />
-
-        <LocationSelector onLocationSelect={() => {}} />
-
-        {/* ✅ selectedItem 팝업 (사용 시에만 표시) */}
-        {selectedItem && (
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-white rounded-lg shadow-xl border p-4 z-20 min-w-64">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h3 className="font-semibold text-gray-900">{selectedItem.name}</h3>
-                  {selectedItem.category && (
-                      <p className="text-sm text-gray-600">{selectedItem.category}</p>
-                  )}
-                </div>
-                <button
-                    onClick={() => setSelectedItem(null)}
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="space-y-2">
-                {selectedItem.address && (
-                    <p className="text-sm text-gray-600">{selectedItem.address}</p>
-                )}
-                <div className="flex items-center gap-2">
-              <span className={`px-2 py-1 rounded text-xs font-medium text-white ${
+            <button
+              onClick={() => setSelectedItem(null)}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="space-y-2">
+            {selectedItem.address && (
+              <p className="text-sm text-gray-600">{selectedItem.address}</p>
+            )}
+            <div className="flex items-center gap-2">
+              <span
+                className={`px-2 py-1 rounded text-xs font-medium text-white ${
                   selectedItem.type === 'store' ? 'bg-green-500' : 'bg-blue-500'
-              }`}>
+                }`}
+              >
                 {selectedItem.type === 'store' ? '상가' : 'AI추천'}
               </span>
-                  {selectedItem.closureProbability && (
-                      <span className="px-2 py-1 rounded text-xs font-medium text-white bg-orange-500">
+              {selectedItem.closureProbability && (
+                <span className="px-2 py-1 rounded text-xs font-medium text-white bg-orange-500">
                   {selectedItem.closureProbability}%
                 </span>
-                  )}
-                </div>
-              </div>
+              )}
             </div>
-        )}
-      </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
