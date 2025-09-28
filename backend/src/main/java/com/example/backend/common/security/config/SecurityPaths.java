@@ -39,7 +39,7 @@ public final class SecurityPaths {
             "/api/v1/ai/single-industry",
             "/api/v1/ai/single-industry-explanation",
             "/api/v1/ai/range",
-            "/api/v1/auth/oauth2/check",
+            "/api/v1/auth/oauth2/check"
     };
     /**
      * GET 메서드로만 인증 없이 접근 가능한 경로

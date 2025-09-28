@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 import static com.example.backend.common.security.config.SecurityPaths.PUBLIC_GET_PATHS;
 import static com.example.backend.common.security.config.SecurityPaths.PUBLIC_PATHS;
+import static com.example.backend.common.security.config.SecurityPaths.rc_PATHS;
 
 /**
  * JWT 기반 인증을 처리하는 필터 클래스 (디버깅 로그 강화)
@@ -89,7 +90,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (!StringUtils.hasText(token)) {
 
-boolean isPassablePath = Arrays.stream(rc_PATHS)
+                boolean isPassablePath = Arrays.stream(rc_PATHS)
                 .anyMatch(pattern -> {
                     boolean matches = pathMatcher.match(pattern, requestURI); return matches;
                 });
