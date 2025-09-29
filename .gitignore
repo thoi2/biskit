@@ -1,0 +1,79 @@
+# =========================================================================
+# Dependencies & Build files
+# 의존성 폴더 및 빌드 결과물
+# =========================================================================
+
+# Node.js 의존성 폴더 (가장 중요!)
+node_modules/
+jenkins-data/
+
+# 빌드 결과물 폴더
+build/
+/backend/out
+/build
+/.idea
+dist/
+.next/
+.out/
+/backend/out
+/ai/data
+./original
+./out
+# npm 또는 Yarn 로그 파일
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+
+# =========================================================================
+# IDE & Editor files
+# IDE 및 코드 에디터 설정 파일
+# =========================================================================
+
+# VS Code
+.vscode/
+
+# JetBrains (IntelliJ, WebStorm 등)
+.idea/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Gradle cache files
+.gradle/
+
+# =========================================================================
+# Environment Variables
+# 환경 변수 파일 (API 키 등 민감 정보 포함)
+# =========================================================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env
+next-env.d.ts
+
+# =========================================================================
+# Operating System files
+# 운영체제(OS)에서 자동으로 생성하는 파일
+# =========================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+
+# =========================================================================
+# Log files
+# 각종 로그 파일
+# =========================================================================
+*.log
+logs/

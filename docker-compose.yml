@@ -1,0 +1,139 @@
+# ===================================================================
+# 1. docker-compose.yml (공통/기본 설정 파일)
+# - 모든 환경(개발, 운영)에서 공통으로 사용되는 기본 뼈대입니다.
+# - 프론트엔드, 백엔드, DB, Redis 서비스의 기본 구조를 정의합니다.
+# ===================================================================
+services:
+  ai:
+    build:
+      context: ./ai
+      # 사용할 Dockerfile은 override 또는 prod 파일에서 지정합니다.
+    container_name: ai
+    environment:
+      - GMS_BASE_URL=https://gms.ssafy.io/gmsapi/api.openai.com/v1
+      - GMS_KEY=${GMS_KEY}
+      - MODEL_PATH=survival_gnn.pt
+      - META_PATH=survival_meta.json
+      - LOG_LEVEL=INFO
+      - LLM_ENABLE=true
+      - LLM_MODEL=gpt-5-nano
+      - LLM_TIMEOUT=60
+      - DATA_DIR=./data
+    networks:
+      - my-network
+  # Spring Boot 백엔드 애플리케이션
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev # 개발용 Dockerfile 명시
+    container_name: backend
+
+    # 🎯 핫리로드를 위한 볼륨 마운트
+    volumes:
+      - ./backend/src:/app/src:rw # 소스 코드 실시간 동기화
+      - ./backend/build:/app/build # 빌드 결과 공유
+      - gradle-cache:/home/gradle/.gradle # Gradle 캐시 보존
+
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT}
+      - JWT_SECRET=${JWT_SECRET}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+      - SPRING_DATA_REDIS_TIMEOUT=2000
+      - LOGGING_LEVEL_ROOT=INFO
+      - LOGGING_LEVEL_APP=DEBUG
+      - GEOCODER_TOKEN=${GEOCODER_TOKEN}
+      - AI_GMS_BASE_URL=https://gms.ssafy.io/gmsapi
+      - AI_GMS_API_KEY=${GMS_KEY}
+      - AI_SERVER_BASE_URL=${AI_SERVER_BASE_URL}
+    networks:
+      - my-network
+
+    depends_on:
+      ai:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  # Next.js 프론트엔드 애플리케이션
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Jenkins 변수를 빌드 인자로 전달
+        - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+        - NEXT_PUBLIC_GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
+        - NEXT_PUBLIC_KAKAO_MAP_KEY=${KAKAO_MAP_KEY}
+      # 사용할 Dockerfile은 override 또는 prod 파일에서 지정합니다.
+    container_name: frontend
+    environment:
+      - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - NEXT_PUBLIC_GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
+      - NEXT_PUBLIC_KAKAO_MAP_KEY=${KAKAO_MAP_KEY}
+
+    depends_on:
+      - backend
+      - ai
+    networks:
+      - my-network
+
+  # MySQL 데이터베이스
+  mysql:
+    build: ./mysql # <-- 이 라인으로 교체/추가합니다.
+    # (★핵심 수정★) 실행할 플랫폼을 명시적으로 지정합니다.
+    platform: linux/amd64
+    container_name: mysql
+    # 이하 나머지 설정은 동일합니다.
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: Asia/Seoul
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${MYSQL_ROOT_PASSWORD}",
+        ]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 30s
+    networks:
+      - my-network
+
+  # Redis 인메모리 데이터 스토어
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: ["redis-server", "--port", "${REDIS_PORT}", "--save", "60", "1000"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - my-network
+
+volumes:
+  mysql_data:
+  redis_data:
+  gradle-cache:
+
+networks:
+  my-network:
+    driver: bridge

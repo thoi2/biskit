@@ -1,0 +1,57 @@
+# ===================================================================
+# 2. docker-compose.override.yml (개발용 덮어쓰기 파일)
+# - 로컬 개발 환경에서만 사용됩니다. (Hot Reloading 지원)
+# ===================================================================
+services:
+  ai:
+    build:
+      dockerfile: Dockerfile.dev
+    ports:
+      - "9090:8000" # 컨테이너 내부 8000번 포트를 호스트 9090번 포트로 연결
+    volumes:
+      - ./ai:/app # 로컬 ai 폴더를 컨테이너 /app 폴더에 마운트 (핫 리로딩)
+  backend:
+    build:
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8080:8080"
+      - "35729:35729" # LiveReload 포트
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    # 개발용 Dockerfile로 빌드 설정을 덮어씁니다.
+    build:
+      dockerfile: Dockerfile.dev
+      args:
+        - NEXT_PUBLIC_WS_URL=http://localhost:8080/ws
+    # 개발에만 필요한 포트 포워딩을 추가합니다.
+    ports:
+      - "3000:3000"
+    # 개발에만 필요한 볼륨 마운트(핫 리로딩)를 추가합니다.
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    # 개발 서버 실행 명령어로 덮어씁니다.
+    command: yarn dev
+    # 개발용 환경 변수 파일을 추가합니다.
+    env_file:
+      - .env
+
+    environment:
+      - NEXT_PUBLIC_WS_URL=http://localhost:8080/ws
+
+  mysql:
+    ports:
+      - "3306:3306"
+    command: --secure-file-priv=/var/lib/mysql-files/
+    volumes:
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./mysql/input_store.csv:/var/lib/mysql-files/input_store.csv
+      - ./mysql/categories.csv:/var/lib/mysql-files/categories.csv
+
+  redis:
+    ports:
+      - "${REDIS_PORT}:${REDIS_PORT}"

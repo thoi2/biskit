@@ -1,0 +1,158 @@
+@import 'tailwindcss';
+
+/* 수평 스크롤 완전 제거 */
+* {
+    box-sizing: border-box;
+}
+
+html {
+    overflow-x: hidden;
+    width: 100%;
+    height: 100%;
+}
+
+body {
+    font-family: 'Pretendard', sans-serif;
+    color: #333;
+    background-color: #f8f9fa;
+    overflow-x: hidden;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+#__next, [data-nextjs-scroll-focus-boundary] {
+    overflow-x: hidden;
+    width: 100%;
+    height: 100%;
+}
+
+.max-w-screen {
+    max-width: 100vw !important;
+}
+
+/* 🎨 심플하고 예쁜 스크롤바 */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+/* 사이드바 전용 스크롤바 - 갈색 테마 */
+.sidebar-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-track {
+    background: rgba(254, 243, 199, 0.5); /* 연한 갈색 */
+    border-radius: 3px;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+    background: #b45309; /* 갈색 */
+    border-radius: 3px;
+    transition: all 0.2s ease;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #92400e; /* 더 진한 갈색 */
+}
+
+/* Firefox */
+html {
+    scrollbar-width: thin;
+    scrollbar-color: #94a3b8 #f1f5f9;
+}
+
+@layer base {
+    h1 {
+        @apply text-4xl font-bold mb-4;
+    }
+    a {
+        @apply text-blue-600 hover:underline;
+    }
+}
+
+/* 기존 globals.css에 이것만 추가 */
+
+/* 오렌지 버튼 클래스 - Tailwind 스타일로 */
+.btn-orange {
+    width: 100% !important;
+    background-color: #d97706 !important;  /* bg-amber-600 */
+    color: white !important;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05) !important;  /* shadow-sm */
+    border: none !important;
+    padding: 8px 16px !important;
+    border-radius: 6px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+.btn-orange:hover:not(:disabled) {
+    background-color: #c2410c !important;  /* hover:bg-orange-700 */
+}
+
+.btn-orange:disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+}
+
+
+
+/* 🎯 드로잉 모드일 때 마커/오버레이 클릭 차단 */
+.drawing-mode [class*="marker"],
+.drawing-mode [class*="overlay"]:not([class*="drawing"]),
+.drawing-mode .kakao-marker,
+.drawing-mode .map-marker {
+    pointer-events: none !important;
+    cursor: crosshair !important;
+}
+
+/* 드로잉 관련 요소들은 클릭 허용 */
+.drawing-mode [class*="drawing"],
+.drawing-mode .drawing-manager,
+.drawing-mode canvas {
+    pointer-events: auto !important;
+}
+/* 75% 전역 축소 */
+.app-75 {
+    zoom: 0.8;              /* Chrome/Edge/Safari */
+    overflow: hidden;        /* 가로·세로 스크롤 유입 방지 */
+}
+
+/* Firefox 폴백 */
+@supports not (zoom: 1) {
+    .app-75 {
+        transform: scale(0.8);
+        transform-origin: top left;
+        width: calc(100vw / 0.8);   /* 스케일 보정 */
+        height: calc(100vh / 0.8);
+        overflow: hidden;
+    }
+}
+
+/* 레이아웃 체인 높이 보장 */
+html, body, #__next { height: 100%; }
+
+/* Kakao 지도 컨테이너 역스케일: 전역 zoom 0.8의 반대값(1/0.8=1.25) */
+.kakao-map-container {
+    transform: scale(1.25);
+    transform-origin: top left;
+    /* overflow는 지도 relayout으로 처리, pointer-events는 기본값 유지 */
+}

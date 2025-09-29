@@ -1,0 +1,21 @@
+# backend/Dockerfile.dev
+FROM gradle:8.5-jdk21
+
+WORKDIR /app
+
+# Gradle 설정 복사
+COPY gradle/ gradle/
+COPY gradlew build.gradle.kts settings.gradle.kts ./
+
+# 의존성 미리 다운로드 (캐싱 최적화)
+RUN ./gradlew dependencies --no-daemon
+
+# DevTools 환경변수
+ENV SPRING_DEVTOOLS_RESTART_ENABLED=true
+ENV SPRING_DEVTOOLS_LIVERELOAD_ENABLED=true
+
+EXPOSE 8080
+EXPOSE 35729
+
+# 🎯 핵심: --continuous 옵션 추가
+CMD ["./gradlew", "bootRun", "--continuous", "--no-daemon", "-x", "test"]
