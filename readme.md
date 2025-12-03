@@ -1,6 +1,7 @@
 # BISKIT: 사업 시작 키트 (Business Starter KIT)
 
-**BISKIT**(Business Starter KIT)은 창업가와 예비 사업자가 **데이터 기반 의사결정**을 할 수 있도록 돕는 **GNN 기반 사업 분석 및 추천 웹 애플리케이션**입니다.
+**BISKIT**(Business Starter KIT)은 창업가와 예비 사업자가 **데이터 기반 의사결정**을 할 수 있도록 돕는
+**GNN 기반 사업 분석 및 추천 웹 애플리케이션**입니다.
 
 ---
 
@@ -101,6 +102,34 @@ BISKIT은 이러한 문제를 해소하기 위해
 
 ---
 
+## 👥 팀 소개 (Team BISKIT)
+
+| 이름 | 역할 | 담당 영역 |
+| --- | --- | --- |
+| 성기원 | 팀장, 백엔드 | 전체 일정 관리, 추천 시스템 구현,  ERD 및 DB 스키마 설계 |
+| 강건 | 프론트엔드, 백엔드 | 서비스 전체 프론트엔드 화면 개발 및 AI 추천 시스템 개발 |
+| 김승민 | 백엔드 | Login, 실시간 채팅 기능 전체 개발 (Google OAuth2, JWT, WebSocket) |
+| 이승주 | 프론트엔드, 인프라 | Docker, Jenkins, 배포/운영 환경 구성, API 설계 |
+| 강한설 | AI, DS | GNN 모델링, 데이터 전처리 |
+| 문종원 | AI, DS | GNN 모델링, 데이터 전처리 |
+
+---
+
+## 📂 프로젝트 구조 (Project Structure)
+
+```
+.
+├─ frontend/        # Next.js 기반 프론트엔드
+├─ backend/         # Spring Boot 백엔드
+├─ ai/              # FastAPI 기반 AI/GNN 서비스
+├─ mysql/           # 상가 & 카테고리 데이터베이스 정보
+├─ exec/            # Docker & 배포 관련 설정 문서
+└─ README.md
+
+```
+
+---
+
 ## 🚀 시작하기 (Getting Started)
 
 전체 애플리케이션은 **Docker Compose**로 실행되도록 설계되었습니다.
@@ -122,6 +151,7 @@ BISKIT은 이러한 문제를 해소하기 위해
 
 ```
 docker-compose up --build -d
+
 ```
 
 ### 4. 애플리케이션 접속
@@ -133,20 +163,7 @@ docker-compose up --build -d
 
 ```
 docker-compose down
-```
 
----
-
-## 📂 프로젝트 구조 (Project Structure)
-
-```
-.
-├─ frontend/        # Next.js 기반 프론트엔드
-├─ backend/         # Spring Boot 백엔드
-├─ ai/              # FastAPI 기반 AI/GNN 서비스
-├─ mysql/           # 상가 & 카테고리 데이터베이스 정보
-├─ exec/            # Docker & 배포 관련 설정 문서
-└─ README.md
 ```
 
 ---
@@ -162,6 +179,5 @@ docker-compose down
 본 프로젝트는 **신규 창업자의 데이터 기반 의사결정**을 지원하기 위해 개발되었습니다.
 
 - 버그 제보, 기능 제안, 질문 등은 이슈 트래커를 통해 남겨 주세요.
-- 아래 영역에 팀원/개발자 정보, 연락처, 라이선스 정보 등을 추가할 수 있습니다.
     
     Team BISKIT
