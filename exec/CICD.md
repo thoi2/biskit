@@ -132,12 +132,12 @@ SPRING_DATA_REDIS_TIMEOUT=2000
 
 # === JWT 설정 ===
 
-JWT_SECRET=aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789aBcDeFgHiJkLmNoPqRsTuVwX
+JWT_SECRET=
 
 # === OAuth 설정 ===
 
-GOOGLE_CLIENT_ID="361804184669-4fednsl81j0fr4k4gcs80k74b8n9i0c8.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET=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
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
 GOOGLE_REDIRECT_URI="http://localhost:3000/auth/callback"
 
 # === 외부 API 설정 ===
@@ -145,7 +145,7 @@ GOOGLE_REDIRECT_URI="http://localhost:3000/auth/callback"
 KT_API_KEY=your-kt-api-key
 PUBLIC_DATA_API_KEY=your-public-data-api-key
 
-KAKAO_MAP_KEY=5aece7cdf099c0e176baff877352d033
+KAKAO_MAP_KEY=
 
 # === 로깅 ===
 
@@ -154,16 +154,16 @@ LOGGING_LEVEL_APP=DEBUG
 
 # === Geo ===
 
-GEOCODER_TOKEN=84677bf78e50a4032abb3905a9c24055ea2a6e1c
+GEOCODER_TOKEN=
 
 # === AI GMS 설정 (새로 추가) ===
 AI_SERVER_BASE_URL=http://ai:8000
 
-AI_GMS_API_KEY=S13P22A101-ced8d062-57db-4aa9-9a1d-a612cc82912c
+AI_GMS_API_KEY=
 AI_GMS_BASE_URL=https://gms.ssafy.io/gmsapi
 
 # 필수
-GMS_KEY=S13P22A101-ced8d062-57db-4aa9-9a1d-a612cc82912c
+GMS_KEY=
 GMS_BASE_URL=https://gms.ssafy.io/gmsapi/api.openai.com/v1
 
 # 데이터/모델 파일이 있는 폴더 (스크린샷에 보인 파일들이 위치한 곳)
